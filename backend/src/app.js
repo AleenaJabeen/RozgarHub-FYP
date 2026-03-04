@@ -20,9 +20,24 @@ app.use(express.urlencoded({extended:true,limit:"16kb"}));
 app.use(express.static("public"));
 
 app.use(cookieParser());
+
 // routes
 import authRouter from './routes/auth.route.js';
 
 app.use('/api/v1/auth',authRouter);
+
+
+// sending error as json
+app.use((err, req, res, next) => {
+  // If the error is from your ApiError class, it will have a statusCode
+  const statusCode = err.statusCode || 500;
+  
+  // Send the error as JSON so Axios can read it
+  res.status(statusCode).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+    errors: err.errors || []
+  });
+});
 
 export {app};

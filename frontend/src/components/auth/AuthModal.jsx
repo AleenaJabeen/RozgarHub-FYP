@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { signupImg } from '../../assets';
 import { useDispatch } from 'react-redux'; // Assuming you use Redux
-import {registerUser} from '../../store/auth-slice';
-import {toast} from 'react-toastify'
-import { useNavigate } from 'react-router-dom';
+import {loginUser, registerUser} from '../../store/auth-slice';
+import { showToast } from '../../utils/toastHelper';
+import { Link, useNavigate } from 'react-router-dom';
 
 const AuthModal = ({ isOpen, onClose }) => {
   const navigate=useNavigate();
@@ -18,6 +18,11 @@ const AuthModal = ({ isOpen, onClose }) => {
     email: '',
     password: ''
   });
+  // Google login
+  const handleGoogleLogin = () => {
+  // Directly point to your backend endpoint
+  window.location.href = "http://localhost:3000/api/v1/auth/google"; 
+};
 
   // Handle input changes
   const handleChange = (e) => {
@@ -33,51 +38,31 @@ const AuthModal = ({ isOpen, onClose }) => {
     let newErrors = {};
     if (!isLogin && !formData.name.trim()) newErrors.name = "Full name is required";
     if (!formData.email.includes('@')) newErrors.email = "Valid email is required";
-    if (formData.password.length < 6) newErrors.password = "Password must be at least 8 characters";
+    if (formData.password.length < 8) newErrors.password = "Password must be at least 8 characters";
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // 3. Submit Handler
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validate()) {
-      if (isLogin) {
-        console.log("Dispatching Login:", { email: formData.email, password: formData.password });
-        // dispatch(loginUser({ email: formData.email, password: formData.password }));
-      } else {
-        console.log("Dispatching Register:", formData);
-        dispatch(registerUser(formData)).then((data) => {
-      console.log(data);
-      const responseMessage = data?.payload?.message || "Operation successful";
-      if (data?.payload?.success) {
-        toast.success(responseMessage, {
-          position: "bottom-right",
-          autoClose: 3000,
-          style: {
-            fontSize: "16px",
-            fontWeight: "bold",
-            fontFamily: "'Inter', sans-serif",
-            padding: "15px",
-            color: "#0D7A5F",
-            backgroundColor: "#ffffff",
-            textAlign: "center",
-          },
-        });
-        setTimeout(() => {
-          navigate("/");
-        }, 2000);
-      } else {
-        toast.error(responseMessage, {
-          position: "bottom-right",
-          autoClose: 3000,
-        });
-      }
-    });
-      }
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!validate()) return;
+
+  try {
+    if (isLogin) {
+      const data = await dispatch(loginUser(formData)).unwrap();
+      showToast(data.message);
+    } else {
+      const data = await dispatch(registerUser(formData)).unwrap();
+      showToast(data.message);
     }
-  };
+
+    setTimeout(() => navigate("/"), 2000);
+  } catch (error) {
+    showToast(error,'error'); // this will now show: "Email or User already exists"
+  }
+};
 
   useEffect(() => {
     if (isOpen) {
@@ -91,8 +76,8 @@ const AuthModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] overflow-hidden flex flex-col md:flex-row relative animate-in fade-in zoom-in duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30  p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[90vh] overflow-hidden flex flex-col md:flex-row relative animate-in fade-in zoom-in duration-300">
         
         <button onClick={onClose} className="absolute top-4 right-4 text-white z-30 bg-black/20 hover:bg-black/40 rounded-full p-1 transition-all">
           <IoClose size={24} />
@@ -105,7 +90,7 @@ const AuthModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Right Side: Form */}
-        <div className="w-full md:w-1/2 px-8 py-6 md:px-12 md:py-8 bg-white h-full overflow-y-auto">
+        <div className="w-full md:w-1/2 px-8 py-6 md:px-12 md:py-7 bg-white h-full overflow-y-auto">
           <div className="max-w-md mx-auto py-4">
             <h2 className="text-[30px] font-semibold text-gray-800 mb-8">
               {isLogin ? 'Welcome Back' : 'Create an Account'}
@@ -169,6 +154,20 @@ const AuthModal = ({ isOpen, onClose }) => {
             </div>
             
             {/* Divider and Google Button remain same... */}
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-300"></span>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-400 font-medium italic">or</span>
+              </div>
+            </div>
+
+            <button onClick={handleGoogleLogin}  className="w-full flex items-center justify-center gap-3 border border-gray-300 py-3 rounded-full hover:bg-gray-50 transition-colors mb-4">
+              <img src="https://www.svgrepo.com/show/475656/google-color.svg" loading="lazy" alt="google logo" className="w-5 h-5"/>
+              <span className="text-tertiary font-normal">Continue with Google</span>
+            </button>
+         
           </div>
         </div>
       </div>

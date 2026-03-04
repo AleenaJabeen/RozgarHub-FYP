@@ -10,48 +10,65 @@ const initialState = {
 
 // Api calls
 // register
-
+const BASE_URL = "http://localhost:3000/api/v1/auth";
 export const registerUser = createAsyncThunk(
   "/auth/register",
-  async (formData) => {
-    const response = await axios.post(
-      "http://localhost:3000/api/v1/auth/register",
-      formData,
-      {
-        withCredentials: true,
-      },
-    );
-    return response.data;
-  },
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+          `${BASE_URL}/register`,
+        formData,
+        { withCredentials: true }
+      );
+      return response.data;
+    } catch (error) {
+      console.log(rejectWithValue(error.response.data))
+      return rejectWithValue(
+        error.response?.data?.message || "Something went wrong"
+      );
+    }
+  }
 );
 
-export const loginUser = createAsyncThunk("/auth/login", async (formData) => {
-  const response = await axios.post(
-    "http://localhost:3000/api/v1/auth/login",
-    formData,
-    {
-      withCredentials: true,
-    },
-  );
-  return response.data;
-});
 
+
+
+// Login Thunk
+export const loginUser = createAsyncThunk(
+  "/auth/login", 
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/login`,
+        formData,
+        { withCredentials: true }
+      );
+      return response.data;
+    } catch (error) {
+      // Extracts message from your JSON response
+      const message = error.response?.data?.message || "Login failed";
+      return rejectWithValue(message);
+    }
+  }
+);
+
+// Logout Thunk
 export const logoutUser = createAsyncThunk(
   "/auth/logout",
-
-  async () => {
-    const response = await axios.post(
-      "http://localhost:3000/api/v1/auth/logout",
-      {},
-      {
-        withCredentials: true,
-      },
-    );
-
-    return response.data;
-  },
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/logout`,
+        {},
+        { withCredentials: true }
+      );
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || "Logout failed";
+      return rejectWithValue(message);
+    }
+  }
 );
-
 const authSlice = createSlice({
   name: "auth",
   initialState,

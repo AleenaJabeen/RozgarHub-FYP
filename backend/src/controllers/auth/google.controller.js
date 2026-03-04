@@ -2,8 +2,9 @@ import { User } from "../../models/user.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
-import { generateCodeVerifier, generateState } from "arctic";
+import { generateCodeVerifier, generateState,decodeIdToken } from "arctic";
 import { OAUTH_EXCHANGE_EXPIRY } from "../../constants.js";
+import {generateAccessTokenandRefreshToken} from './auth.controller.js';
 import { google } from "../../lib/oauth/google.js";
 
 // -----------------------------login wih google---------------------

@@ -125,4 +125,4 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
-export { registerUserWithEmail, logoutUser, loginUser };
+export { registerUserWithEmail, logoutUser, loginUser,generateAccessTokenandRefreshToken };
