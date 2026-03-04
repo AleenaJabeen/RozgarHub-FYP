@@ -1,0 +1,75 @@
+import { Router } from "express";
+
+import {
+  createGig,
+  getMyGigs,
+  getGigById,
+  updateGig,
+  deleteGig,
+  setGigOffline,
+  setGigOnline,
+  enableAutoMode,
+} from "../controllers/gig/gig.controller.js";
+
+import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { requireServiceProvider } from "../middlewares/role.middleware.js";
+import { upload } from "../middlewares/multer.middleware.js";
+
+const router = Router();
+
+/* =====================================================
+   PUBLIC ROUTES
+===================================================== */
+
+// Public: View single gig
+router.get("/:id", getGigById);
+
+/* =====================================================
+   PROTECTED ROUTES (Service Providers Only)
+===================================================== */
+
+// Apply auth + role middleware to all routes below
+router.use(verifyJWT, requireServiceProvider);
+
+/* -------------------------
+   Create Gig
+-------------------------- */
+router.post(
+  "/",
+  upload.array("images"), // no limit (generic)
+  createGig
+);
+
+/* -------------------------
+   Get My Gigs
+-------------------------- */
+router.get("/provider/my-gigs", getMyGigs);
+
+/* -------------------------
+   Update Gig
+-------------------------- */
+router.patch(
+  "/:id",
+  upload.array("images"), // allow adding new images
+  updateGig
+);
+
+/* -------------------------
+   Delete Gig
+-------------------------- */
+router.delete("/:id", deleteGig);
+
+/* -------------------------
+   Manual Status Controls
+-------------------------- */
+
+// Set Offline (Manual Mode)
+router.patch("/:id/offline", setGigOffline);
+
+// Set Online (Switch back to Auto)
+router.patch("/:id/online", setGigOnline);
+
+// Explicit Enable Auto Mode
+router.patch("/:id/mode/auto", enableAutoMode);
+
+export default router;
