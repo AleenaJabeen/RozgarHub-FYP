@@ -62,9 +62,7 @@ const logoutUser = asyncHandler(async (req, res) => {
         refreshToken: undefined,
       },
     },
-    {
-      new: true,
-    },
+    { returnDocument: 'after' }
   );
 
   const options = {
@@ -125,4 +123,45 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
-export { registerUserWithEmail, logoutUser, loginUser,generateAccessTokenandRefreshToken };
+// choose role
+const updateUserRole=asyncHandler(async(req,res)=>{
+  const {role}=req.body;
+  const userId = req.user._id;
+  if(!['customer', 'serviceprovider'].includes(role)){
+    throw new ApiError(400,"Invalid role selected. Please choose 'customer' or 'provider")
+  };
+  const updatedUser = await User.findByIdAndUpdate(
+  userId,
+  { role },
+  { 
+    returnDocument: 'after', // ✅ Replaces { new: true }
+    runValidators: true 
+  }
+);
+
+    if(!updatedUser){
+      throw new ApiError(404,"User not found");
+    }
+
+    return res.status(200).json(
+      new ApiResponse(200,updatedUser,"User role selected successfully")
+
+    );
+
+
+});
+
+const checkAuth = asyncHandler(async (req, res) => {
+  // Your existing auth middleware should populate req.user
+  const user = await User.findById(req.user._id).select("-password -refreshToken");
+  
+  if (!user) {
+    throw new ApiError(401, "User not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, user, "User authenticated")
+  );
+});
+
+export { registerUserWithEmail, logoutUser, loginUser,generateAccessTokenandRefreshToken,updateUserRole ,checkAuth};
