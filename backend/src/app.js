@@ -23,6 +23,9 @@ app.use(cookieParser());
 
 // routes
 import authRouter from './routes/auth.route.js';
+import gigRouter from './routes/gig.route.js';
+
+app.use('/api/v1/gigs',gigRouter);
 
 app.use('/api/v1/auth',authRouter);
 
