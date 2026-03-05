@@ -2,9 +2,9 @@ import { User } from "../../models/user.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
-import { generateCodeVerifier, generateState,decodeIdToken } from "arctic";
+import { generateCodeVerifier, generateState, decodeIdToken } from "arctic";
 import { OAUTH_EXCHANGE_EXPIRY } from "../../constants.js";
-import {generateAccessTokenandRefreshToken} from './auth.controller.js';
+import { generateAccessTokenandRefreshToken } from "./auth.controller.js";
 import { google } from "../../lib/oauth/google.js";
 
 // -----------------------------login wih google---------------------
@@ -118,11 +118,19 @@ const getGoogleLoginCallback = asyncHandler(async (req, res) => {
     sameSite: "lax",
   };
 
-  return res
-    .status(200)
+  res
     .cookie("accessToken", accessToken, cookieOptions)
-    .cookie("refreshToken", refreshToken, cookieOptions)
-    .json(new ApiResponse(200, { user: user._id }, "Google login successful"));
+    .cookie("refreshToken", refreshToken, cookieOptions);
+
+  if (user.role==="pending") {
+    return res.redirect(`${process.env.CORS_ORIGIN}/choose-role`);
+  }
+
+  return res.redirect(
+    user.role === "customer"
+      ? `${process.env.CORS_ORIGIN}/customer`
+      : `${process.env.CORS_ORIGIN}/serviceprovider`,
+  );
 });
 
 export { getGoogleLoginPage, getGoogleLoginCallback };
