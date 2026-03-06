@@ -39,9 +39,9 @@ const serviceProviderSchema = new Schema(
       trim: true,
     },
 
-    experienceYears: {
-      type: Number,
-      default: 0,
+    experienceDetails: {
+      type: String,
+      trim: true,
     },
 
     experienceDocuments: [experienceDocumentSchema],
