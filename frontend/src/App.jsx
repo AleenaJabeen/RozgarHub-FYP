@@ -9,6 +9,7 @@ import ChangePassword from "./components/auth/ChangePassword";
 import ChooseRole from "./components/auth/ChooseRole";
 import { useEffect } from "react";
 import { checkAuth } from "./store/auth-slice"; // ✅ import checkAuth
+import Profile from "./pages/Profile";
 
 function App() {
   const dispatch = useDispatch();
@@ -32,7 +33,10 @@ function App() {
           <Route index element={<Home />} />
           <Route path="reset-password" element={<ForgotPassword />} />
           <Route path="reset-password/:token" element={<ChangePassword />} />
-
+          <Route
+            path="profile"
+            element={<Profile />}
+          />
           <Route
             path="choose-role"
             element={
