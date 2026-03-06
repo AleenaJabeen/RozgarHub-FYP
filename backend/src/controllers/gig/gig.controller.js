@@ -5,7 +5,7 @@ import { Gig } from "../../models/gig.model.js";
 import {
   uploadOnCloudinary,
   deleteFromCloudinary,
-} from "../utils/cloudinary.js";
+} from "../../utils/cloudinary.js";
 
 const checkIfWithinAvailability = (availabilityHours) => {
   const now = new Date();
