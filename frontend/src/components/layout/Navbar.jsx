@@ -12,7 +12,7 @@ const Navbar = ({ onOpenAuth }) => {
   const navigate = useNavigate(); 
   const { user } = useSelector((state) => state.auth);
   const role = user?.role;
-  const name=user?.name[0];
+  const name=user?.name || "U";
 
   const handleLogout = async () => {
     try {
@@ -75,7 +75,7 @@ const Navbar = ({ onOpenAuth }) => {
             ) : (
               <div className="flex items-center space-x-2 cursor-pointer border-l pl-8 group">
                 <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold group-hover:bg-emerald-200 transition-colors">
-                  {name?.toUpperCase()}
+                  {name[0]?.toUpperCase()}
                 </div>
                 <span className="text-sm font-medium text-gray-600">{role}</span>
               </div>

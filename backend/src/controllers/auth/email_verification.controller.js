@@ -1,13 +1,11 @@
 import crypto from "crypto";
 import { User } from "../../models/user.model.js";
-import { Resend } from "resend";
 import { ApiError } from "../../utils/ApiError.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { OTP_EXPIRY } from "../../constants.js";
 import { sendVerificationEmail } from "../../lib/oauth/emailJS.js";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Generate 6 digit OTP
 const generateOTP = () => {
