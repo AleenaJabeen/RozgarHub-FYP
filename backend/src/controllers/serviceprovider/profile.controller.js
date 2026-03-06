@@ -9,7 +9,21 @@ import { uploadOnCloudinary } from "../../utils/cloudinary.js";
 const createServiceProviderProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
-  const { cnicNo, bio, experienceYears, skills, urgentHire } = req.body;
+  const {
+    cnicNo,
+    bio,
+    experienceDetails,
+    skills,
+    urgentHire,
+    phone,
+    street,
+    city,
+    state,
+    country,
+    zipCode,
+    longitude,
+    latitude,
+  } = req.body;
 
   const existingProfile = await ServiceProvider.findOne({ user: userId });
 
@@ -18,13 +32,28 @@ const createServiceProviderProfile = asyncHandler(async (req, res) => {
   }
 
   // CNIC IMAGE
-  let cnicImgUrl = "";
-  if (req.files?.cnicImg?.[0]) {
-    const uploaded = await uploadOnCloudinary(req.files.cnicImg[0].path, {
-      folder: "providers/cnic",
+  if (!req.files?.cnicImg?.[0]) {
+    throw new ApiError(400, "CNIC image is required");
+  }
+
+  const uploadedCnic = await uploadOnCloudinary(req.files.cnicImg[0].path, {
+    folder: "providers/cnic",
+  });
+
+  // AVATAR (optional)
+  let avatarUrl;
+  if (req.files?.avatar?.[0]) {
+    const uploadedAvatar = await uploadOnCloudinary(req.files.avatar[0].path, {
+      folder: "providers/avatar",
     });
 
-    cnicImgUrl = uploaded.secure_url;
+    avatarUrl = uploadedAvatar?.secure_url;
+  }
+
+  // SKILLS parsing
+  let parsedSkills = skills;
+  if (typeof skills === "string") {
+    parsedSkills = skills.split(",");
   }
 
   // CERTIFICATES
@@ -60,31 +89,45 @@ const createServiceProviderProfile = asyncHandler(async (req, res) => {
     }
   }
 
+  // CREATE SERVICE PROVIDER PROFILE
   const provider = await ServiceProvider.create({
     user: userId,
     cnicNo,
-    cnicImg: cnicImgUrl,
+    cnicImg: uploadedCnic.secure_url,
     bio,
-    experienceYears,
-    skills,
+    experienceDetails,
+    skills: parsedSkills,
     urgentHire,
     certificates,
     experienceDocuments,
   });
 
-  if (!provider) {
-    throw new ApiError(500, "Service Provider profile is not created");
+  // UPDATE USER PROFILE DATA
+  const userUpdate = {
+    phone,
+    "location.address.street": street,
+    "location.address.city": city,
+    "location.address.state": state,
+    "location.address.country": country,
+    "location.address.zipCode": zipCode,
+  };
+
+  if (avatarUrl) {
+    userUpdate.avatar = avatarUrl;
   }
 
-  res
-    .status(201)
-    .json(
-      new ApiResponse(
-        201,
-        provider,
-        "Service provider profile created successfully"
-      )
-    );
+  if (longitude && latitude) {
+    userUpdate["location.currentLocation"] = {
+      type: "Point",
+      coordinates: [Number(longitude), Number(latitude)],
+    };
+  }
+
+  await User.findByIdAndUpdate(userId, userUpdate, { new: true });
+
+  res.status(201).json(
+    new ApiResponse(200, provider, "Service provider profile created successfully")
+  );
 });
 const updateServiceProviderProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;

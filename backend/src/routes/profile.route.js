@@ -10,11 +10,12 @@ router.route(
   "/create-profile").post(
   verifyJWT,
   requireServiceProvider,
-  upload.fields([
-    { name: "cnicImg", maxCount: 1 },
-    { name: "certificates", maxCount: 5 },
-    { name: "experienceDocuments", maxCount: 5 },
-  ]),
+ upload.fields([
+  { name: "cnicImg", maxCount: 1 },
+  { name: "avatar", maxCount: 1 },
+  { name: "certificates", maxCount: 5 },
+  { name: "experienceDocuments", maxCount: 5 },
+]),
   createServiceProviderProfile
 );
 

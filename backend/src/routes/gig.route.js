@@ -9,7 +9,7 @@ import {
   setGigOffline,
   setGigOnline,
   enableAutoMode,
-} from "../controllers/gig/gig.controller.js";
+} from "../controllers/serviceprovider/gig.controller.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { requireServiceProvider } from "../middlewares/role.middleware.js";

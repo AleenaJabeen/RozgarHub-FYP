@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useOutletContext, useLocation, useNavigate } from "react-router-dom";
+import { useOutletContext, useLocation, useNavigate, Outlet } from "react-router-dom";
 import HeroSection from "../components/ui/HeroSection";
 
 function Home() {
@@ -18,6 +18,7 @@ function Home() {
   return (
     <div>
       <HeroSection onBtnClick={toggleModal} />
+      <Outlet/>
     </div>
   );
 }

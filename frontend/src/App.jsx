@@ -8,8 +8,9 @@ import ForgotPassword from "./components/auth/ForgotPassword";
 import ChangePassword from "./components/auth/ChangePassword";
 import ChooseRole from "./components/auth/ChooseRole";
 import { useEffect } from "react";
-import { checkAuth } from "./store/auth-slice"; // ✅ import checkAuth
-import Profile from "./pages/Profile";
+import { checkAuth } from "./store/auth-slice"; 
+import Profile from "./pages/serviceprovider/Profile";
+import Dashboard from "./pages/serviceprovider/Dashboard";
 
 function App() {
   const dispatch = useDispatch();
@@ -28,55 +29,57 @@ function App() {
   return (
     <>
       <ToastContainer />
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route path="reset-password" element={<ForgotPassword />} />
-          <Route path="reset-password/:token" element={<ChangePassword />} />
-          <Route
-            path="profile"
-            element={<Profile />}
-          />
-          <Route
-            path="choose-role"
-            element={
-              <CheckAuth
-                isAuthenticated={isAuthenticated}
-                user={user}
-                loading={isLoading}
-              >
-                <ChooseRole />
-              </CheckAuth>
-            }
-          />
+     <Routes>
+  <Route path="/" element={<Layout />}>
+    <Route index element={<Home />} />
 
-          <Route
-            path="customer/*"
-            element={
-              <CheckAuth
-                isAuthenticated={isAuthenticated}
-                user={user}
-                loading={isLoading}
-              >
-                <Home />
-              </CheckAuth>
-            }
-          />
+    <Route path="reset-password" element={<ForgotPassword />} />
+    <Route path="reset-password/:token" element={<ChangePassword />} />
 
-          <Route
-            path="serviceprovider/*"
-            element={
-              <CheckAuth
-                isAuthenticated={isAuthenticated}
-                user={user}
-                loading={isLoading}
-              >
-               <Home/>
-              </CheckAuth>
-            }
-          />
-        </Route>
-      </Routes>
+    <Route
+      path="choose-role"
+      element={
+        <CheckAuth
+          isAuthenticated={isAuthenticated}
+          user={user}
+          loading={isLoading}
+        >
+          <ChooseRole />
+        </CheckAuth>
+      }
+    />
+
+    <Route
+      path="customer/*"
+      element={
+        <CheckAuth
+          isAuthenticated={isAuthenticated}
+          user={user}
+          loading={isLoading}
+        >
+          <Home />
+        </CheckAuth>
+      }
+    />
+
+    {/* Service Provider */}
+    <Route
+      path="serviceprovider"
+      element={
+        <CheckAuth
+          isAuthenticated={isAuthenticated}
+          user={user}
+          loading={isLoading}
+        >
+         <Dashboard/>
+        </CheckAuth>
+      }
+    >
+      <Route path="profile" element={<Profile />} />
+    </Route>
+
+  </Route>
+</Routes>
     </>
   );
 }
