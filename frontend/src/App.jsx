@@ -67,7 +67,7 @@ function App() {
                 user={user}
                 loading={isLoading}
               >
-                {/* Provider Dashboard */}
+               <Home/>
               </CheckAuth>
             }
           />

@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { IoMenu, IoClose } from "react-icons/io5";
 import { Logo2 } from '../../assets';
-import { useDispatch } from 'react-redux'; // ✅
-import { logoutUser } from '../../store/auth-slice'; // ✅
-import { useNavigate } from 'react-router-dom'; // ✅
-import { showToast } from '../../utils/toastHelper'; // ✅
+import { useDispatch, useSelector } from 'react-redux'; 
+import { logoutUser } from '../../store/auth-slice'; 
+import { useNavigate } from 'react-router-dom'; 
+import { showToast } from '../../utils/toastHelper'; 
 
-const Navbar = ({ role = "pending", onOpenAuth }) => {
+const Navbar = ({ onOpenAuth }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const dispatch = useDispatch(); // ✅
-  const navigate = useNavigate(); // ✅
+  const dispatch = useDispatch(); 
+  const navigate = useNavigate(); 
+  const { user } = useSelector((state) => state.auth);
+  const role = user?.role;
+  const name=user?.name[0];
 
   const handleLogout = async () => {
     try {
@@ -62,7 +65,7 @@ const Navbar = ({ role = "pending", onOpenAuth }) => {
               </button>
             ))}
 
-            {role === 'pending' ? (
+            {role === 'pending' || !role? (
               <button
                 onClick={onOpenAuth}
                 className="border-2 border-emerald-600 text-emerald-700 px-6 py-2 rounded-lg font-semibold hover:bg-emerald-50 transition-all"
@@ -72,7 +75,7 @@ const Navbar = ({ role = "pending", onOpenAuth }) => {
             ) : (
               <div className="flex items-center space-x-2 cursor-pointer border-l pl-8 group">
                 <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold group-hover:bg-emerald-200 transition-colors">
-                  {role[0].toUpperCase()}
+                  {name?.toUpperCase()}
                 </div>
                 <span className="text-sm font-medium text-gray-600">{role}</span>
               </div>

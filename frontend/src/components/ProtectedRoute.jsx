@@ -4,9 +4,12 @@ function CheckAuth({ isAuthenticated, user, loading, children }) {
   const location = useLocation();
   const path = location.pathname;
 
-  if (loading) return <div>Loading...</div>; // Replace with a spinner if you have one
+  if (loading) {
+    // Wait until auth check finishes
+    return <div>Loading...</div>;
+  }
 
-  // 1. Not Authenticated: Allow public routes, redirect everything else to home/login
+  // 1️⃣ NOT AUTHENTICATED
   if (!isAuthenticated) {
     if (path === "/" || path.startsWith("/reset-password")) {
       return children;
@@ -14,31 +17,29 @@ function CheckAuth({ isAuthenticated, user, loading, children }) {
     return <Navigate to="/" state={{ openAuth: true }} replace />;
   }
 
-  // 2. Authenticated but NO ROLE: Force them to choose-role
-  if (!user?.role || user.role === "pending") {
-    if (path === "/choose-role") {
-      return children;
+  // 2️⃣ AUTHENTICATED BUT ROLE NOT SET
+  if (user?.role === "pending" || !user?.role) {
+    if (path !== "/choose-role") {
+      return <Navigate to="/choose-role" replace />;
     }
-    return <Navigate to="/choose-role" replace />;
+    return children;
   }
 
-  // 3. Authenticated WITH ROLE: Prevent them from going back to choose-role or landing
-  if (user?.role) {
-    const dashboardPath = user.role === "customer" 
-      ? "/customer/home" 
-      : "/serviceprovider/dashboard";
+  // 3️⃣ AUTHENTICATED WITH ROLE
+  const dashboardPath =
+    user.role === "customer" ? "/customer/home" : "/serviceprovider/dashboard";
 
-    if (path === "/choose-role" || path === "/") {
-      return <Navigate to={dashboardPath} replace />;
-    }
+  if (path === "/" || path === "/choose-role") {
+    return <Navigate to={dashboardPath} replace />;
+  }
 
-    // Role-based Access Control (RBAC)
-    if (user.role === "customer" && path.startsWith("/serviceprovider")) {
-      return <Navigate to="/customer/home" replace />;
-    }
-    if (user.role === "serviceprovider" && path.startsWith("/customer")) {
-      return <Navigate to="/serviceprovider/dashboard" replace />;
-    }
+  // 4️⃣ ROLE BASED ACCESS CONTROL
+  if (user.role === "customer" && path.startsWith("/serviceprovider")) {
+    return <Navigate to="/customer/home" replace />;
+  }
+
+  if (user.role === "serviceprovider" && path.startsWith("/customer")) {
+    return <Navigate to="/serviceprovider/dashboard" replace />;
   }
 
   return children;

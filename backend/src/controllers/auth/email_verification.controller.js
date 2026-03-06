@@ -5,6 +5,7 @@ import { ApiError } from "../../utils/ApiError.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { OTP_EXPIRY } from "../../constants.js";
+import { sendVerificationEmail } from "../../lib/oauth/emailJS.js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -22,10 +23,12 @@ const sendEmailOTP = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
   const user = await User.findOne({ email });
+  
 
   if (!user) {
     throw new ApiError(404, "User not found");
   }
+  const name=user.name;
 
   if (user.emailOTP.attempts >= 3) {
     throw new ApiError(
@@ -43,18 +46,9 @@ const sendEmailOTP = asyncHandler(async (req, res) => {
 
   await user.save();
 
-  // Send Email
-  await resend.emails.send({
-    from: "RozgarHub <onboarding@resend.dev>",
-    to: email,
-    subject: "Verify Your Email for RozgarHub",
-    html: `
-        <h2>Email Verification</h2>
-        <p>Your OTP is:</p>
-        <h1>${otp}</h1>
-        <p>This OTP will expire in 10 minutes</p>
-      `,
-  });
+  // Send Email through emailjs
+  await sendVerificationEmail(name,email,otp);
+ 
   res.status(200).json(new ApiResponse(200, email, "OTP sent succesfully"));
 });
 

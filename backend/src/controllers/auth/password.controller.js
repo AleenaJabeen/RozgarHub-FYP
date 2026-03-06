@@ -5,27 +5,26 @@ import { ApiResponse } from '../../utils/ApiResponse.js';
 import { User } from '../../models/user.model.js';
 import { RESET_PASSWORD_TOKEN_EXPIRY } from "../../constants.js";
 import {Resend} from 'resend';
+import { sendResetPasswordLink } from "../../lib/oauth/emailJS.js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 
-/**
-  Generates a token, hashes it, and saves it to the DB
- */
+
 const generateTemporaryToken = async (user) => {
-    // 1. Create a raw random token
+    
     const unhashedToken = crypto.randomBytes(32).toString('hex');
 
-    // 2. Hash the token to store in the DB (Security best practice)
+    
     const tokenHash = crypto
         .createHash('sha256')
         .update(unhashedToken)
         .digest('hex');
 
-    // 3. Set expiry (e.g., 15 minutes)
+    //  Set expiry (e.g., 15 minutes)
     const tokenExpiry = Date.now() + RESET_PASSWORD_TOKEN_EXPIRY;
 
-    // 4. Save to user object
+    //  Save to user object
     user.resetPasswordToken = tokenHash;
     user.resetPasswordExpiry = tokenExpiry;
     await user.save({ validateBeforeSave: false });
@@ -57,62 +56,26 @@ const postForgotPassword = asyncHandler(async (req, res) => {
     // Construct URL (Frontend URL)
     const resetUrl = `${process.env.CORS_ORIGIN}/reset-password/${resetToken}`;
 
-    const message = `Your password reset link is: \n\n ${resetUrl} \n\n This link expires in 15 minutes.`;
 
-    try {
-     await resend.emails.send({
-  from: "RozgarHub <onboarding@resend.dev>",
-  to: email,
-  subject: "Reset your password for RozgarHub",
-  html: `
-    <div style="font-family: 'Inter', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-      <div style="background-color: #0D7A5F; padding: 20px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">RozgarHub</h1>
-      </div>
+   try {
+    // 1. Attempt to send the email
+    await sendResetPasswordLink(email, resetUrl);
 
-      <div style="padding: 30px; color: #333; line-height: 1.6;">
-        <h2 style="color: #222; margin-top: 0;">Forgot your password?</h2>
-        <p>We received a request to reset the password for your RozgarHub account. No changes have been made yet.</p>
-        <p>Click the button below to choose a new password. <strong>This link will expire in 15 minutes.</strong></p>
+    // 2. If successful, return success
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Reset link sent successfully. Check your inbox."));
         
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${resetUrl}" 
-             style="background-color: #0D7A5F; color: white; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
-            Reset Your Password
-          </a>
-        </div>
+} catch (error) {
+    console.error("Email Sending Error:", error);
 
-        <p style="font-size: 14px; color: #666;">
-          If the button above doesn't work, copy and paste this link into your browser:
-          <br />
-          <a href="${resetUrl}" style="color: #0D7A5F; word-break: break-all;">${resetUrl}</a>
-        </p>
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpiry = undefined;
+    
+    await user.save({ validateBeforeSave: false });
 
-        <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;" />
-        
-        <p style="font-size: 12px; color: #999;">
-          If you didn't request a password reset, you can safely ignore this email. Your password will remain the same.
-        </p>
-      </div>
-
-      <div style="background-color: #f9f9f9; padding: 20px; text-align: center; font-size: 12px; color: #999;">
-        <p>© 2026 RozgarHub Marketplace. All rights reserved.</p>
-      </div>
-    </div>
-  `,
-});
-
-        return res
-            .status(200)
-            .json(new ApiResponse(200, {}, "Reset link sent to your email successfully."));
-            
-    } catch (error) {
-        // If email fails, clear the DB fields
-        user.resetPasswordToken = undefined;
-        user.resetPasswordExpiry = undefined;
-        await user.save({ validateBeforeSave: false });
-        throw new ApiError(500, "Email could not be sent. Please try again later.");
-    }
+    throw new ApiError(500, "We encountered an issue sending your reset email. Please try again in a few minutes.");
+}
 });
 
 /**
