@@ -57,7 +57,7 @@ function App() {
           user={user}
           loading={isLoading}
         >
-          <Home />
+         <h2>Hi</h2>
         </CheckAuth>
       }
     />

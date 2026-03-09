@@ -30,7 +30,7 @@ app.use('/api/v1/gigs',gigRouter);
 
 app.use('/api/v1/auth',authRouter);
 
-app.use('/api/v1/profile',profileRouter);
+app.use('/api/v1/serviceprovider',profileRouter);
 
 
 // sending error as json

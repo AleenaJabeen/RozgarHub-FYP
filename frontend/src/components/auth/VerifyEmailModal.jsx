@@ -62,34 +62,41 @@ const VerifyEmailModal = ({ email,password, isOpen, onClose }) => {
   };
 
   const handleResend = async () => {
-    if (resendAttempts >= MAX_ATTEMPTS) {
-      showToast(
-        "Maximum resend attempts reached. Please try again later.",
-        "error"
-      );
-      onClose();
+  if (resendAttempts >= MAX_ATTEMPTS) {
+    showToast("Maximum resend attempts reached. Please try again later.", "error");
+    onClose();
+    return;
+  }
 
-      return;
-    }
+  try {
+    await dispatch(sendEmailOTP(email)).unwrap();
+    setResendAttempts((prev) => prev + 1);
+    showToast(`OTP Resent (${resendAttempts + 1}/${MAX_ATTEMPTS})`);
+    startTimer();
+  } catch (error) {
+    showToast(error, "error");
+  }
+};
 
+  // ✅ Only handles timer
+  // ✅ Send OTP when modal opens
+useEffect(() => {
+  if (!isOpen) return;
+
+  const sendOtp = async () => {
     try {
       await dispatch(sendEmailOTP(email)).unwrap();
-      setResendAttempts((prev) => prev + 1);
-      showToast(`OTP Resent (${resendAttempts + 1}/${MAX_ATTEMPTS})`);
-      startTimer();
+      showToast("OTP sent to your email");
     } catch (error) {
       showToast(error, "error");
     }
   };
 
-  // ✅ Only handles timer
-  useEffect(() => {
-    if (!isOpen) return;
+  sendOtp();
+  startTimer();
 
-    startTimer();
-
-    return () => clearInterval(timerRef.current);
-  }, [isOpen]);
+  return () => clearInterval(timerRef.current);
+}, [isOpen]);
 
 
   if (!isOpen) return null;

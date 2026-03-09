@@ -1,7 +1,7 @@
 import { upload } from '../middlewares/multer.middleware.js';
 import {Router} from 'express'
 import {verifyJWT} from '../middlewares/auth.middleware.js';
-import { createServiceProviderProfile, updateServiceProviderProfile } from "../controllers/serviceprovider/profile.controller.js";
+import { createServiceProviderProfile, sendOtp, updateServiceProviderProfile, verifyOtp } from "../controllers/serviceprovider/profile.controller.js";
 import { requireServiceProvider } from '../middlewares/role.middleware.js';
 
 
@@ -9,7 +9,7 @@ const router=Router();
 router.route(
   "/create-profile").post(
   verifyJWT,
-  requireServiceProvider,
+  
  upload.fields([
   { name: "cnicImg", maxCount: 1 },
   { name: "avatar", maxCount: 1 },
@@ -30,5 +30,9 @@ router.route(
   ]),
   updateServiceProviderProfile
 );
+
+router.route('/send-otp').post(verifyJWT,sendOtp)
+
+router.route('/verify-phone-otp').post(verifyJWT,verifyOtp)
 
 export default router;

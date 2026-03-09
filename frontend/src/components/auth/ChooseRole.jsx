@@ -17,7 +17,7 @@ const ChooseRole = () => {
        const data=await dispatch(updateUserRole(role)).unwrap();
       showToast(data.message);
       // 2. Navigate based on role
-      if (role === "customer") navigate("/");
+      if (role === "customer") navigate("/customer");
       else navigate("/serviceprovider");
     } catch (err) {
         showToast(err, "error");

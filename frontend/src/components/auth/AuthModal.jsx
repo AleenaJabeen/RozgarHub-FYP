@@ -62,7 +62,7 @@ const AuthModal = ({ isOpen, onClose, openVerifyModal }) => {
         if (authData?.role && authData.role !== "pending") {
           navigate(
             authData.role === "customer"
-              ? "/customer/home"
+              ? "/customer"
               : "/serviceprovider/dashboard",
           );
         } else {

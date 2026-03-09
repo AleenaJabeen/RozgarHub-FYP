@@ -3,29 +3,73 @@ import axios from "axios";
 
 const initialState = {
   profile: null,
-  loading: false,
+  loading: true,
   error: null,
   success: false,
 };
+const BASE_URL="http://localhost:3000/api/v1/serviceprovider"
 
 export const createProviderProfile = createAsyncThunk(
   "profile/createProviderProfile",
   async (formData, { rejectWithValue }) => {
     try {
-      const res = await axios.post("/api/providers/profile", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        withCredentials: true,
-      });
-
-      return res.data.data;
+      const res = await axios.post(
+        `${BASE_URL}/create-profile`,
+        formData,
+        {
+          withCredentials: true,
+          // ✅ No Content-Type — axios handles it automatically for FormData
+        }
+      );
+      return res.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Profile creation failed",
+        error.response?.data?.message || "Profile creation failed"
       );
     }
-  },
+  }
+);
+
+export const sendPhoneOTP = createAsyncThunk(
+  "profile/sendPhoneOTP",
+  async (phone, { rejectWithValue }) => {
+    try {
+
+      const response = await axios.post(
+        `${BASE_URL}/send-otp`,
+        { phone },
+        { withCredentials: true }
+      );
+
+      return response.data;
+
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to send OTP"
+      );
+    }
+  }
+);
+
+export const verifyPhoneOTP = createAsyncThunk(
+  "profile/verifyPhoneOTP",
+  async ({ phone, otp }, { rejectWithValue }) => {
+    try {
+
+      const response = await axios.post(
+          `${BASE_URL}/verify-phone-otp`,
+        { phone, otp },
+        { withCredentials: true }
+      );
+
+      return response.data;
+
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "OTP verification failed"
+      );
+    }
+  }
 );
 
 const profileSlice = createSlice({

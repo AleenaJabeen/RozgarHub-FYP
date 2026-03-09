@@ -1,15 +1,22 @@
 import React, { useState } from "react";
-import { useDispatch } from "react-redux";
+import {useNavigate} from 'react-router-dom'
+import { useDispatch, useSelector } from "react-redux";
 import PersonalInfo from "../../components/serviceprovider/profile/PersonalInfo";
 import AdditionalInfo from "../../components/serviceprovider/profile/AdditionalInfo";
 import Verification from "../../components/serviceprovider/profile/Verification";
+import { createProviderProfile } from "../../store/serviceProvider/profile-slice";
+import { showToast } from "../../utils/toastHelper";
 
 const Profile = () => {
   const dispatch = useDispatch();
+  const navigate=useNavigate();
   const [step, setStep] = useState(1);
+   const { user } = useSelector((state) => state.auth);
+   const name=user?.name;
+   const email=user?.email;
   const [formData, setFormData] = useState({
-    name: "Aleena Jabeen",
-    email: "aleena@gmail.com",
+    name: name,
+    email: email,
     bio: "",
     address: { street: "", city: "", state: "", country: "", zipCode: "" },
     location: { latitude: null, longitude: null }, // 📍 geolocation
@@ -22,35 +29,51 @@ const Profile = () => {
     experienceDoc: null,       // File object
     skills: ["Plumber", "Carpenter", "Electrician"],
     phoneNumber: "",
-    otp: ["", "", "", ""],
+   otp: ["", "", "", "", "", ""],
   });
 
   const nextStep = () => setStep((prev) => prev + 1);
 
-  const handleSubmit = () => {
-    // Build FormData for multipart/form-data (file uploads)
-    const data = new FormData();
+const handleSubmit = async() => {
+  const data = new FormData();
 
-    // Scalar fields
-    data.append("name", formData.name);
-    data.append("email", formData.email);
-    data.append("bio", formData.bio);
-    data.append("education", formData.education);
-    data.append("cnicNo", formData.cnicNo);
-    data.append("experienceDetails", formData.experienceDetails);
-    data.append("phoneNumber", formData.phoneNumber);
-    data.append("skills", JSON.stringify(formData.skills));
-    data.append("address", JSON.stringify(formData.address));
-    data.append("location", JSON.stringify(formData.location));
+  data.append("bio", formData.bio);
+  data.append("cnicNo", formData.cnicNo);
+  data.append("experienceDetails", formData.experienceDetails);
+  data.append("phone", formData.phoneNumber);
+  data.append("skills", formData.skills.join(","));
+  data.append("street", formData.address.street);
+  data.append("city", formData.address.city);
+  data.append("state", formData.address.state);
+  data.append("country", formData.address.country);
+  data.append("zipCode", formData.address.zipCode);
+  data.append("longitude", formData.location.longitude);
+  data.append("latitude", formData.location.latitude);
+  data.append("urgentHire", false);
 
-    // File fields (only append if file exists)
-    if (formData.profilePicture) data.append("profilePicture", formData.profilePicture);
-    if (formData.certificates)   data.append("certificates", formData.certificates);
-    if (formData.cnicPicture)    data.append("cnicPicture", formData.cnicPicture);
-    if (formData.experienceDoc)  data.append("experienceDoc", formData.experienceDoc);
-console.log(data)
-    // dispatch(createProfile(data));
-  };
+  if (formData.profilePicture) data.append("avatar", formData.profilePicture);
+  if (formData.cnicPicture) data.append("cnicImg", formData.cnicPicture);
+  if (formData.certificates) data.append("certificates", formData.certificates);
+  if (formData.experienceDoc) data.append("experienceDocuments", formData.experienceDoc);
+  console.log("cnicPicture:", formData.cnicPicture instanceof File); // must be true
+console.log("cnicPicture name:", formData.cnicPicture?.name);
+
+  // ✅ Correct way to log FormData contents
+  for (let [key, value] of data.entries()) {
+    console.log(key, value instanceof File ? `FILE: ${value.name}` : value);
+  }
+
+  try {
+  const response = await dispatch(createProviderProfile(data)).unwrap();
+  showToast(response.message);   // Now this will work
+  console.log(response.message);
+  navigate('/');
+} catch (err) {
+  showToast(err.message || 'Something went wrong','error');
+  console.error(err);
+}
+ 
+};
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">

@@ -9,25 +9,29 @@ cloudinary.config({
 });
 
 
-const uploadOnCloudinary = async (localFilePath) => {
-    try {
-        if(!localFilePath) {
-            return null;
-        }
-        const response = await cloudinary.uploader.upload(localFilePath, { resource_type: "auto",...options, });
+const uploadOnCloudinary = async (localFilePath, options = {}) => {  // ✅ add options param
+  try {
+    if (!localFilePath) return null;
 
-        console.log("File uploaded successfully to Cloudinary",response.url);
-        if (fs.existsSync(localFilePath)) {
-      fs.unlinkSync(localFilePath);
-    }
-        return response;
-    } catch (error) {
-        if (fs.existsSync(localFilePath)) {
-      fs.unlinkSync(localFilePath);
-    }
-        return null;
-    }
-}
+    // ✅ Fix Windows backslash paths
+    const normalizedPath = localFilePath.replace(/\\/g, "/");
+
+    const response = await cloudinary.uploader.upload(normalizedPath, {
+      resource_type: "auto",
+      ...options,
+    });
+
+    console.log("Uploaded to Cloudinary:", response.url);
+
+    if (fs.existsSync(localFilePath)) fs.unlinkSync(localFilePath);
+    return response;
+
+  } catch (error) {
+    console.error("=== CLOUDINARY ERROR ===", error.message); // ✅ see real error
+    if (fs.existsSync(localFilePath)) fs.unlinkSync(localFilePath);
+    return null;
+  }
+};
 
 const deleteFromCloudinary = async (publicId) => {
   try {

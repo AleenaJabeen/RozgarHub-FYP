@@ -39,6 +39,7 @@ const PersonalInfo = ({ formData, setFormData, onNext }) => {
       setErrors((prev) => ({ ...prev, profilePicture: "Please upload a valid image." }));
       return;
     }
+    console.log(file)
     setFormData((prev) => ({ ...prev, profilePicture: file }));
     setErrors((prev) => ({ ...prev, profilePicture: "" }));
   };
