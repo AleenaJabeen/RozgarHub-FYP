@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { IoClose, IoDocumentAttachOutline, IoChevronDown } from "react-icons/io5";
+import { IoClose, IoChevronDown } from "react-icons/io5";
+import { FaRegFileAlt } from "react-icons/fa";
 
-const AdditionalInfo = ({ formData, setFormData, onNext }) => {
+
+const AdditionalInfo = ({ formData, setFormData, onNext,onBack }) => {
   const [errors, setErrors] = useState({});
   const [skillInput, setSkillInput] = useState("");
 
@@ -47,11 +49,11 @@ const AdditionalInfo = ({ formData, setFormData, onNext }) => {
       <div className="max-w-2xl space-y-5">
 
         {/* Experience */}
-        <div>
-          <label className="block text-sm font-semibold mb-1">Experience</label>
+        <div className="ms-3">
+          <label className="block text-base font-medium mb-2">Experience</label>
           <textarea
             placeholder="Enter your experience..."
-            className={`w-full p-4 border rounded-xl h-32 focus:outline-none ${errors.experienceDetails ? "border-red-500" : "border-gray-300"}`}
+            className={`w-full p-4 border rounded-3xl h-32 focus:outline-none ${errors.experienceDetails ? "border-red-500" : "border-gray-300"}`}
             value={formData.experienceDetails}
             onChange={(e) => { setFormData((prev) => ({ ...prev, experienceDetails: e.target.value })); if (errors.experienceDetails) setErrors((p) => ({ ...p, experienceDetails: "" })); }}
           />
@@ -59,21 +61,21 @@ const AdditionalInfo = ({ formData, setFormData, onNext }) => {
         </div>
 
         {/* Experience Doc */}
-        <div>
-          <label className="block text-sm font-semibold mb-1">Experience Document <span className="text-gray-400 font-normal">(Optional)</span></label>
+        <div className="ms-3">
+          <label className="block text-base font-medium mb-2">Experience Document <span className="text-gray-400 font-normal">(Optional)</span></label>
           <label className="cursor-pointer">
             <input type="file" accept=".pdf,image/*" className="hidden" onChange={handleExperienceDoc} />
-            <div className="w-full px-4 py-2 bg-gray-200 rounded-lg flex justify-between items-center text-gray-500 hover:bg-gray-300 transition-colors">
+            <div className="w-full px-4 py-2 bg-gray-300 rounded-full flex justify-between items-center text-tertiary hover:bg-gray-300 transition-colors">
               <span>{formData.experienceDoc ? formData.experienceDoc.name : "Choose File"}</span>
-              <IoDocumentAttachOutline size={20} />
+              <FaRegFileAlt size={20} className="text-gray-500" />
             </div>
           </label>
           {errors.experienceDoc && <p className="text-red-500 text-xs mt-1">{errors.experienceDoc}</p>}
         </div>
 
         {/* Skills */}
-        <div>
-          <label className="block text-sm font-semibold mb-2">Skills</label>
+        <div className="ms-3">
+          <label className="block text-base font-medium mb-2">Skills</label>
           <div className="relative flex gap-2 mb-3">
             <div className="relative flex-1 md:max-w-xs">
               <input
@@ -82,11 +84,11 @@ const AdditionalInfo = ({ formData, setFormData, onNext }) => {
                 value={skillInput}
                 onChange={(e) => setSkillInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addSkill()}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none pr-8"
+                className="w-full px-4 py-2 border border-gray-300 rounded-full outline-none pr-8"
               />
-              <IoChevronDown className="absolute right-3 top-3 text-gray-400" />
+             
             </div>
-            <button onClick={addSkill} className="px-4 py-2 bg-secondary text-white rounded-lg text-sm font-medium hover:bg-[#0e5641] transition-all">
+            <button onClick={addSkill} className="px-4 py-2 bg-secondary text-white rounded-full text-sm font-medium hover:bg-[#0e5641] transition-all">
               Add
             </button>
           </div>
@@ -104,10 +106,17 @@ const AdditionalInfo = ({ formData, setFormData, onNext }) => {
         </div>
       </div>
 
-      <div className="flex justify-center pt-8">
+      <div className="flex justify-center gap-4 pt-8">
+        <button
+          type="button"
+          onClick={onBack}
+          className="md:w-sm w-xs  cursor-pointer bg-secondary text-white font-bold py-3 rounded-full mt-8 hover:bg-[#0e5641] transition-all">
+        
+          Back
+        </button>
         <button onClick={() => validate() && onNext()}
-          className="md:w-lg w-xs bg-secondary text-white font-bold py-3 rounded-full sm:mt-12 hover:bg-[#0e5641] transition-all">
-          Continue to Step 3
+          className="md:w-sm w-xs  cursor-pointer bg-secondary text-white font-bold py-3 rounded-full mt-8 hover:bg-[#0e5641] transition-all">
+         Next
         </button>
       </div>
     </div>

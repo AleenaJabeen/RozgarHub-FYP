@@ -13,6 +13,7 @@ import Profile from "./pages/serviceprovider/Profile";
 import Dashboard from "./pages/serviceprovider/Dashboard";
 import AuthPage from "./components/auth/AuthPage";
 import ScrollToTop from "./components/layout/ScrollToTop";
+import ProviderHome from "./pages/serviceprovider/ProviderHome";
 
 function App() {
   const dispatch = useDispatch();
@@ -35,7 +36,14 @@ function App() {
 
      <Routes>
   <Route path="/" element={<Layout />}>
-    <Route index element={<Home />} />
+  <Route 
+      index 
+      element={
+        <CheckAuth isAuthenticated={isAuthenticated} user={user} loading={isLoading}>
+          <Home />
+        </CheckAuth>
+      } 
+    />
      <Route path="auth" element={<AuthPage />} />
 
     <Route path="reset-password" element={<ForgotPassword />} />
@@ -76,10 +84,11 @@ function App() {
           user={user}
           loading={isLoading}
         >
-         <Dashboard/>
+        <ProviderHome/>
         </CheckAuth>
       }
     >
+      <Route index element={<Dashboard/>}/>
       <Route path="profile" element={<Profile />} />
     </Route>
 

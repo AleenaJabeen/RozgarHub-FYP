@@ -178,7 +178,7 @@ const AuthPage = () => {
 
               <button
                 type="submit"
-                className="w-full bg-secondary cursor-pointer text-white font-bold py-3 rounded-full mt-4 
+                className="w-full  bg-secondary cursor-pointer text-white font-bold py-3 rounded-full mt-6 
              transition-transform duration-150 ease-out
              hover:brightness-110
              active:scale-[0.97] active:brightness-90 shadow-md"

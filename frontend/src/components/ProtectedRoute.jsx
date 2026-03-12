@@ -7,19 +7,21 @@ function CheckAuth({ isAuthenticated, user, loading, children }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secindary-500"></div>
+        {/* Fixed typo: border-secondary */}
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary"></div>
       </div>
     );
   }
 
   // 1️⃣ NOT AUTHENTICATED
   if (!isAuthenticated) {
-    // Allow access to Landing, Sign-up, and Reset Password
-    if (path === "/" || path === "/sign-up" || path.startsWith("/reset-password")) {
+    // Public paths allowed for guests
+    const isPublicPath = path === "/" || path === "/auth" || path.startsWith("/reset-password");
+    
+    if (isPublicPath) {
       return children;
     }
-    // Redirect everything else to Sign-up
-    return <Navigate to="/sign-up" replace />;
+    return <Navigate to="/auth?mode=signup" replace />;
   }
 
   // 2️⃣ AUTHENTICATED BUT ROLE NOT SET
@@ -30,12 +32,11 @@ function CheckAuth({ isAuthenticated, user, loading, children }) {
     return children;
   }
 
-  // 3️⃣ AUTHENTICATED WITH ROLE
-  const dashboardPath =
-    user.role === "customer" ? "/customer/home" : "/serviceprovider";
+  // 3️⃣ AUTHENTICATED WITH ROLE - PREVENT LANDING/AUTH ACCESS
+  const dashboardPath = user.role === "customer" ? "/customer/home" : "/serviceprovider";
 
-  // If logged in, don't let them see Landing, Sign-up, or Role Selection
-  if (path === "/" || path === "/sign-up" || path === "/choose-role") {
+  // If user is logged in and has a role, redirect them AWAY from landing, auth, or choose-role
+  if (path === "/" || path === "/auth" || path === "/choose-role") {
     return <Navigate to={dashboardPath} replace />;
   }
 
@@ -45,7 +46,7 @@ function CheckAuth({ isAuthenticated, user, loading, children }) {
   }
 
   if (user.role === "serviceprovider" && path.startsWith("/customer")) {
-    return <Navigate to="/serviceprovider/dashboard" replace />;
+    return <Navigate to="/serviceprovider" replace />;
   }
 
   return children;
