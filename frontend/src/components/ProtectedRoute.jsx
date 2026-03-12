@@ -5,16 +5,21 @@ function CheckAuth({ isAuthenticated, user, loading, children }) {
   const path = location.pathname;
 
   if (loading) {
-    // Wait until auth check finishes
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secindary-500"></div>
+      </div>
+    );
   }
 
   // 1️⃣ NOT AUTHENTICATED
   if (!isAuthenticated) {
-    if (path === "/" || path.startsWith("/reset-password")) {
+    // Allow access to Landing, Sign-up, and Reset Password
+    if (path === "/" || path === "/sign-up" || path.startsWith("/reset-password")) {
       return children;
     }
-    return <Navigate to="/" state={{ openAuth: true }} replace />;
+    // Redirect everything else to Sign-up
+    return <Navigate to="/sign-up" replace />;
   }
 
   // 2️⃣ AUTHENTICATED BUT ROLE NOT SET
@@ -27,13 +32,14 @@ function CheckAuth({ isAuthenticated, user, loading, children }) {
 
   // 3️⃣ AUTHENTICATED WITH ROLE
   const dashboardPath =
-    user.role === "customer" ? "/customer/home" : "/serviceprovider/dashboard";
+    user.role === "customer" ? "/customer/home" : "/serviceprovider";
 
-  if (path === "/" || path === "/choose-role") {
+  // If logged in, don't let them see Landing, Sign-up, or Role Selection
+  if (path === "/" || path === "/sign-up" || path === "/choose-role") {
     return <Navigate to={dashboardPath} replace />;
   }
 
-  // 4️⃣ ROLE BASED ACCESS CONTROL
+  // 4️⃣ ROLE BASED ACCESS CONTROL (RBAC)
   if (user.role === "customer" && path.startsWith("/serviceprovider")) {
     return <Navigate to="/customer/home" replace />;
   }

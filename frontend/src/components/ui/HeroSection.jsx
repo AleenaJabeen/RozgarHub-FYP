@@ -6,25 +6,23 @@ const HeroSection = () => {
   // Use your local paths or hosted URLs for these images
   const images = [
    
-    "https://images.unsplash.com/photo-1595844730298-b960ff98fee0?q=80&w=500&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1505798577917-a65157d3320a?q=80&w=500&auto=format&fit=crop"
+    heroImg
   ];
 
   return (
     <section className="relative w-full">
       {/* Background Image Grid */}
       <div className="flex w-full h-[500px] md:h-[600px] overflow-hidden">
-        {images.map((src, index) => (
-          <div key={index} className="flex-1 h-full relative group">
+       
+          <div className="flex-1 h-full relative group">
             <img 
-              src={src} 
-              alt={`service-${index}`} 
+              src={heroImg} 
+              alt="Services" 
               className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-500"
             />
             {/* Dark Overlay to make text readable */}
-            <div className="absolute inset-0 bg-black/40"></div>
-          </div>
-        ))}
+            <div className="absolute inset-0 bg-black/30"></div>
+       </div>
       </div>
 
       {/* Center Content Overlay */}

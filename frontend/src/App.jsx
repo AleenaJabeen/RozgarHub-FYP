@@ -11,6 +11,8 @@ import { useEffect } from "react";
 import { checkAuth } from "./store/auth-slice"; 
 import Profile from "./pages/serviceprovider/Profile";
 import Dashboard from "./pages/serviceprovider/Dashboard";
+import AuthPage from "./components/auth/AuthPage";
+import ScrollToTop from "./components/layout/ScrollToTop";
 
 function App() {
   const dispatch = useDispatch();
@@ -28,10 +30,13 @@ function App() {
 
   return (
     <>
+    <ScrollToTop/>
       <ToastContainer />
+
      <Routes>
   <Route path="/" element={<Layout />}>
     <Route index element={<Home />} />
+     <Route path="auth" element={<AuthPage />} />
 
     <Route path="reset-password" element={<ForgotPassword />} />
     <Route path="reset-password/:token" element={<ChangePassword />} />
