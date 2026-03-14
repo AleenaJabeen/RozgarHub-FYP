@@ -2,6 +2,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Gig } from "../../models/gig.model.js";
+import { Category } from "../../models/category.model.js";  
 import {
   uploadOnCloudinary,
   deleteFromCloudinary,
@@ -28,12 +29,14 @@ export const createGig = asyncHandler(async (req, res) => {
   const {
     title,
     description,
-    images,
     categoryId,
     hourlyRate,
     inspectionRate,
-    availabilityHours,
   } = req.body;
+  let { availabilityHours } = req.body;
+  if (typeof availabilityHours === "string") {
+    availabilityHours = JSON.parse(availabilityHours);
+  }
 
   let imageObjects = [];
 
@@ -51,7 +54,7 @@ export const createGig = asyncHandler(async (req, res) => {
       }
     }
   }
-
+  
   const isOnline = checkIfWithinAvailability(availabilityHours);
 
   const gig = await Gig.create({
@@ -65,6 +68,10 @@ export const createGig = asyncHandler(async (req, res) => {
     availabilityHours,
     availabilityStatus: isOnline ? "online" : "offline",
     statusMode: "auto",
+
+    totalOrders: 0,
+  totalReviews: 0,
+  averageRating: 0,
   });
 
   return res
@@ -76,8 +83,8 @@ export const createGig = asyncHandler(async (req, res) => {
 
 export const getMyGigs = asyncHandler(async (req, res) => {
   const gigs = await Gig.find({
-    serviceProviderId: req.user._id,
-  });
+  serviceProviderId: req.user._id,
+}).populate("categoryId", "name");
 
   return res
     .status(200)
@@ -191,7 +198,25 @@ export const updateGig = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Unauthorized");
   }
 
-  Object.assign(gig, req.body);
+  let { availabilityHours } = req.body;
+
+if (typeof availabilityHours === "string") {
+  availabilityHours = JSON.parse(availabilityHours);
+}
+const {
+  title,
+  description,
+  categoryId,
+  hourlyRate,
+  inspectionRate,
+} = req.body;
+
+if (title) gig.title = title;
+if (description) gig.description = description;
+if (categoryId) gig.categoryId = categoryId;
+if (hourlyRate) gig.hourlyRate = hourlyRate;
+if (inspectionRate) gig.inspectionRate = inspectionRate;
+if (availabilityHours) gig.availabilityHours = availabilityHours;
 
   if (req.files && req.files.length > 0) {
     let newImages = [];

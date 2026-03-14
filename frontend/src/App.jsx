@@ -11,6 +11,8 @@ import { useEffect } from "react";
 import { checkAuth } from "./store/auth-slice"; 
 import Profile from "./pages/serviceprovider/Profile";
 import Dashboard from "./pages/serviceprovider/Dashboard";
+import Gig from "./pages/serviceprovider/Gig";
+import CreateGig from "./components/serviceprovider/gig/CreateGig";
 
 function App() {
   const dispatch = useDispatch();
@@ -76,6 +78,9 @@ function App() {
       }
     >
       <Route path="profile" element={<Profile />} />
+      <Route path="gigs" element={<Gig />} />
+      <Route path="createGig" element={<CreateGig />} />
+      {/* <Route path="orders" element={<Orders />} /> */}
     </Route>
 
   </Route>

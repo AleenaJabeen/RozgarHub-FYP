@@ -37,8 +37,8 @@ const Navbar = ({ onOpenAuth }) => {
     ],
     serviceprovider: [
       { name: 'Home', href: '/serviceprovider' },
-      { name: 'Gigs', href: '#' },
-      { name: 'Orders', href: '#' },
+      { name: 'Gigs', href: '/serviceprovider/gigs' },
+      { name: 'Orders', href: '/orders' },
       { name: 'Log out', onClick: handleLogout }, // ✅
     ]
   };
