@@ -9,9 +9,10 @@ import signupImg from './HomeAsset/signupImg.png';
 import googleIcon from './HomeAsset/googleIcon.png';
 import loginImg from './HomeAsset/login.png'
 import login from './HomeAsset/loginImg.png'
+import mainVideo from './HomeAsset/MainVideo.mp4'
 
 // Home exports
-export {heroImg,signupImg,googleIcon,loginImg,login};
+export {heroImg,signupImg,googleIcon,loginImg,login,mainVideo};
 
 // layout exports
 export {Logo,Logo2};

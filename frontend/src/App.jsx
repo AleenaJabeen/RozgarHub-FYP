@@ -14,21 +14,23 @@ import Dashboard from "./pages/serviceprovider/Dashboard";
 import AuthPage from "./components/auth/AuthPage";
 import ScrollToTop from "./components/layout/ScrollToTop";
 import ProviderHome from "./pages/serviceprovider/ProviderHome";
-
 function App() {
   const dispatch = useDispatch();
-  const { user, isAuthenticated, isLoading } = useSelector(
-    (state) => state.auth,
-  );
+  const { user, isAuthenticated, isLoading } = useSelector((state) => state.auth);
 
-  // ✅ Rehydrate auth state on every page load/refresh (including Google redirect)
   useEffect(() => {
     dispatch(checkAuth());
-  }, []); // ✅ Run ONCE on mount — no dependencies causing loops
+  }, [dispatch]);
 
-  // ✅ Remove the broken navigation useEffect entirely
-  // CheckAuth component handles all redirects declaratively
-
+  // If the app is checking auth on first load, show a simple, 
+  // fast-painting loading state so Lighthouse sees content immediately.
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-primary">
+        <div className="animate-pulse text-white text-xl font-bold">RozgarHub...</div>
+      </div>
+    )
+  }
   return (
     <>
     <ScrollToTop/>

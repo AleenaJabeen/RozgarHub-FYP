@@ -12,8 +12,6 @@ const Profile = () => {
   const navigate=useNavigate();
  
    const { user } = useSelector((state) => state.auth);
-   const name=user?.name;
-   const email=user?.email;
  // 1. Initialize state from localStorage (if it exists)
   const [formData, setFormData] = useState(() => {
     const savedData = localStorage.getItem("serviceProviderProfileDraft");
@@ -53,12 +51,14 @@ const Profile = () => {
 
   // 2. Save to localStorage whenever formData or step changes
   useEffect(() => {
-    // We create a copy without the File objects (localStorage can't store Files)
-    const { certificates, cnicPicture, profilePicture, experienceDoc, ...textData } = formData;
-    localStorage.setItem("serviceProviderProfileDraft", JSON.stringify(textData));
-    localStorage.setItem("profileCurrentStep", step.toString());
+   if (!user) {
+    localStorage.removeItem("serviceProviderProfileDraft");
+    localStorage.removeItem("profileCurrentStep");
+    // Optional: Redirect to login if user is missing
+    navigate('/login'); 
+  }
      window.scrollTo(0, 0);
-  }, [formData, step]);
+  }, [formData, step,user]);
 
   const nextStep = () => setStep((prev) => prev + 1);
   const prevStep = () => setStep((prev) => prev - 1);

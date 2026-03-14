@@ -1,28 +1,31 @@
 import React from 'react';
 import { CiSearch } from "react-icons/ci";
-import { heroImg } from '../../assets';
+import { heroImg,mainVideo } from '../../assets';
 
 const HeroSection = () => {
-  // Use your local paths or hosted URLs for these images
-  const images = [
-   
-    heroImg
-  ];
+
 
   return (
     <section className="relative w-full">
       {/* Background Image Grid */}
       <div className="flex w-full h-[500px] md:h-[600px] overflow-hidden">
        
-          <div className="flex-1 h-full relative group">
-            <img 
-              src={heroImg} 
-              alt="Services" 
-              className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-500"
-            />
-            {/* Dark Overlay to make text readable */}
-            <div className="absolute inset-0 bg-black/30"></div>
-       </div>
+         <div className="absolute inset-0 z-0">
+        <video
+        poster={heroImg}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+        >
+          <source src={mainVideo} type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+        
+        {/* Dark Overlay to ensure text readability */}
+        <div className="absolute inset-0 bg-black/60"></div>
+      </div>
       </div>
 
       {/* Center Content Overlay */}
