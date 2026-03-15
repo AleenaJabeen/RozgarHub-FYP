@@ -11,9 +11,9 @@ import { useEffect } from "react";
 import { checkAuth } from "./store/auth-slice"; 
 import Profile from "./pages/serviceprovider/Profile";
 import Dashboard from "./pages/serviceprovider/Dashboard";
-import AuthPage from "./components/auth/AuthPage";
-import ScrollToTop from "./components/layout/ScrollToTop";
-import ProviderHome from "./pages/serviceprovider/ProviderHome";
+import Gig from "./pages/serviceprovider/Gig";
+import CreateGig from "./components/serviceprovider/gig/CreateGig";
+
 function App() {
   const dispatch = useDispatch();
   const { user, isAuthenticated, isLoading } = useSelector((state) => state.auth);
@@ -92,6 +92,9 @@ function App() {
     >
       <Route index element={<Dashboard/>}/>
       <Route path="profile" element={<Profile />} />
+      <Route path="gigs" element={<Gig />} />
+      <Route path="createGig" element={<CreateGig />} />
+      {/* <Route path="orders" element={<Orders />} /> */}
     </Route>
 
   </Route>

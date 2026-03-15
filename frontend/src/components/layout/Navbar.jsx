@@ -57,6 +57,11 @@ const Navbar = () => {
       { name: "Inbox", href: "/inbox" },
     ],
     serviceprovider: [
+      { name: 'Home', href: '/serviceprovider' },
+      { name: 'Gigs', href: '/serviceprovider/gigs' },
+      { name: 'Orders', href: '/orders' },
+      { name: 'Log out', onClick: handleLogout }, // ✅
+    ]
       { name: "Dashboard", href: "/serviceprovider" },
       { name: "Gigs", href: "/serviceprovider/gigs" },
       { name: "Orders", href: "/serviceprovider/orders" },

@@ -80,6 +80,23 @@ const gigSchema = new Schema(
     },
 
     availabilityHours: [availabilityHoursSchema],
+
+    totalOrders: {
+      type: Number,
+      default: 0,
+    },
+
+    totalReviews: {
+      type: Number,
+      default: 0,
+    },
+
+    averageRating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
   },
   { timestamps: true },
 );
