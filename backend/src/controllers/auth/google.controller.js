@@ -116,6 +116,7 @@ const getGoogleLoginCallback = asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: true,
     sameSite: "lax",
+     maxAge: 604800000
   };
 
   res
