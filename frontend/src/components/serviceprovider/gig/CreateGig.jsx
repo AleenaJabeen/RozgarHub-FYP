@@ -3,6 +3,7 @@ import {
   createGig,
   resetGigState,
 } from "../../../store/serviceProvider/gig-slice";
+import { getCategories } from "../../../store/serviceProvider/category-slice";
 import { useEffect, useState } from "react";
 import { IoCloudUploadOutline, IoTrashOutline } from "react-icons/io5";
 import { showToast } from "../../../utils/toastHelper";
@@ -21,27 +22,11 @@ const INITIAL_FORM_STATE = {
 const CreateGig = () => {
   const dispatch = useDispatch();
   const { loading, success, error } = useSelector((state) => state.gigs);
-  // Mock categories (In production, these come from your Category model via API)
-  const categories = [
-    {
-      _id: "65edae7f1f4e1a2b3c4d5e6f",
-      name: "Plumbing",
-      subcategory: [
-        { name: "Leak Repair" },
-        { name: "Pipe Installation" },
-        { name: "Drain Cleaning" },
-      ],
-    },
-    {
-      _id: "65edae7f1f4e1a2b3c4d5e7a",
-      name: "Electrical",
-      subcategory: [
-        { name: "Fan Repair" },
-        { name: "Wiring" },
-        { name: "Switchboard" },
-      ],
-    },
-  ];
+  const { categories } = useSelector((state) => state.categories);
+
+  useEffect(() => {
+    dispatch(getCategories());
+  }, [dispatch]);
 
   const daysOfWeek = [
     "Monday",
@@ -131,27 +116,27 @@ const CreateGig = () => {
   };
 
   const toggleSubcategory = (name) => {
-  setFormData((prev) => {
-    const alreadySelected = prev.subcategoryIds.includes(name)
+    setFormData((prev) => {
+      const alreadySelected = prev.subcategoryIds.includes(name);
 
-    if (alreadySelected) {
+      if (alreadySelected) {
+        return {
+          ...prev,
+          subcategoryIds: prev.subcategoryIds.filter((s) => s !== name),
+        };
+      }
+
+      if (prev.subcategoryIds.length >= 3) {
+        showToast("Maximum 3 subcategories allowed", "error");
+        return prev;
+      }
+
       return {
         ...prev,
-        subcategoryIds: prev.subcategoryIds.filter((s) => s !== name),
-      }
-    }
-
-    if (prev.subcategoryIds.length >= 3) {
-      showToast("Maximum 3 subcategories allowed", "error")
-      return prev
-    }
-
-    return {
-      ...prev,
-      subcategoryIds: [...prev.subcategoryIds, name],
-    }
-  })
-}
+        subcategoryIds: [...prev.subcategoryIds, name],
+      };
+    });
+  };
 
   const validate = () => {
     let newErrors = {};
@@ -259,7 +244,6 @@ const CreateGig = () => {
           </div>
 
           {/* Category & SubCategory */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold mb-1 text-gray-700">
                 Category
@@ -271,7 +255,7 @@ const CreateGig = () => {
                 onChange={handleChange}
               >
                 <option value="">Select Category</option>
-                {categories.map((cat) => (
+                {categories?.map((cat) => (
                   <option key={cat._id} value={cat._id}>
                     {cat.name}
                   </option>
@@ -279,37 +263,36 @@ const CreateGig = () => {
               </select>
             </div>
             <div className="space-y-2">
-  <label className="text-sm font-medium text-gray-700">
-    Subcategories (Max 3)
-  </label>
+              <label className="text-sm font-medium text-gray-700">
+                Subcategories (Max 3)
+              </label>
 
-  <div className="flex flex-wrap gap-2">
-    {selectedCategory?.subcategory.map((sub, i) => {
-      const isSelected = formData.subcategoryIds.includes(sub.name)
+              <div className="flex flex-wrap gap-2">
+                {selectedCategory?.subcategory.map((sub, i) => {
+                  const isSelected = formData.subcategoryIds.includes(sub.name);
 
-      return (
-        <button
-          type="button"
-          key={i}
-          onClick={() => toggleSubcategory(sub.name)}
-          className={`px-3 py-1.5 rounded-full text-sm border transition
+                  return (
+                    <button
+                      type="button"
+                      key={i}
+                      onClick={() => toggleSubcategory(sub.name)}
+                      className={`px-3 py-1.5 rounded-full text-sm border transition
           ${
             isSelected
               ? "bg-blue-600 text-white border-blue-600"
               : "bg-white text-gray-700 border-gray-300 hover:border-blue-400"
           }`}
-        >
-          {sub.name}
-        </button>
-      )
-    })}
-  </div>
+                    >
+                      {sub.name}
+                    </button>
+                  );
+                })}
+              </div>
 
-  <p className="text-xs text-gray-500">
-    {formData.subcategoryIds.length}/3 selected
-  </p>
-</div>
-          </div>
+              <p className="ml-3 text-xs text-gray-500">
+                {formData.subcategoryIds.length}/3 selected
+              </p>
+            </div>
 
           {/* Pricing */}
           <div className="grid grid-cols-2 gap-4">
@@ -375,7 +358,7 @@ const CreateGig = () => {
                   <p className="text-red-500 text-[10px]">{errors.days}</p>
                 )}
 
-                <div className="flex items-center gap-3">
+                <div className="sm:flex items-center gap-3">
                   <div className="flex-1">
                     <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">
                       Start Time

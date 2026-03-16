@@ -58,6 +58,13 @@ const gigSchema = new Schema(
       required: true,
     },
 
+    subcategories: [
+      {
+        type: String,
+        required: true,
+      },
+    ],
+
     hourlyRate: {
       type: Number,
       required: true,

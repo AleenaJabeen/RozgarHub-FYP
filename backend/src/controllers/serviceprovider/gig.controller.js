@@ -2,7 +2,6 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Gig } from "../../models/gig.model.js";
-import { Category } from "../../models/category.model.js";  
 import {
   uploadOnCloudinary,
   deleteFromCloudinary,
@@ -26,16 +25,15 @@ const checkIfWithinAvailability = (availabilityHours) => {
 // Create Gig
 
 export const createGig = asyncHandler(async (req, res) => {
-  const {
-    title,
-    description,
-    categoryId,
-    hourlyRate,
-    inspectionRate,
-  } = req.body;
-  let { availabilityHours } = req.body;
+  const { title, description, categoryId, hourlyRate, inspectionRate } =
+    req.body;
+  let { availabilityHours, subcategoryIds } = req.body;
   if (typeof availabilityHours === "string") {
     availabilityHours = JSON.parse(availabilityHours);
+  }
+
+  if (typeof subcategoryIds === "string") {
+    subcategoryIds = JSON.parse(subcategoryIds);
   }
 
   let imageObjects = [];
@@ -54,7 +52,7 @@ export const createGig = asyncHandler(async (req, res) => {
       }
     }
   }
-  
+
   const isOnline = checkIfWithinAvailability(availabilityHours);
 
   const gig = await Gig.create({
@@ -63,17 +61,17 @@ export const createGig = asyncHandler(async (req, res) => {
     description,
     images: imageObjects,
     categoryId,
+    subcategories: subcategoryIds,
     hourlyRate,
     inspectionRate,
     availabilityHours,
     availabilityStatus: isOnline ? "online" : "offline",
     statusMode: "auto",
-
     totalOrders: 0,
-  totalReviews: 0,
-  averageRating: 0,
+    totalReviews: 0,
+    averageRating: 0,
   });
-
+  console.log("Created Gig:", gig);
   return res
     .status(201)
     .json(new ApiResponse(201, gig, "Gig created successfully"));
@@ -83,8 +81,8 @@ export const createGig = asyncHandler(async (req, res) => {
 
 export const getMyGigs = asyncHandler(async (req, res) => {
   const gigs = await Gig.find({
-  serviceProviderId: req.user._id,
-}).populate("categoryId", "name");
+    serviceProviderId: req.user._id,
+  }).populate("categoryId", "name").populate("serviceProviderId", "name");
 
   return res
     .status(200)
@@ -200,23 +198,18 @@ export const updateGig = asyncHandler(async (req, res) => {
 
   let { availabilityHours } = req.body;
 
-if (typeof availabilityHours === "string") {
-  availabilityHours = JSON.parse(availabilityHours);
-}
-const {
-  title,
-  description,
-  categoryId,
-  hourlyRate,
-  inspectionRate,
-} = req.body;
+  if (typeof availabilityHours === "string") {
+    availabilityHours = JSON.parse(availabilityHours);
+  }
+  const { title, description, categoryId, hourlyRate, inspectionRate } =
+    req.body;
 
-if (title) gig.title = title;
-if (description) gig.description = description;
-if (categoryId) gig.categoryId = categoryId;
-if (hourlyRate) gig.hourlyRate = hourlyRate;
-if (inspectionRate) gig.inspectionRate = inspectionRate;
-if (availabilityHours) gig.availabilityHours = availabilityHours;
+  if (title) gig.title = title;
+  if (description) gig.description = description;
+  if (categoryId) gig.categoryId = categoryId;
+  if (hourlyRate) gig.hourlyRate = hourlyRate;
+  if (inspectionRate) gig.inspectionRate = inspectionRate;
+  if (availabilityHours) gig.availabilityHours = availabilityHours;
 
   if (req.files && req.files.length > 0) {
     let newImages = [];
