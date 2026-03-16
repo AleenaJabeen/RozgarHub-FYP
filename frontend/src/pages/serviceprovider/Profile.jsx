@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {useNavigate} from 'react-router-dom'
 import { useDispatch, useSelector } from "react-redux";
 import PersonalInfo from "../../components/serviceprovider/profile/PersonalInfo";
@@ -10,29 +10,58 @@ import { showToast } from "../../utils/toastHelper";
 const Profile = () => {
   const dispatch = useDispatch();
   const navigate=useNavigate();
-  const [step, setStep] = useState(1);
+ 
    const { user } = useSelector((state) => state.auth);
-   const name=user?.name;
-   const email=user?.email;
-  const [formData, setFormData] = useState({
-    name: name,
-    email: email,
-    bio: "",
-    address: { street: "", city: "", state: "", country: "", zipCode: "" },
-    location: { latitude: null, longitude: null }, // 📍 geolocation
-    education: "",
-    certificates: null,       // File object
-    cnicNo: "",
-    cnicPicture: null,         // File object
-    profilePicture: null,      // File object
-    experienceDetails: "",
-    experienceDoc: null,       // File object
-    skills: ["Plumber", "Carpenter", "Electrician"],
-    phoneNumber: "",
-   otp: ["", "", "", "", "", ""],
+ // 1. Initialize state from localStorage (if it exists)
+  const [formData, setFormData] = useState(() => {
+    const savedData = localStorage.getItem("serviceProviderProfileDraft");
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      // We don't save files (blobs) to localStorage, so we reset them to null
+      return {
+        ...parsed,
+        certificates: null,
+        cnicPicture: null,
+        profilePicture: null,
+        experienceDoc: null
+      };
+    }
+    return {
+      name: user?.name || "",
+      email: user?.email || "",
+      bio: "",
+      address: { street: "", city: "", state: "", country: "", zipCode: "" },
+      location: { latitude: null, longitude: null },
+      education: "",
+      certificates: null,
+      cnicNo: "",
+      cnicPicture: null,
+      profilePicture: null,
+      experienceDetails: "",
+      experienceDoc: null,
+      skills: ["Plumber", "Carpenter", "Electrician"],
+      phoneNumber: "",
+      otp: ["", "", "", "", "", ""],
+    };
+  });
+  const [step, setStep] = useState(() => {
+    const savedStep = localStorage.getItem("profileCurrentStep");
+    return savedStep ? parseInt(savedStep, 10) : 1;
   });
 
+  // 2. Save to localStorage whenever formData or step changes
+  useEffect(() => {
+   if (!user) {
+    localStorage.removeItem("serviceProviderProfileDraft");
+    localStorage.removeItem("profileCurrentStep");
+    // Optional: Redirect to login if user is missing
+    navigate('/login'); 
+  }
+     window.scrollTo(0, 0);
+  }, [formData, step,user]);
+
   const nextStep = () => setStep((prev) => prev + 1);
+  const prevStep = () => setStep((prev) => prev - 1);
 
 const handleSubmit = async() => {
   const data = new FormData();
@@ -64,31 +93,31 @@ console.log("cnicPicture name:", formData.cnicPicture?.name);
   }
 
   try {
-  const response = await dispatch(createProviderProfile(data)).unwrap();
-  showToast(response.message);   // Now this will work
-  console.log(response.message);
-  navigate('/');
-} catch (err) {
-  showToast(err.message || 'Something went wrong','error');
-  console.error(err);
-}
+      const response = await dispatch(createProviderProfile(data)).unwrap();
+      localStorage.removeItem("serviceProviderProfileDraft"); // Clean up!
+      localStorage.removeItem("profileCurrentStep");
+      showToast(response.message);
+      navigate('/');
+    } catch (err) {
+      showToast(err.message || 'Something went wrong', 'error');
+    }
  
 };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="bg-white rounded-2xl shadow-sm md:p-8 p-2">
+    <div className="min-h-screen  py-10 px-4">
+      <div className="lg:p-8 md:p-6 p-2">
         {/* Stepper */}
         <div className="flex items-center justify-center mb-12 relative">
           {[1, 2, 3].map((num) => (
             <React.Fragment key={num}>
               <div className="flex flex-col items-center z-10">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors ${
-                  step >= num ? "bg-secondary text-white" : "bg-gray-200 text-gray-500"
+                  step >= num ? "bg-secondary text-white" : "bg-gray-400 text-primary"
                 }`}>
                   {num}
                 </div>
-                <span className={`text-xs mt-2 font-medium ${step === num ? "text-secondary" : "text-gray-400"}`}>
+                <span className={`text-xs mt-2 font-semibold ${step === num ? "text-secondary" : "text-gray-400"}`}>
                   {num === 1 ? "Personal Info" : num === 2 ? "Additional Info" : "Verification"}
                 </span>
               </div>
@@ -102,8 +131,8 @@ console.log("cnicPicture name:", formData.cnicPicture?.name);
         </div>
 
         {step === 1 && <PersonalInfo formData={formData} setFormData={setFormData} onNext={nextStep} />}
-        {step === 2 && <AdditionalInfo formData={formData} setFormData={setFormData} onNext={nextStep} />}
-        {step === 3 && <Verification formData={formData} setFormData={setFormData} onSubmit={handleSubmit} />}
+        {step === 2 && <AdditionalInfo formData={formData} setFormData={setFormData} onNext={nextStep} onBack={prevStep} />}
+        {step === 3 && <Verification formData={formData} setFormData={setFormData} onSubmit={handleSubmit} onBack={prevStep} />}
       </div>
     </div>
   );

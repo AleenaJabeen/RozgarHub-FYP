@@ -1,57 +1,104 @@
-import React from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import { FaHome } from "react-icons/fa";
-import { MdOutlineDesignServices } from "react-icons/md";
-import { updateUserRole } from "../../store/auth-slice";
-import { showToast } from "../../utils/toastHelper";
+import React, { useState } from 'react';
+import { FaUserCircle, FaArrowRight, FaCheck } from 'react-icons/fa';
+import { MdDesignServices } from 'react-icons/md';
+import { heroImg } from '../../assets';
+import { showToast } from '../../utils/toastHelper';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { updateUserRole } from '../../store/auth-slice';
 
 const ChooseRole = () => {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
+  const navigate=useNavigate();
+  const dispatch=useDispatch();
+  const [selectedRole, setSelectedRole] = useState(null);
 
-  const handleRoleSelection = async (role) => {
+  const handleRoleSelection = (role) => {
+    setSelectedRole(role);
+  };
+
+  const onContinue = async () => {
+    if (!selectedRole) return;
     try {
-      // 1. Update role in backend
-       const data=await dispatch(updateUserRole(role)).unwrap();
+      const data = await dispatch(updateUserRole(selectedRole)).unwrap();
       showToast(data.message);
-      // 2. Navigate based on role
-      if (role === "customer") navigate("/customer");
-      else navigate("/serviceprovider");
+      navigate(selectedRole === "customer" ? "/customer" : "/serviceprovider");
     } catch (err) {
-        showToast(err, "error");
-      console.error("Failed to set role", err);
+      showToast(err, "error");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-primary">
-      <div className="max-w-4xl w-full p-6 text-center">
-        <h1 className="text-3xl font-bold text-tertiary mb-2">Welcome to RozgarHub!</h1>
-        <p className="text-gray-600 mb-10">Choose how you want to use the platform</p>
-        
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Customer Option */}
+    <div 
+      className="min-h-screen flex items-center justify-center bg-[#1F2937] bg-cover bg-center bg-no-repeat p-4 relative"
+      style={{ backgroundImage: `url(${heroImg})` }}
+    >
+      {/* Background Overlay */}
+      <div className="absolute inset-0 bg-black/60 z-0"></div>
+
+      {/* Main Glassmorphism Box */}
+      <div className="relative z-10 max-w-xl w-full p-8 md:p-12 bg-primary/10  rounded-[2rem] border border-white/20 shadow-2xl text-center">
+        <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">
+          Welcome to RozgarHub!
+        </h1>
+        <p className="text-gray-300 mb-10 text-lg">How would you like to use our platform?</p>
+
+        <div className="space-y-4">
+          {/* Customer Choice */}
           <div 
             onClick={() => handleRoleSelection("customer")}
-            className="bg-white p-8 rounded-2xl shadow-lg border-2 border-transparent hover:border-secondary cursor-pointer transition-all group"
+            className={`flex items-center gap-4 p-5 rounded-2xl cursor-pointer transition-all duration-300 border-2 
+              ${selectedRole === "customer" 
+                ? "bg-secondary/20 border-secondary shadow-[0_0_15px_rgba(var(--secondary-rgb),0.3)]" 
+                : "bg-white/5 border-white/10 hover:bg-white/10"}`}
           >
-            <div className="text-5xl mb-4"><FaHome/></div>
-            <h2 className="text-xl font-bold mb-2">I am a Customer</h2>
-            <p className="text-gray-500">I want to hire skilled professionals for my tasks.</p>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl 
+              ${selectedRole === "customer" ? "bg-secondary text-white" : "bg-white/10 text-gray-400"}`}>
+              <FaUserCircle />
+            </div>
+            <div className="text-left flex-1">
+              <h3 className="text-white font-bold text-lg">I am a Customer</h3>
+              <p className="text-gray-400 text-sm">I want to hire skilled professionals</p>
+            </div>
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center
+              ${selectedRole === "customer" ? "border-secondary bg-secondary" : "border-white/20"}`}>
+              {selectedRole === "customer" && <FaCheck className="text-white text-xs" />}
+            </div>
           </div>
 
-          {/* Provider Option */}
+          {/* Provider Choice */}
           <div 
             onClick={() => handleRoleSelection("serviceprovider")}
-            className="bg-white p-8 rounded-2xl shadow-lg border-2 border-transparent hover:border-secondary cursor-pointer transition-all group"
+            className={`flex items-center gap-4 p-5 rounded-2xl cursor-pointer transition-all duration-300 border-2 
+              ${selectedRole === "serviceprovider" 
+                ? "bg-secondary/20 border-secondary shadow-[0_0_15px_rgba(var(--secondary-rgb),0.3)]" 
+                : "bg-white/5 border-white/10 hover:bg-white/10"}`}
           >
-            <div className="text-5xl mb-4"><MdOutlineDesignServices /></div>
-            <h2 className="text-xl font-bold mb-2">I am a Service Provider</h2>
-            <p className="text-gray-500">I want to offer my skills and find local work.</p>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl 
+              ${selectedRole === "serviceprovider" ? "bg-secondary text-white" : "bg-white/10 text-gray-400"}`}>
+              <MdDesignServices />
+            </div>
+            <div className="text-left flex-1">
+              <h3 className="text-white font-bold text-lg">I am a Service Provider</h3>
+              <p className="text-gray-400 text-sm">I want to offer my skills and find work</p>
+            </div>
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center
+              ${selectedRole === "serviceprovider" ? "border-secondary bg-secondary" : "border-white/20"}`}>
+              {selectedRole === "serviceprovider" && <FaCheck className="text-white text-xs" />}
+            </div>
           </div>
         </div>
+
+        {/* Action Button */}
+        <button 
+          disabled={!selectedRole}
+          onClick={onContinue}
+          className={`mt-10 w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all
+            ${selectedRole 
+              ? "bg-secondary text-white hover:scale-[1.02] shadow-lg" 
+              : "bg-white/10 text-gray-500 cursor-not-allowed"}`}
+        >
+          Continue <FaArrowRight />
+        </button>
       </div>
     </div>
   );

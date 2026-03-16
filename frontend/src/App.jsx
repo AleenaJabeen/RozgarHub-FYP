@@ -16,24 +16,37 @@ import CreateGig from "./components/serviceprovider/gig/CreateGig";
 
 function App() {
   const dispatch = useDispatch();
-  const { user, isAuthenticated, isLoading } = useSelector(
-    (state) => state.auth,
-  );
+  const { user, isAuthenticated, isLoading } = useSelector((state) => state.auth);
 
-  // ✅ Rehydrate auth state on every page load/refresh (including Google redirect)
   useEffect(() => {
     dispatch(checkAuth());
-  }, []); // ✅ Run ONCE on mount — no dependencies causing loops
+  }, [dispatch]);
 
-  // ✅ Remove the broken navigation useEffect entirely
-  // CheckAuth component handles all redirects declaratively
-
+  // If the app is checking auth on first load, show a simple, 
+  // fast-painting loading state so Lighthouse sees content immediately.
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-primary">
+        <div className="animate-pulse text-white text-xl font-bold">RozgarHub...</div>
+      </div>
+    )
+  }
   return (
     <>
+    <ScrollToTop/>
       <ToastContainer />
+
      <Routes>
   <Route path="/" element={<Layout />}>
-    <Route index element={<Home />} />
+  <Route 
+      index 
+      element={
+        <CheckAuth isAuthenticated={isAuthenticated} user={user} loading={isLoading}>
+          <Home />
+        </CheckAuth>
+      } 
+    />
+     <Route path="auth" element={<AuthPage />} />
 
     <Route path="reset-password" element={<ForgotPassword />} />
     <Route path="reset-password/:token" element={<ChangePassword />} />
@@ -73,10 +86,11 @@ function App() {
           user={user}
           loading={isLoading}
         >
-         <Dashboard/>
+        <ProviderHome/>
         </CheckAuth>
       }
     >
+      <Route index element={<Dashboard/>}/>
       <Route path="profile" element={<Profile />} />
       <Route path="gigs" element={<Gig />} />
       <Route path="createGig" element={<CreateGig />} />

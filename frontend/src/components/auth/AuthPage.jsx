@@ -1,39 +1,42 @@
-import React, { useState, useEffect } from "react";
-import { IoClose } from "react-icons/io5";
-import { signupImg } from "../../assets";
-import { useDispatch } from "react-redux"; // Assuming you use Redux
+import React, { useEffect, useState } from "react";
+import { login } from "../../assets";
+import { useDispatch } from "react-redux";
 import { checkAuth, loginUser, registerUser } from "../../store/auth-slice";
 import { showToast } from "../../utils/toastHelper";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { FcGoogle } from "react-icons/fc";
+import VerifyEmailModal from "./VerifyEmailModal";
 
-const AuthModal = ({ isOpen, onClose, openVerifyModal }) => {
+const AuthPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [searchParams] = useSearchParams(); 
+  const mode = searchParams.get("mode");
+
   const [isLogin, setIsLogin] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // 1. Form Data State
+  // --- Modal Logic ---
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+  const [tempUserData, setTempUserData] = useState({ email: "", password: "" });
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
   });
-  // Google login
+
   const handleGoogleLogin = () => {
-    // Directly point to your backend endpoint
     window.location.href = "http://localhost:3000/api/v1/auth/google";
   };
 
-  // Handle input changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    // Clear error when user starts typing
     if (errors[e.target.name]) {
       setErrors({ ...errors, [e.target.name]: "" });
     }
   };
 
-  // 2. Simple Validation Logic
   const validate = () => {
     let newErrors = {};
     if (!isLogin && !formData.name.trim())
@@ -47,7 +50,6 @@ const AuthModal = ({ isOpen, onClose, openVerifyModal }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // 3. Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
@@ -58,12 +60,11 @@ const AuthModal = ({ isOpen, onClose, openVerifyModal }) => {
         showToast(data.message);
 
         const authData = await dispatch(checkAuth()).unwrap();
-        onClose();
         if (authData?.role && authData.role !== "pending") {
           navigate(
             authData.role === "customer"
               ? "/customer"
-              : "/serviceprovider/dashboard",
+              : "/serviceprovider",
           );
         } else {
           navigate("/choose-role");
@@ -71,51 +72,56 @@ const AuthModal = ({ isOpen, onClose, openVerifyModal }) => {
       } else {
         const data = await dispatch(registerUser(formData)).unwrap();
         showToast(data.message);
-        onClose(); // close auth modal
-        openVerifyModal(formData.email, formData.password); // 👈 pass email
+
+        // Open the Verify Modal instead of navigating
+        setTempUserData({ email: formData.email, password: formData.password });
+        setIsVerifyModalOpen(true);
       }
     } catch (error) {
-      showToast(error, "error"); // this will now show: "Email or User already exists"
+      showToast(error, "error");
     }
   };
-
+  // based on what is click from navbar
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
+    if (mode === "login") {
+      setIsLogin(true);
+    } else if (mode === "signup") {
+      setIsLogin(false);
     }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [isOpen]);
-
-  if (!isOpen) return null;
+  }, [mode]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30  p-4">
-      <div className="bg-primary rounded-2xl shadow-2xl w-full max-w-5xl h-[90vh] overflow-hidden flex flex-col md:flex-row relative animate-in fade-in zoom-in duration-300">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-white z-30 bg-black/20 hover:bg-black/40 rounded-full p-1 transition-all"
-        >
-          <IoClose size={24} />
-        </button>
+    <div className="flex justify-center lg:p-12 md:p-6 p-4">
+      {/* Verify Modal Integration */}
+      {isVerifyModalOpen && (
+        <VerifyEmailModal
+          isOpen={isVerifyModalOpen}
+          onClose={() => setIsVerifyModalOpen(false)}
+          email={tempUserData.email}
+          password={tempUserData.password}
+        />
+      )}
 
+      <div className="rounded-2xl shadow-xl border border-gray-200 w-full max-w-5xl flex flex-col md:flex-row relative">
         {/* Left Side: Image */}
-        <div className="hidden md:block md:w-1/2 h-full relative">
+        <div className="flex-1 hidden md:block md:w-1/2 relative rounded-tl-2xl rounded-bl-2xl">
           <img
-            src={signupImg}
-            className="w-full h-full object-fill"
+            src={login}
+            className="absolute inset-0 w-full  h-full lg:object-cover object-fill  rounded-tl-2xl rounded-bl-2xl"
             alt="Professionals"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+          <div className="relative z-20 flex flex-col justify-start h-full p-8 text-primary">
+            <div className="text-center mt-4">
+              <h1 className="text-4xl font-bold mb-4">Join RozgarHub</h1>
+              <p className="text-lg">Find Work. Hire Workers.</p>
+            </div>
+          </div>
         </div>
 
         {/* Right Side: Form */}
-        <div className="w-full md:w-1/2 px-8 py-6 md:px-12 md:py-7 bg-white h-full overflow-y-auto">
-          <div className="max-w-md mx-auto py-4">
-            <h2 className="text-[30px] font-semibold text-gray-800 mb-8">
+        <div className="flex-1 w-full md:w-1/2 p-3 md:px-0 md:py-7">
+          <div className="md:px-8 px-2 py-4">
+            <h2 className="sm:text-[30px] text-2xl md:text-left text-center font-semibold text-tertiary mb-8">
               {isLogin ? "Welcome Back" : "Create an Account"}
             </h2>
 
@@ -128,7 +134,7 @@ const AuthModal = ({ isOpen, onClose, openVerifyModal }) => {
                     placeholder="Full Name"
                     value={formData.name}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2 rounded-full border ${errors.name ? "border-red-500" : "border-gray-300"} focus:outline-none`}
+                    className={`w-full px-4 py-3 rounded-full border ${errors.name ? "border-red-500" : "border-gray-300"} focus:ring-1 focus:ring-secondary outline-none`}
                   />
                   {errors.name && (
                     <p className="text-red-500 text-xs mt-1 ml-4">
@@ -145,7 +151,7 @@ const AuthModal = ({ isOpen, onClose, openVerifyModal }) => {
                   placeholder="Email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2 rounded-full border ${errors.email ? "border-red-500" : "border-gray-300"} focus:outline-none`}
+                  className={`w-full px-4 py-3 rounded-full border ${errors.email ? "border-red-500" : "border-gray-300"} focus:ring-1 focus:ring-secondary outline-none`}
                 />
                 {errors.email && (
                   <p className="text-red-500 text-xs mt-1 ml-4">
@@ -161,7 +167,7 @@ const AuthModal = ({ isOpen, onClose, openVerifyModal }) => {
                   placeholder="Password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2 rounded-full border ${errors.password ? "border-red-500" : "border-gray-300"} focus:outline-none`}
+                  className={`w-full px-4 py-3 rounded-full border ${errors.password ? "border-red-500" : "border-gray-300"} focus:ring-1 focus:ring-secondary outline-none`}
                 />
                 {errors.password && (
                   <p className="text-red-500 text-xs mt-1 ml-4">
@@ -172,23 +178,25 @@ const AuthModal = ({ isOpen, onClose, openVerifyModal }) => {
 
               <button
                 type="submit"
-                className="w-full bg-secondary hover:bg-[#0e5641] text-white font-bold py-3 rounded-full mt-4 transition-colors shadow-lg"
+                className="w-full  bg-secondary cursor-pointer text-white font-bold py-3 rounded-full mt-6 
+             transition-transform duration-150 ease-out
+             hover:brightness-110
+             active:scale-[0.97] active:brightness-90 shadow-md"
               >
                 {isLogin ? "Log in" : "Sign up"}
               </button>
             </form>
 
             <div className="text-center">
-              <p
-                onClick={() => {
-                  onClose();
-                  navigate("/reset-password");
-                }}
-                className={`cursor-pointer text-right flex justify-end items-end mt-2 hover:underline`}
-              >
-                {isLogin ? "Forgot password" : ""}
-              </p>
-              <p className="text-gray-600 mt-4">
+              {isLogin && (
+                <Link to="/reset-password">
+                  <p className="text-right text-sm text-tertiary mt-2 hover:underline">
+                    Forgot password?
+                  </p>
+                </Link>
+              )}
+
+              <p className="text-gray-600 mt-6">
                 {isLogin
                   ? "Don't have an account?"
                   : "Already have an account?"}{" "}
@@ -196,38 +204,38 @@ const AuthModal = ({ isOpen, onClose, openVerifyModal }) => {
                   type="button"
                   onClick={() => {
                     setIsLogin(!isLogin);
-                    setErrors({});
+                    setErrors({}); // Clears validation messages
+                    // Reset the form data to empty strings
+                    setFormData({
+                      name: "",
+                      email: "",
+                      password: "",
+                    });
                   }}
-                  className="text-blue-800 font-semibold hover:underline"
+                  className="cursor-pointer text-secondary font-semibold hover:underline"
                 >
                   {isLogin ? "Sign up" : "Log in"}
                 </button>
               </p>
             </div>
 
-            {/* Divider and Google Button remain same... */}
-            <div className="relative my-4">
+            <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-gray-300"></span>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-400 font-medium italic">
-                  or
-                </span>
+                <span className="px-2 bg-white text-gray-400 italic">or</span>
               </div>
             </div>
-
             <button
               onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center gap-3 border border-gray-300 py-3 rounded-full hover:bg-gray-50 transition-colors mb-4"
+              className="w-full cursor-pointer flex items-center justify-center gap-3 border border-gray-300 py-3 rounded-full mb-4
+             transition-all duration-200 ease-in-out
+             hover:bg-gray-100  hover:shadow-md 
+             active:scale-[0.98] active:bg-gray-100"
             >
-              <img
-                src="https://www.svgrepo.com/show/475656/google-color.svg"
-                loading="lazy"
-                alt="google logo"
-                className="w-5 h-5"
-              />
-              <span className="text-tertiary font-normal">
+              <FcGoogle size={24} />
+              <span className="text-gray-700 font-medium">
                 Continue with Google
               </span>
             </button>
@@ -238,4 +246,4 @@ const AuthModal = ({ isOpen, onClose, openVerifyModal }) => {
   );
 };
 
-export default AuthModal;
+export default AuthPage;

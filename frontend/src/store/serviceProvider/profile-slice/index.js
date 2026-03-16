@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 const initialState = {
+  user:null,
   profile: null,
   loading: true,
   error: null,
@@ -98,10 +99,10 @@ const profileSlice = createSlice({
       .addCase(createProviderProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
-        state.profile = action.payload;
+         state.user = action.payload.data;
+        state.profile = action.payload.data;
       })
 
-      // REJECTED
       .addCase(createProviderProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
