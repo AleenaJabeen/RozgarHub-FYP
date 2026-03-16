@@ -7,7 +7,6 @@ const GigCard = ({ gig }) => {
         occupied: "bg-orange-500",
         offline: "bg-gray-500",
     };
-    console.log("Rendering GigCard for:", gig);
 
     return (
         <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow group flex flex-col h-full">
@@ -26,15 +25,15 @@ const GigCard = ({ gig }) => {
             </div>
 
             {/* Content */}
-            <div className="p-4 flex flex-col flex-grow space-y-3">
+            <div className="p-4 flex flex-col grow space-y-3">
                 {/* Provider Name Only */}
                 <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                         <span className="text-[10px] font-bold text-gray-500 uppercase">
-                            {gig.serviceProviderName?.charAt(0) || "A"}
+                            {gig.serviceProviderId?.name?.charAt(0) || "A"}
                         </span>
                     </div>
-                    <p className="text-xs font-bold text-gray-800">{gig.serviceProviderName}</p>
+                    <p className="text-xs font-bold text-gray-800">{gig.serviceProviderId?.name}</p>
                 </div>
 
                 {/* Title */}
@@ -57,11 +56,11 @@ const GigCard = ({ gig }) => {
                     {/* Availability Time from wireframe */}
                     <div className="text-right">
                         <p className="text-gray-400 font-medium leading-tight">Available btw</p>
-                        <p className="text-gray-800 font-bold">{gig.availabilityhours?.[0].startTime} - {gig.availabilityhours?.[0].endTime}</p>
+                        <p className="text-gray-800 font-bold">{gig.availabilityHours?.[0].startTime} - {gig.availabilityHours?.[0].endTime}</p>
                     </div>
                 </div>
 
-                <div className="h-[1px] bg-gray-100 w-full mt-auto" />
+                <div className="h-px bg-gray-100 w-full mt-auto" />
 
                 {/* Pricing Row */}
                 <div className="flex justify-between items-end pt-1">

@@ -1,5 +1,6 @@
 import { DB_NAME } from "../constants.js";
 import mongoose from "mongoose";
+import {seedCategories } from "../controllers/serviceprovider/category.controller.js"
 
 const connectDB = async () => {
   try {
@@ -9,6 +10,7 @@ const connectDB = async () => {
     console.log(
       `Mongodb connected and Host: ${connectionInstance.connection.host}`,
     );
+    await seedCategories();
   } catch (err) {
     console.error("Error connection to Mongodb", err);
     process.exit(1);
