@@ -31,6 +31,46 @@ export const createProviderProfile = createAsyncThunk(
   }
 );
 
+export const getProviderProfile = createAsyncThunk(
+  "profile/getProviderProfile",
+  async (_, { rejectWithValue }) => {
+    try {
+      // Typically fetching is a GET request
+      const res = await axios.get(`${BASE_URL}/get-profile`, {
+        withCredentials: true,
+      });
+            console.log(res.data)
+
+      return res.data; 
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Fetching Profile failed"
+      );
+    }
+  }
+);
+export const updateProviderProfile = createAsyncThunk(
+  "profile/updateProviderProfile",
+  async (formData, { rejectWithValue }) => {
+    try {
+      const res = await axios.patch(
+        `${BASE_URL}/update-profile`, 
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
+      console.log(res.data)
+      
+      return res.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Profile update failed"
+      );
+    }
+  }
+);
+
 export const sendPhoneOTP = createAsyncThunk(
   "profile/sendPhoneOTP",
   async (phone, { rejectWithValue }) => {
@@ -99,7 +139,6 @@ const profileSlice = createSlice({
       .addCase(createProviderProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
-         state.user = action.payload.data;
         state.profile = action.payload.data;
       })
 
@@ -107,7 +146,35 @@ const profileSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
         state.success = false;
-      });
+      })
+      .addCase(updateProviderProfile.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    })
+    .addCase(updateProviderProfile.fulfilled, (state, action) => {
+      state.loading = false;
+      // Replace the old profile data with the updated data from the server
+      state.profile = action.payload.data; 
+      state.success = true;
+    })
+    .addCase(updateProviderProfile.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+    })
+      .addCase(getProviderProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getProviderProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.profile = action.payload.data;
+        state.user = action.payload.data.user; 
+        state.error = null;
+      })
+      .addCase(getProviderProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
   },
 });
 

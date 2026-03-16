@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { IoClose, IoChevronDown } from "react-icons/io5";
-import { FaRegFileAlt } from "react-icons/fa";
+import { FaCheck, FaRegFileAlt } from "react-icons/fa";
 
 
 const AdditionalInfo = ({ formData, setFormData, onNext,onBack }) => {
@@ -33,6 +33,13 @@ const AdditionalInfo = ({ formData, setFormData, onNext,onBack }) => {
 
   const removeSkill = (skillToRemove) => {
     setFormData((prev) => ({ ...prev, skills: prev.skills.filter((s) => s !== skillToRemove) }));
+  };
+
+  const handleUrgentToggle = () => {
+    setFormData((prev) => ({
+      ...prev,
+      urgentHire: prev.urgentHire === "yes" ? "no" : "yes",
+    }));
   };
 
   const validate = () => {
@@ -104,7 +111,57 @@ const AdditionalInfo = ({ formData, setFormData, onNext,onBack }) => {
           </div>
           {errors.skills && <p className="text-red-500 text-xs mt-2">{errors.skills}</p>}
         </div>
+        {/* Urgent Hire Section */}
+<div className="ms-3 pt-4">
+  <label className="block text-base font-medium mb-3">
+    Are you available for urgent hire?
+  </label>
+  <div className="flex gap-6">
+    {/* Yes Option */}
+    <label className="flex items-center gap-2 cursor-pointer group">
+      <input
+        type="radio"
+        name="urgentHire"
+        value="yes"
+        checked={formData.urgentHire === "yes"}
+        onChange={(e) => setFormData((prev) => ({ ...prev, urgentHire: e.target.value }))}
+        className="hidden" // Hide default radio
+      />
+      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+        formData.urgentHire === "yes" ? "border-secondary" : "border-gray-300 group-hover:border-gray-400"
+      }`}>
+        {formData.urgentHire === "yes" && <div className="w-2.5 h-2.5 rounded-full bg-secondary" />}
       </div>
+      <span className={`text-sm font-medium ${formData.urgentHire === "yes" ? "text-secondary" : "text-gray-600"}`}>
+        Yes
+      </span>
+    </label>
+
+    {/* No Option */}
+    <label className="flex items-center gap-2 cursor-pointer group">
+      <input
+        type="radio"
+        name="urgentHire"
+        value="no"
+        checked={formData.urgentHire === "no"}
+        onChange={(e) => setFormData((prev) => ({ ...prev, urgentHire: e.target.value }))}
+        className="hidden"
+      />
+      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+        formData.urgentHire === "no" ? "border-secondary" : "border-gray-300 group-hover:border-gray-400"
+      }`}>
+        {formData.urgentHire === "no" && <div className="w-2.5 h-2.5 rounded-full bg-secondary" />}
+      </div>
+      <span className={`text-sm font-medium ${formData.urgentHire === "no" ? "text-secondary" : "text-gray-600"}`}>
+        No
+      </span>
+    </label>
+  </div>
+</div>
+
+      
+      </div>
+      
 
       <div className="flex justify-center gap-4 pt-8">
         <button

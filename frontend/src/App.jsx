@@ -13,6 +13,10 @@ import Profile from "./pages/serviceprovider/Profile";
 import Dashboard from "./pages/serviceprovider/Dashboard";
 import Gig from "./pages/serviceprovider/Gig";
 import CreateGig from "./components/serviceprovider/gig/CreateGig";
+import ScrollToTop from './components/layout/ScrollToTop';
+import AuthPage from './components/auth/AuthPage';
+import ProviderHome from './pages/serviceprovider/ProviderHome';
+import ViewProfile from "./pages/serviceprovider/ViewProfile";
 
 function App() {
   const dispatch = useDispatch();
@@ -92,6 +96,7 @@ function App() {
     >
       <Route index element={<Dashboard/>}/>
       <Route path="profile" element={<Profile />} />
+       <Route path="view-profile" element={<ViewProfile />} />
       <Route path="gigs" element={<Gig />} />
       <Route path="createGig" element={<CreateGig />} />
       {/* <Route path="orders" element={<Orders />} /> */}

@@ -57,15 +57,12 @@ const Navbar = () => {
       { name: "Inbox", href: "/inbox" },
     ],
     serviceprovider: [
-      { name: 'Home', href: '/serviceprovider' },
+      { name: 'Dashboard', href: '/serviceprovider' },
       { name: 'Gigs', href: '/serviceprovider/gigs' },
-      { name: 'Orders', href: '/orders' },
-      { name: 'Log out', onClick: handleLogout }, // ✅
+      { name: 'Orders', href: '/serviceprovider/orders' },
     ]
-      { name: "Dashboard", href: "/serviceprovider" },
-      { name: "Gigs", href: "/serviceprovider/gigs" },
-      { name: "Orders", href: "/serviceprovider/orders" },
-    ],
+    
+  
   };
 
   const currentLinks = navLinks[role] || navLinks.pending;
@@ -165,7 +162,7 @@ const Navbar = () => {
                     </Link>
                     <Link
                  
-                      to="/serviceprovider/profile"
+                      to="/serviceprovider/view-profile"
                       className="flex items-center cursor-pointer px-4 py-2.5 text-base text-gray-600 hover:bg-gray-50"
                     >
                       Profile
