@@ -11,7 +11,7 @@ const experienceDocumentSchema = new Schema(
       required: true,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const serviceProviderSchema = new Schema(
@@ -38,7 +38,10 @@ const serviceProviderSchema = new Schema(
       type: String,
       trim: true,
     },
-
+    education: {
+      type: String,
+      trim: true,
+    },
     experienceDetails: {
       type: String,
       trim: true,
@@ -79,7 +82,7 @@ const serviceProviderSchema = new Schema(
       default: 0,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 serviceProviderSchema.index({ skills: 1 });
@@ -87,5 +90,5 @@ serviceProviderSchema.index({ urgentHire: 1 });
 
 export const ServiceProvider = mongoose.model(
   "ServiceProvider",
-  serviceProviderSchema
+  serviceProviderSchema,
 );
