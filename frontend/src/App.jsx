@@ -17,6 +17,7 @@ import ScrollToTop from './components/layout/ScrollToTop';
 import AuthPage from './components/auth/AuthPage';
 import ProviderHome from './pages/serviceprovider/ProviderHome';
 import ViewProfile from "./pages/serviceprovider/ViewProfile";
+import CustomerProfile from "./pages/customer/Profile";
 
 function App() {
   const dispatch = useDispatch();
@@ -71,15 +72,11 @@ function App() {
     <Route
       path="customer/*"
       element={
-        <CheckAuth
-          isAuthenticated={isAuthenticated}
-          user={user}
-          loading={isLoading}
-        >
-         <h2>Hi</h2>
-        </CheckAuth>
-      }
-    />
+      <CheckAuth isAuthenticated={isAuthenticated} user={user} loading={isLoading}>
+        <CustomerProfile />
+      </CheckAuth>
+    }
+  />
 
     {/* Service Provider */}
     <Route
