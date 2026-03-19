@@ -154,7 +154,7 @@ const Navbar = () => {
                       to={
                         role === "serviceprovider"
                           ? "/serviceprovider"
-                          : "/dashboard"
+                          : "/customer"
                       }
                       className="flex cursor-pointer items-center px-4 py-4 text-base text-gray-600 hover:bg-gray-50"
                     >
@@ -162,7 +162,7 @@ const Navbar = () => {
                     </Link>
                     <Link
                  
-                      to="/serviceprovider/view-profile"
+                      to={role === "serviceprovider" ? "/serviceprovider/view-profile" : "/customer/view-profile"}
                       className="flex items-center cursor-pointer px-4 py-2.5 text-base text-gray-600 hover:bg-gray-50"
                     >
                       Profile

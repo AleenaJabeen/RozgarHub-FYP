@@ -20,6 +20,8 @@ import ViewProfile from "./pages/serviceprovider/ViewProfile";
 import CustomerProfile from "./pages/customer/Profile";
 import CustomerHome from "./pages/customer/CustomerHome";
 import ServicesPage from "./pages/customer/ServicesPage";
+import CustomerDashboard from "./pages/customer/Dashboard";
+import CustomerViewProfile from "./pages/customer/ViewProfile";
 
 function App() {
   const dispatch = useDispatch();
@@ -89,7 +91,9 @@ function App() {
               </CheckAuth>
             }
           >
-              <Route index element={<ServicesPage/>} />
+            <Route index element={<CustomerDashboard />} />
+            <Route path="view-profile" element={<CustomerViewProfile />} />
+            <Route path="services" element={<ServicesPage/>} />
             <Route path="profile" element={<CustomerProfile/>}/>
             </Route>
 
