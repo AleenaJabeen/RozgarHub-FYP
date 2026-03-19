@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import {
   IoMenu,
   IoClose,
-  IoChevronDown,
   IoLogOutOutline,
 } from "react-icons/io5";
 import { Logo2 } from "../../assets";
@@ -52,6 +51,7 @@ const Navbar = () => {
   const navLinks = {
     pending: [{ name: "Services", href: "/services" }],
     customer: [
+      { name: "Home", href: "/customer" },
       { name: "Services", href: "/services" },
       { name: "Orders", href: "/orders" },
       { name: "Inbox", href: "/inbox" },

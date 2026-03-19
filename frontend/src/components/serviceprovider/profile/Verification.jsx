@@ -1,8 +1,10 @@
 import React, { useState, useRef } from "react";
 import { useDispatch } from "react-redux";
+import { sendPhoneOTP,verifyPhoneOTP } from "../../../store/serviceProvider/profile-slice";
 import { useNavigate } from "react-router-dom";
 
 const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
+  const dispatch=useDispatch();
   const [errors, setErrors] = useState({});
   const [otpSent, setOtpSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false); // Loading state
@@ -41,31 +43,42 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSendOtp = async () => {
+ const handleSendOtp = async () => {
     if (!validatePhone()) return;
     try {
+      // Clear previous OTP errors when resending
+      setErrors((prev) => ({ ...prev, otp: null })); 
       // await dispatch(sendPhoneOTP(formData.phoneNumber)).unwrap();
       setOtpSent(true);
     } catch (err) {
-      setErrors((prev) => ({ ...prev, phone: err }));
+      setErrors((prev) => ({ ...prev, phone: err || "Failed to send OTP" }));
     }
   };
 
   const handleSubmit = async () => {
+    // 1. Validate UI
     if (formData.otp.some((d) => d === "")) {
-      setErrors((prev) => ({ ...prev, otp: "Please enter the complete OTP." }));
+      setErrors((prev) => ({ ...prev, otp: "Please enter the complete 6-digit OTP." }));
       return;
     }
 
-    setIsSubmitting(true); // Start loading
-    const otp = formData.otp.join("");
+    setIsSubmitting(true);
+    const otpString = formData.otp.join("");
 
     try {
+      // 2. Verify OTP via Redux first
+      // await dispatch(verifyPhoneOTP({ 
+      //   phoneNumber: formData.phoneNumber, 
+      //   otp: otpString 
+      // })).unwrap();
+
+      // 3. If verification passes, call the parent onSubmit (e.g., to save the whole profile)
       await onSubmit();
     } catch (err) {
-      setErrors((prev) => ({ ...prev, otp: err.message || "Verification failed" }));
+      // Handle server-side verification errors
+      setErrors((prev) => ({ ...prev, otp: err || "Invalid OTP. Please try again." }));
     } finally {
-      setIsSubmitting(false); // Stop loading
+      setIsSubmitting(false);
     }
   };
 

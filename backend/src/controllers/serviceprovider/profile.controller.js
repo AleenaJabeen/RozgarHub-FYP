@@ -18,6 +18,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
 
   const userId = req.user._id;
   const { phone } = req.body;
+  // console.log("Phone",phone)
 
   const user = await User.findById(userId);
 
@@ -38,6 +39,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
 
   user.phone = formattedPhone;
   await user.save();
+  // console.log(verification);
 
   res.json(new ApiResponse(200, verification, "OTP sent successfully"));
 
@@ -47,6 +49,7 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 
   const userId = req.user._id;
   const { phone, otp } = req.body;
+  // console.log(phone,otp)
 
   const user = await User.findById(userId);
 
@@ -57,7 +60,6 @@ export const verifyOtp = asyncHandler(async (req, res) => {
   const formattedPhone = phone.startsWith("03")
     ? "+92" + phone.slice(1)
     : phone;
-    console.log("Service ID:", process.env.TWILIO_SERVICE_ID);
 
   const verificationCheck = await client.verify.v2
     .services(process.env.TWILIO_SERVICE_ID)
@@ -66,7 +68,7 @@ export const verifyOtp = asyncHandler(async (req, res) => {
       code: otp
     });
 
-    console.log(verificationCheck.status);
+    // console.log(verificationCheck.status);
   if (verificationCheck.status !== "approved") {
     throw new ApiError(400, "Invalid or expired OTP");
   }

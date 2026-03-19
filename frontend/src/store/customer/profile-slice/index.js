@@ -79,6 +79,8 @@ export const sendCustomerPhoneOTP = createAsyncThunk(
         { phone },
         { withCredentials: true }
       );
+            console.log(response.data);
+
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -97,6 +99,7 @@ export const verifyCustomerPhoneOTP = createAsyncThunk(
         { phone, otp },
         { withCredentials: true }
       );
+      console.log(response.data);
       return response.data;
     } catch (error) {
       return rejectWithValue(

@@ -83,7 +83,7 @@ const CustomerProfile = () => {
       localStorage.removeItem("customerProfileDraft");
       localStorage.removeItem("customerProfileStep");
       showToast(response.message);
-      navigate("/customer/dashboard");
+      navigate("/customer");
     } catch (err) {
       showToast(err || "Something went wrong", "error");
     }

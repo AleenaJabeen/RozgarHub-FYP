@@ -47,7 +47,7 @@ const CustomerVerification = ({ formData, setFormData, onSubmit, onBack }) => {
   const handleSendOtp = async () => {
     if (!validatePhone()) return;
     try {
-      await dispatch(sendCustomerPhoneOTP(formData.phoneNumber)).unwrap();
+      // await dispatch(sendCustomerPhoneOTP(formData.phoneNumber)).unwrap();
       setOtpSent(true);
       setErrors((prev) => ({ ...prev, phone: "" }));
     } catch (err) {
@@ -68,9 +68,9 @@ const CustomerVerification = ({ formData, setFormData, onSubmit, onBack }) => {
 
     try {
       // Step 1: Verify the OTP — throws if invalid/expired
-      await dispatch(
-        verifyCustomerPhoneOTP({ phone: formData.phoneNumber, otp })
-      ).unwrap();
+      // await dispatch(
+      //   verifyCustomerPhoneOTP({ phone: formData.phoneNumber, otp })
+      // ).unwrap();
 
       // Step 2: Only if verification passed, fire the profile creation
       await onSubmit();

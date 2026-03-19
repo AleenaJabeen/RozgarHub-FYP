@@ -70,6 +70,7 @@ const handleSubmit = async() => {
   data.append("cnicNo", formData.cnicNo);
   data.append("experienceDetails", formData.experienceDetails);
   data.append("phone", formData.phoneNumber);
+   data.append("education", formData.education);
   data.append("skills", formData.skills.join(","));
   data.append("street", formData.address.street);
   data.append("city", formData.address.city);

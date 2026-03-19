@@ -33,7 +33,7 @@ function CheckAuth({ isAuthenticated, user, loading, children }) {
   }
 
   // 3️⃣ AUTHENTICATED WITH ROLE - PREVENT LANDING/AUTH ACCESS
-  const dashboardPath = user.role === "customer" ? "/customer/home" : "/serviceprovider";
+  const dashboardPath = user.role === "customer" ? "/customer" : "/serviceprovider";
 
   // If user is logged in and has a role, redirect them AWAY from landing, auth, or choose-role
   if (path === "/" || path === "/auth" || path === "/choose-role") {
@@ -42,7 +42,7 @@ function CheckAuth({ isAuthenticated, user, loading, children }) {
 
   // 4️⃣ ROLE BASED ACCESS CONTROL (RBAC)
   if (user.role === "customer" && path.startsWith("/serviceprovider")) {
-    return <Navigate to="/customer/home" replace />;
+    return <Navigate to="/customer" replace />;
   }
 
   if (user.role === "serviceprovider" && path.startsWith("/customer")) {
