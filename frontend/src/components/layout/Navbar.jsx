@@ -208,14 +208,20 @@ const Navbar = () => {
                       </div>
                     </div>
                     <Link
-                      to={role === "serviceprovider" ? "/serviceprovider" : "/dashboard"}
-                      className="flex items-center px-4 py-4 text-base text-gray-600 hover:bg-gray-50"
+
+                      to={
+                        role === "serviceprovider"
+                          ? "/serviceprovider"
+                          : "/customer"
+                      }
+                      className="flex cursor-pointer items-center px-4 py-4 text-base text-gray-600 hover:bg-gray-50"
                     >
                       Dashboard
                     </Link>
                     <Link
-                      to="/serviceprovider/view-profile"
-                      className="flex items-center px-4 py-2.5 text-base text-gray-600 hover:bg-gray-50"
+                 
+                      to={role === "serviceprovider" ? "/serviceprovider/view-profile" : "/customer/view-profile"}
+                      className="flex items-center cursor-pointer px-4 py-2.5 text-base text-gray-600 hover:bg-gray-50"
                     >
                       Profile
                     </Link>

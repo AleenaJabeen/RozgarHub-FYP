@@ -3,22 +3,60 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import CustomerPersonalInfo from "../../components/customer/profile/PersonalInfo";
 import CustomerVerification from "../../components/customer/profile/Verification";
-import { createCustomerProfile } from "../../store/customer/profile-slice";
+import {
+  createCustomerProfile,
+  updateCustomerProfile,
+  getCustomerProfile,
+} from "../../store/customer/profile-slice";
 import { showToast } from "../../utils/toastHelper";
 
 const CustomerProfile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user } = useSelector((state) => state.auth);
 
-  // ─── Form State (with localStorage draft rehydration) ───────────
+  const { user }             = useSelector((state) => state.auth);
+  const { profile, loading } = useSelector((state) => state.customerProfile);
+
+  // ─── Fetch existing profile on mount ────────────────────────────
+  useEffect(() => {
+    dispatch(getCustomerProfile());
+  }, [dispatch]);
+
+  // ─── Smart Form State Initialization ────────────────────────────
+  // Priority: 1. localStorage draft  2. Server data  3. Blank defaults
   const [formData, setFormData] = useState(() => {
+    // Priority 1 — in-progress draft saved to localStorage
     const savedData = localStorage.getItem("customerProfileDraft");
     if (savedData) {
       const parsed = JSON.parse(savedData);
-      // File blobs cannot be serialized — always reset to null on rehydration
-      return { ...parsed, avatar: null };
+      return { ...parsed, avatar: null }; // blobs can't be serialized
     }
+
+    // Priority 2 — pre-fill from existing Redux server data
+    if (profile && user) {
+      const coords = user.location?.currentLocation?.coordinates;
+      return {
+        name:        user.name        || "",
+        email:       user.email       || "",
+        avatar:      null,
+        address: {
+          street:  user.location?.address?.street  || "",
+          city:    user.location?.address?.city    || "",
+          state:   user.location?.address?.state   || "",
+          country: user.location?.address?.country || "",
+          zipCode: user.location?.address?.zipCode || "",
+        },
+        location: {
+          // GeoJSON stores [longitude, latitude]
+          longitude: coords?.[0] ?? null,
+          latitude:  coords?.[1] ?? null,
+        },
+        phoneNumber: user.phone || "",
+        otp:         ["", "", "", "", "", ""],
+      };
+    }
+
+    // Priority 3 — brand new user, blank slate
     return {
       name:        user?.name  || "",
       email:       user?.email || "",
@@ -44,7 +82,7 @@ const CustomerProfile = () => {
       return;
     }
 
-    // Omit the file blob — localStorage only stores serializable data
+    // Omit the file blob — not serializable
     const { avatar, ...serializableData } = formData;
     localStorage.setItem("customerProfileDraft", JSON.stringify(serializableData));
     localStorage.setItem("customerProfileStep", String(step));
@@ -55,7 +93,7 @@ const CustomerProfile = () => {
   const nextStep = () => setStep((prev) => prev + 1);
   const prevStep = () => setStep((prev) => prev - 1);
 
-  // ─── Final Submit ────────────────────────────────────────────────
+  // ─── Dynamic Submit: create vs. update ──────────────────────────
   const handleSubmit = async () => {
     const data = new FormData();
 
@@ -66,20 +104,21 @@ const CustomerProfile = () => {
     data.append("country", formData.address.country);
     data.append("zipCode", formData.address.zipCode);
 
-    // Only append avatar if the user uploaded one
     if (formData.avatar) {
       data.append("avatar", formData.avatar);
     }
 
-    // Critical: never send the string "null" — backend GeoJSON validation will reject it
+    // Never send the string "null" — backend GeoJSON validation will reject it
     if (formData.location.longitude !== null && formData.location.latitude !== null) {
       data.append("longitude", formData.location.longitude);
       data.append("latitude",  formData.location.latitude);
     }
 
     try {
-      const response = await dispatch(createCustomerProfile(data)).unwrap();
-      // Clean up draft on success
+      // If a Customer document already exists — update; otherwise — create
+      const action   = profile ? updateCustomerProfile : createCustomerProfile;
+      const response = await dispatch(action(data)).unwrap();
+
       localStorage.removeItem("customerProfileDraft");
       localStorage.removeItem("customerProfileStep");
       showToast(response.message);
@@ -88,6 +127,17 @@ const CustomerProfile = () => {
       showToast(err || "Something went wrong", "error");
     }
   };
+
+  // ─── Loading State ───────────────────────────────────────────────
+  // Block render while GET is in-flight so the form doesn't flash
+  // blank defaults before server data arrives and re-fills it.
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen py-10 px-4">
