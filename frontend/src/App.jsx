@@ -17,6 +17,7 @@ import ScrollToTop from './components/layout/ScrollToTop';
 import AuthPage from './components/auth/AuthPage';
 import ProviderHome from './pages/serviceprovider/ProviderHome';
 import ViewProfile from "./pages/serviceprovider/ViewProfile";
+import GigDetails from "./components/serviceprovider/gig/GigDetails";
 
 function App() {
   const dispatch = useDispatch();
@@ -99,6 +100,7 @@ function App() {
        <Route path="view-profile" element={<ViewProfile />} />
       <Route path="gigs" element={<Gig />} />
       <Route path="createGig" element={<CreateGig />} />
+      <Route path="gig-details/:id" element={<GigDetails />} />
       {/* <Route path="orders" element={<Orders />} /> */}
     </Route>
 
