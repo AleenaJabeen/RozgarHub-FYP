@@ -8,7 +8,7 @@ import {
   updateServiceProviderProfile,
   verifyOtp,
 } from "../controllers/serviceprovider/profile.controller.js";
-import { requireServiceProvider } from "../middlewares/role.middleware.js";
+
 
 const router = Router();
 router.route("/create-profile").post(

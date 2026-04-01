@@ -1,25 +1,24 @@
 import React, { useState, useRef } from "react";
 import { useDispatch } from "react-redux";
-import { sendPhoneOTP,verifyPhoneOTP } from "../../../store/serviceProvider/profile-slice";
-import { useNavigate } from "react-router-dom";
+import { sendCustomerPhoneOTP, verifyCustomerPhoneOTP } from "../../../store/customer/profile-slice";
 
-const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
-  const dispatch=useDispatch();
+const CustomerVerification = ({ formData, setFormData, onSubmit, onBack }) => {
+  const dispatch = useDispatch();
   const [errors, setErrors] = useState({});
   const [otpSent, setOtpSent] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const otpRefs = useRef([]);
 
+  // ─── OTP Input Handlers ─────────────────────────────────────────
   const handleOtpChange = (value, index) => {
     // Only allow single digits
     if (!/^\d?$/.test(value)) return;
 
     const newOtp = [...formData.otp];
     newOtp[index] = value;
-
     setFormData((prev) => ({ ...prev, otp: newOtp }));
 
-    // Move to next input if value is entered
+    // Auto-advance to next box
     if (value && index < 5) {
       otpRefs.current[index + 1]?.focus();
     }
@@ -32,51 +31,54 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
     }
   };
 
+  // ─── Phone Validation ───────────────────────────────────────────
   const validatePhone = () => {
-    let newErrors = {};
+    const newErrors = {};
     if (!formData.phoneNumber.trim()) {
       newErrors.phone = "Phone number is required.";
     } else if (!/^03\d{9}$/.test(formData.phoneNumber)) {
-      newErrors.phone = "Enter valid Pakistani phone number (03XXXXXXXXX)";
+      newErrors.phone = "Enter a valid Pakistani phone number (03XXXXXXXXX).";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
- const handleSendOtp = async () => {
+  // ─── Send OTP ───────────────────────────────────────────────────
+  const handleSendOtp = async () => {
     if (!validatePhone()) return;
     try {
-      // Clear previous OTP errors when resending
-      setErrors((prev) => ({ ...prev, otp: null })); 
-      // await dispatch(sendPhoneOTP(formData.phoneNumber)).unwrap();
+      // await dispatch(sendCustomerPhoneOTP(formData.phoneNumber)).unwrap();
       setOtpSent(true);
+      setErrors((prev) => ({ ...prev, phone: "" }));
     } catch (err) {
-      setErrors((prev) => ({ ...prev, phone: err || "Failed to send OTP" }));
+      setErrors((prev) => ({ ...prev, phone: err || "Failed to send OTP. Try again." }));
     }
   };
 
+  // ─── Verify OTP then Submit ─────────────────────────────────────
+  // Critical: verifyCustomerPhoneOTP MUST succeed before calling onSubmit()
   const handleSubmit = async () => {
-    // 1. Validate UI
     if (formData.otp.some((d) => d === "")) {
-      setErrors((prev) => ({ ...prev, otp: "Please enter the complete 6-digit OTP." }));
+      setErrors((prev) => ({ ...prev, otp: "Please enter the complete OTP." }));
       return;
     }
 
     setIsSubmitting(true);
-    const otpString = formData.otp.join("");
+    const otp = formData.otp.join("");
 
     try {
-      // 2. Verify OTP via Redux first
-      // await dispatch(verifyPhoneOTP({ 
-      //   phoneNumber: formData.phoneNumber, 
-      //   otp: otpString 
-      // })).unwrap();
+      // Step 1: Verify the OTP — throws if invalid/expired
+      // await dispatch(
+      //   verifyCustomerPhoneOTP({ phone: formData.phoneNumber, otp })
+      // ).unwrap();
 
-      // 3. If verification passes, call the parent onSubmit (e.g., to save the whole profile)
+      // Step 2: Only if verification passed, fire the profile creation
       await onSubmit();
     } catch (err) {
-      // Handle server-side verification errors
-      setErrors((prev) => ({ ...prev, otp: err || "Invalid OTP. Please try again." }));
+      setErrors((prev) => ({
+        ...prev,
+        otp: err || "Invalid or expired OTP. Please try again.",
+      }));
     } finally {
       setIsSubmitting(false);
     }
@@ -87,7 +89,8 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
       <h2 className="text-2xl font-bold text-secondary mb-6">Verify Phone Number</h2>
 
       <div className="max-w-xl">
-        {/* Email */}
+
+        {/* ── Email (Read-only) ── */}
         <div className="mb-4 ms-3">
           <label className="block text-base font-medium mb-2 ms-1">Email</label>
           <input
@@ -98,7 +101,7 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
           />
         </div>
 
-        {/* Phone */}
+        {/* ── Phone Number ── */}
         <div className="mb-8 ms-3">
           <label className="block text-base font-medium mb-2 ms-1">Phone Number</label>
           <input
@@ -108,12 +111,14 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
               errors.phone ? "border-red-500" : "border-gray-300 focus:border-secondary"
             }`}
             value={formData.phoneNumber}
-            onChange={(e) => setFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))
+            }
           />
           {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
         </div>
 
-        {/* Send OTP Button */}
+        {/* ── Send OTP Button ── */}
         <div className="mb-4 ms-4">
           <button
             onClick={handleSendOtp}
@@ -123,7 +128,7 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
           </button>
         </div>
 
-        {/* OTP Inputs */}
+        {/* ── OTP Input Boxes ── */}
         {otpSent && (
           <div className="mb-8 ms-3">
             <label className="block text-base font-medium mb-4 ms-1">Enter OTP</label>
@@ -138,11 +143,11 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
                   onChange={(e) => handleOtpChange(e.target.value, i)}
                   onKeyDown={(e) => handleOtpKeyDown(e, i)}
                   className={`w-12 h-12 md:w-16 md:h-12 border-2 rounded-lg text-center text-xl font-bold transition-all focus:outline-none ${
-                    errors.otp 
-                      ? "border-red-500" 
-                      : formData.otp[i] 
-                        ? "border-secondary" // Green border if value exists
-                        : "border-gray-300" // Gray border if empty
+                    errors.otp
+                      ? "border-red-500"
+                      : formData.otp[i]
+                      ? "border-secondary"
+                      : "border-gray-300"
                   }`}
                 />
               ))}
@@ -152,15 +157,16 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
         )}
       </div>
 
-      {/* Submit Button */}
+      {/* ── Navigation Buttons ── */}
       <div className="flex justify-center items-center gap-4 pt-8">
         <button
           type="button"
           onClick={onBack}
-          className="md:w-sm w-xs  cursor-pointer bg-secondary text-white font-bold py-3 rounded-full  hover:bg-[#0e5641] transition-all">
-        
+          className="md:w-sm w-xs cursor-pointer bg-secondary text-white font-bold py-3 rounded-full hover:bg-[#0e5641] transition-all"
+        >
           Back
         </button>
+
         <button
           onClick={handleSubmit}
           disabled={isSubmitting}
@@ -185,4 +191,4 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
   );
 };
 
-export default Verification;
+export default CustomerVerification;

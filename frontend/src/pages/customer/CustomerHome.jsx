@@ -1,7 +1,7 @@
 import React from 'react'
 import { Outlet } from 'react-router-dom'
 
-function Home() {
+function CustomerHome() {
   return (
     <div>
         <Outlet/>
@@ -10,4 +10,4 @@ function Home() {
   )
 }
 
-export default Home
+export default CustomerHome;
