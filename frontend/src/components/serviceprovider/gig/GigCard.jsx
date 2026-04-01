@@ -1,27 +1,19 @@
-import React from "react";
+import {useNavigate} from "react-router-dom";
 import { IoStar } from "react-icons/io5";
 
 const GigCard = ({ gig }) => {
-    const statusStyles = {
-        online: "bg-green-500",
-        occupied: "bg-orange-500",
-        offline: "bg-gray-500",
-    };
+    const navigate = useNavigate();
+    console.log("GigCard Rendered with gig:", gig);
 
     return (
         <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow group flex flex-col h-full">
             {/* Image & Status Badge */}
-            <div className="relative h-44 bg-gray-100">
+            <div className="h-44 bg-gray-100">
                 <img
                     src={gig.images?.[0]?.url}
                     alt={gig.title}
                     className="w-full h-full object-cover"
                 />
-                <div className="absolute top-2 right-2">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase text-white shadow-sm ${statusStyles[gig.availabilityStatus] || statusStyles.offline}`}>
-                        {gig.availabilityStatus}
-                    </span>
-                </div>
             </div>
 
             {/* Content */}
@@ -37,7 +29,7 @@ const GigCard = ({ gig }) => {
                 </div>
 
                 {/* Title */}
-                <h3 className="font-bold text-base text-center leading-tight h-10 line-clamp-2 text-gray-900">
+                <h3 onClick={() => navigate(`/serviceprovider/gig-details/${gig._id}`)} className="font-bold cursor-pointer text-base text-center leading-tight h-10 line-clamp-2 text-gray-900">
                     {gig.title}
                 </h3>
 

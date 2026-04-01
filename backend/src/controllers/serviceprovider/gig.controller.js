@@ -82,7 +82,9 @@ export const createGig = asyncHandler(async (req, res) => {
 export const getMyGigs = asyncHandler(async (req, res) => {
   const gigs = await Gig.find({
     serviceProviderId: req.user._id,
-  }).populate("categoryId", "name").populate("serviceProviderId", "name");
+  })
+    .populate("categoryId", "name")
+    .populate("serviceProviderId", "name");
 
   return res
     .status(200)
@@ -92,7 +94,9 @@ export const getMyGigs = asyncHandler(async (req, res) => {
 //get single gig of a provider
 
 export const getGigById = asyncHandler(async (req, res) => {
-  const gig = await Gig.findById(req.params.id);
+  const gig = await Gig.findById(req.params.id)
+  .populate("categoryId", "name")
+  .populate("serviceProviderId", "name");
 
   if (!gig) {
     throw new ApiError(404, "Gig not found");
@@ -142,10 +146,13 @@ export const setGigOffline = asyncHandler(async (req, res) => {
   gig.statusMode = "manual";
 
   await gig.save();
+  const populatedGig = await Gig.findById(gig._id)
+  .populate("categoryId", "name")
+  .populate("subcategories", "name");
 
   return res
     .status(200)
-    .json(new ApiResponse(200, gig, "Gig set to offline manually"));
+    .json(new ApiResponse(200, populatedGig, "Gig set to offline manually"));
 });
 
 export const setGigOnline = asyncHandler(async (req, res) => {
@@ -161,10 +168,13 @@ export const setGigOnline = asyncHandler(async (req, res) => {
   gig.statusMode = "manual";
 
   await gig.save();
+  const populatedGig = await Gig.findById(gig._id)
+  .populate("categoryId", "name")
+  .populate("subcategories", "name");
 
   return res
     .status(200)
-    .json(new ApiResponse(200, gig, "Gig set to online and auto mode enabled"));
+    .json(new ApiResponse(200, populatedGig, "Gig set to online and auto mode enabled"));
 });
 
 //enabledauto mode when gig is updated
@@ -179,10 +189,13 @@ export const enableAutoMode = asyncHandler(async (req, res) => {
   gig.availabilityStatus = isOnline ? "online" : "offline";
 
   await gig.save();
+  const populatedGig = await Gig.findById(gig._id)
+  .populate("categoryId", "name")
+  .populate("subcategories", "name");
 
   return res
     .status(200)
-    .json(new ApiResponse(200, gig, "Auto availability mode enabled"));
+    .json(new ApiResponse(200, populatedGig, "Auto availability mode enabled"));
 });
 
 //update gig
@@ -196,21 +209,52 @@ export const updateGig = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Unauthorized");
   }
 
-  let { availabilityHours } = req.body;
+  // ✅ STEP 1: store OLD images FIRST
+  const oldImages = gig.images;
 
+  let { availabilityHours } = req.body;
   if (typeof availabilityHours === "string") {
     availabilityHours = JSON.parse(availabilityHours);
   }
-  const { title, description, categoryId, hourlyRate, inspectionRate } =
+
+  let { title, description, hourlyRate, inspectionRate, subcategoryIds } =
     req.body;
+
+  if (typeof subcategoryIds === "string") {
+    subcategoryIds = JSON.parse(subcategoryIds);
+  }
 
   if (title) gig.title = title;
   if (description) gig.description = description;
-  if (categoryId) gig.categoryId = categoryId;
   if (hourlyRate) gig.hourlyRate = hourlyRate;
   if (inspectionRate) gig.inspectionRate = inspectionRate;
   if (availabilityHours) gig.availabilityHours = availabilityHours;
+  if (subcategoryIds) gig.subcategories = subcategoryIds;
 
+  // ✅ STEP 2: parse existing images from frontend
+  let { existingImages } = req.body;
+  if (typeof existingImages === "string") {
+    existingImages = JSON.parse(existingImages);
+  }
+
+  // fallback safety
+  if (!existingImages) existingImages = [];
+
+  // ✅ STEP 3: detect deleted images BEFORE overwriting
+  const oldPublicIds = oldImages.map((img) => img.public_id);
+  const newPublicIds = existingImages.map((img) => img.public_id);
+
+  const deletedImages = oldPublicIds.filter((id) => !newPublicIds.includes(id));
+
+  // ✅ STEP 4: delete from cloudinary
+  for (const public_id of deletedImages) {
+    await deleteFromCloudinary(public_id);
+  }
+
+  // ✅ STEP 5: set remaining images
+  gig.images = existingImages;
+
+  // ✅ STEP 6: upload new images
   if (req.files && req.files.length > 0) {
     let newImages = [];
 
@@ -230,12 +274,16 @@ export const updateGig = asyncHandler(async (req, res) => {
     gig.images = [...gig.images, ...newImages];
   }
 
+  // ✅ AUTO MODE
   if (gig.statusMode === "auto") {
     const isOnline = checkIfWithinAvailability(gig.availabilityHours);
     gig.availabilityStatus = isOnline ? "online" : "offline";
   }
 
   await gig.save();
+  const populatedGig = await Gig.findById(gig._id)
+  .populate("categoryId", "name")
+  .populate("subcategories", "name");
 
-  return res.status(200).json(new ApiResponse(200, gig, "Gig updated"));
+  return res.status(200).json(new ApiResponse(200, populatedGig, "Gig updated"));
 });
