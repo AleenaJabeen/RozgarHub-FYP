@@ -182,6 +182,43 @@ export const checkAuth = createAsyncThunk(
     }
   },
 );
+
+export const addSavedAddress = createAsyncThunk(
+  "customerProfile/addSavedAddress",
+  async (address, { rejectWithValue }) => {
+    try {
+      const res = await axios.patch(
+        `${BASE_URL}/add-address`,
+        { address },
+        { withCredentials: true }
+      );
+      return res.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to add address"
+      );
+    }
+  }
+);
+
+export const removeSavedAddress = createAsyncThunk(
+  "customerProfile/removeSavedAddress",
+  async (address, { rejectWithValue }) => {
+    try {
+      const res = await axios.patch(
+        `${BASE_URL}/remove-address`,
+        { address },
+        { withCredentials: true }
+      );
+      return res.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to remove address"
+      );
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -262,6 +299,15 @@ const authSlice = createSlice({
         state.user = null;
         state.isAuthenticated = false;
         state.error = action.payload;
+      })
+      // ── Saved Addresses ──────────────────────
+      .addCase(addSavedAddress.fulfilled, (state, action) => {
+        // Automatically update the profile state with the new address list
+        state.profile = action.payload.data;
+      })
+      .addCase(removeSavedAddress.fulfilled, (state, action) => {
+        // Automatically update the profile state after removing an address
+        state.profile = action.payload.data;
       });
   },
 });

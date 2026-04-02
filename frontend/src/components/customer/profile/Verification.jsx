@@ -1,37 +1,38 @@
 import React, { useState, useRef } from "react";
 import { useDispatch } from "react-redux";
-import { sendCustomerPhoneOTP, verifyCustomerPhoneOTP } from "../../../store/customer/profile-slice";
+import { MdOutlineVerified } from "react-icons/md";
+import { IoShieldCheckmarkOutline } from "react-icons/io5";
+import {
+  sendCustomerPhoneOTP,
+  verifyCustomerPhoneOTP,
+} from "../../../store/customer/profile-slice";
 
-const CustomerVerification = ({ formData, setFormData, onSubmit, onBack }) => {
+const CustomerVerification = ({ formData, setFormData, onSubmit, onBack, user }) => {
   const dispatch = useDispatch();
-  const [errors, setErrors] = useState({});
-  const [otpSent, setOtpSent] = useState(false);
+  const [errors, setErrors]           = useState({});
+  const [otpSent, setOtpSent]         = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const otpRefs = useRef([]);
 
-  // ─── OTP Input Handlers ─────────────────────────────────────────
-  const handleOtpChange = (value, index) => {
-    // Only allow single digits
-    if (!/^\d?$/.test(value)) return;
+  // ─── Phone is already verified — lock the entire OTP section ────
+  const isAlreadyVerified = !!user?.isPhoneVerified;
 
+  // ─── OTP Input Handlers ──────────────────────────────────────────
+  const handleOtpChange = (value, index) => {
+    if (!/^\d?$/.test(value)) return;
     const newOtp = [...formData.otp];
     newOtp[index] = value;
     setFormData((prev) => ({ ...prev, otp: newOtp }));
-
-    // Auto-advance to next box
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
+    if (value && index < 5) otpRefs.current[index + 1]?.focus();
   };
 
   const handleOtpKeyDown = (e, index) => {
-    // Move to previous input on backspace if current is empty
     if (e.key === "Backspace" && !formData.otp[index] && index > 0) {
       otpRefs.current[index - 1]?.focus();
     }
   };
 
-  // ─── Phone Validation ───────────────────────────────────────────
+  // ─── Phone Validation ────────────────────────────────────────────
   const validatePhone = () => {
     const newErrors = {};
     if (!formData.phoneNumber.trim()) {
@@ -43,11 +44,11 @@ const CustomerVerification = ({ formData, setFormData, onSubmit, onBack }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // ─── Send OTP ───────────────────────────────────────────────────
+  // ─── Send OTP ────────────────────────────────────────────────────
   const handleSendOtp = async () => {
     if (!validatePhone()) return;
     try {
-      // await dispatch(sendCustomerPhoneOTP(formData.phoneNumber)).unwrap();
+      await dispatch(sendCustomerPhoneOTP(formData.phoneNumber)).unwrap();
       setOtpSent(true);
       setErrors((prev) => ({ ...prev, phone: "" }));
     } catch (err) {
@@ -55,24 +56,30 @@ const CustomerVerification = ({ formData, setFormData, onSubmit, onBack }) => {
     }
   };
 
-  // ─── Verify OTP then Submit ─────────────────────────────────────
-  // Critical: verifyCustomerPhoneOTP MUST succeed before calling onSubmit()
+  // ─── Verify OTP then Submit ──────────────────────────────────────
   const handleSubmit = async () => {
-    if (formData.otp.some((d) => d === "")) {
-      setErrors((prev) => ({ ...prev, otp: "Please enter the complete OTP." }));
-      return;
+    // If already verified, skip OTP gate and go straight to submit
+    if (!isAlreadyVerified) {
+      if (formData.otp.some((d) => d === "")) {
+        setErrors((prev) => ({ ...prev, otp: "Please enter the complete OTP." }));
+        return;
+      }
     }
 
     setIsSubmitting(true);
-    const otp = formData.otp.join("");
 
     try {
-      // Step 1: Verify the OTP — throws if invalid/expired
-      // await dispatch(
-      //   verifyCustomerPhoneOTP({ phone: formData.phoneNumber, otp })
-      // ).unwrap();
+      if (!isAlreadyVerified) {
+        // Gate: verify OTP first — throws if invalid/expired
+        await dispatch(
+          verifyCustomerPhoneOTP({
+            phone: formData.phoneNumber,
+            otp: formData.otp.join(""),
+          })
+        ).unwrap();
+      }
 
-      // Step 2: Only if verification passed, fire the profile creation
+      // Only reaches here if verified (or already was)
       await onSubmit();
     } catch (err) {
       setErrors((prev) => ({
@@ -102,34 +109,67 @@ const CustomerVerification = ({ formData, setFormData, onSubmit, onBack }) => {
         </div>
 
         {/* ── Phone Number ── */}
-        <div className="mb-8 ms-3">
+        <div className="mb-6 ms-3">
           <label className="block text-base font-medium mb-2 ms-1">Phone Number</label>
-          <input
-            type="text"
-            placeholder="03XX------"
-            className={`w-full px-4 py-2 border rounded-full focus:outline-none transition-colors ${
-              errors.phone ? "border-red-500" : "border-gray-300 focus:border-secondary"
-            }`}
-            value={formData.phoneNumber}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))
-            }
-          />
+
+          {isAlreadyVerified ? (
+            // ── Verified State ──────────────────────────────────────────
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                value={user.phone || formData.phoneNumber}
+                disabled
+                className="w-full px-4 py-2 border border-gray-200 bg-gray-100 text-gray-500 rounded-full outline-none cursor-not-allowed"
+              />
+              <div className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-full flex-shrink-0">
+                <MdOutlineVerified className="text-lg" />
+                <span className="text-xs font-bold whitespace-nowrap">Verified</span>
+              </div>
+            </div>
+          ) : (
+            // ── Unverified State ────────────────────────────────────────
+            <input
+              type="text"
+              placeholder="03XX------"
+              className={`w-full px-4 py-2 border rounded-full focus:outline-none transition-colors ${
+                errors.phone ? "border-red-500" : "border-gray-300 focus:border-secondary"
+              }`}
+              value={formData.phoneNumber}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))
+              }
+            />
+          )}
           {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
         </div>
 
-        {/* ── Send OTP Button ── */}
-        <div className="mb-4 ms-4">
-          <button
-            onClick={handleSendOtp}
-            className="px-8 py-2 cursor-pointer bg-secondary text-white rounded-full text-base font-medium hover:bg-[#0e5641] transition-all"
-          >
-            {otpSent ? "Resend OTP" : "Send OTP"}
-          </button>
-        </div>
+        {/* ── Verified Banner — replaces OTP section entirely ─────── */}
+        {isAlreadyVerified && (
+          <div className="ms-3 mb-6 flex items-start gap-4 px-5 py-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+            <IoShieldCheckmarkOutline className="text-emerald-500 text-3xl flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-emerald-700">Phone number securely verified</p>
+              <p className="text-xs text-emerald-600 mt-0.5 leading-relaxed">
+                Your phone has already been verified. You can update your other details and submit directly.
+              </p>
+            </div>
+          </div>
+        )}
 
-        {/* ── OTP Input Boxes ── */}
-        {otpSent && (
+        {/* ── Send OTP Button (hidden when already verified) ── */}
+        {!isAlreadyVerified && (
+          <div className="mb-4 ms-4">
+            <button
+              onClick={handleSendOtp}
+              className="px-8 py-2 cursor-pointer bg-secondary text-white rounded-full text-base font-medium hover:bg-[#0e5641] transition-all"
+            >
+              {otpSent ? "Resend OTP" : "Send OTP"}
+            </button>
+          </div>
+        )}
+
+        {/* ── OTP Input Boxes (hidden when already verified) ── */}
+        {!isAlreadyVerified && otpSent && (
           <div className="mb-8 ms-3">
             <label className="block text-base font-medium mb-4 ms-1">Enter OTP</label>
             <div className="flex md:gap-4 gap-2 ms-3">

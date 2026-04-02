@@ -9,6 +9,14 @@ const customerSchema = new Schema(
       unique: true,
       index: true,
     },
+    
+    savedAddresses: [
+      {
+        type: String,
+        trim: true,
+      }
+    ],
+
     savedGigs: [
       {
         type: Schema.Types.ObjectId,
@@ -28,6 +36,7 @@ const customerSchema = new Schema(
       default: 0,
       min: [0, "totalOrdersPlaced cannot be negative."],
     },
+    
     stripeCustomerId: {
       type: String,
       trim: true,
