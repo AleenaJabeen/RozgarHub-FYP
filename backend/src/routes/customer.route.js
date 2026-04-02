@@ -6,6 +6,8 @@ import {
   createCustomerProfile,
   updateCustomerProfile,
   getCustomerProfile,
+  addSavedAddress,
+  removeSavedAddress,
 } from "../controllers/customer/customer.controller.js";
 import { sendOtp, verifyOtp } from "../controllers/serviceprovider/profile.controller.js";
 
@@ -28,5 +30,9 @@ router.route("/get-profile").get(verifyJWT, getCustomerProfile);
 router.route("/send-otp").post(verifyJWT,  sendOtp);
 
 router.route("/verify-phone-otp").post(verifyJWT, verifyOtp);
+
+router.route("/add-address").patch(verifyJWT, addSavedAddress);
+
+router.route("/remove-address").patch(verifyJWT, removeSavedAddress);
 
 export default router;

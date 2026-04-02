@@ -10,58 +10,32 @@ import {
 } from "../../store/customer/profile-slice";
 import { showToast } from "../../utils/toastHelper";
 
+// ─── Blank address template ───────────────────────────────────────
+const blankAddress = { street: "", city: "", state: "", country: "", zipCode: "" };
+
 const CustomerProfile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { user }             = useSelector((state) => state.auth);
+  const { user: authUser } = useSelector((state) => state.auth);
   const { profile, loading } = useSelector((state) => state.customerProfile);
+  const profileUser = useSelector((state) => state.customerProfile.user);
 
-  // ─── Fetch existing profile on mount ────────────────────────────
   useEffect(() => {
     dispatch(getCustomerProfile());
   }, [dispatch]);
 
-  // ─── Smart Form State Initialization ────────────────────────────
-  // Priority: 1. localStorage draft  2. Server data  3. Blank defaults
   const [formData, setFormData] = useState(() => {
-    // Priority 1 — in-progress draft saved to localStorage
     const savedData = localStorage.getItem("customerProfileDraft");
     if (savedData) {
       const parsed = JSON.parse(savedData);
-      return { ...parsed, avatar: null }; // blobs can't be serialized
+      return { ...parsed, avatar: null };
     }
-
-    // Priority 2 — pre-fill from existing Redux server data
-    if (profile && user) {
-      const coords = user.location?.currentLocation?.coordinates;
-      return {
-        name:        user.name        || "",
-        email:       user.email       || "",
-        avatar:      null,
-        address: {
-          street:  user.location?.address?.street  || "",
-          city:    user.location?.address?.city    || "",
-          state:   user.location?.address?.state   || "",
-          country: user.location?.address?.country || "",
-          zipCode: user.location?.address?.zipCode || "",
-        },
-        location: {
-          // GeoJSON stores [longitude, latitude]
-          longitude: coords?.[0] ?? null,
-          latitude:  coords?.[1] ?? null,
-        },
-        phoneNumber: user.phone || "",
-        otp:         ["", "", "", "", "", ""],
-      };
-    }
-
-    // Priority 3 — brand new user, blank slate
     return {
-      name:        user?.name  || "",
-      email:       user?.email || "",
+      name:        authUser?.name  || "",
+      email:       authUser?.email || "",
       avatar:      null,
-      address:     { street: "", city: "", state: "", country: "", zipCode: "" },
+      addresses:   [{ ...blankAddress }],
       location:    { latitude: null, longitude: null },
       phoneNumber: "",
       otp:         ["", "", "", "", "", ""],
@@ -73,51 +47,92 @@ const CustomerProfile = () => {
     return savedStep ? parseInt(savedStep, 10) : 1;
   });
 
-  // ─── Persist draft to localStorage on every change ──────────────
   useEffect(() => {
-    if (!user) {
+    if (loading) return;
+
+    const coords = profileUser?.location?.currentLocation?.coordinates;
+
+    setFormData((prev) => ({
+      ...prev,
+      name:  authUser?.name  || prev.name,
+      email: authUser?.email || prev.email,
+      avatar: prev.avatar instanceof File ? prev.avatar : (profileUser?.avatar || null),
+      addresses: [
+        {
+          street:  profileUser?.location?.address?.street  || "",
+          city:    profileUser?.location?.address?.city    || "",
+          state:   profileUser?.location?.address?.state   || "",
+          country: profileUser?.location?.address?.country || "",
+          zipCode: profileUser?.location?.address?.zipCode || "",
+        },
+        ...(profile?.savedAddresses || []).slice(1, 3).map((raw) => {
+          const [street = "", city = "", state = "", country = "", zipCode = ""] =
+            raw.split(",").map((s) => s.trim());
+          return { street, city, state, country, zipCode };
+        }),
+      ],
+      location: {
+        longitude: coords?.[0] ?? prev.location.longitude,
+        latitude:  coords?.[1] ?? prev.location.latitude,
+      },
+      phoneNumber: profileUser?.phone || authUser?.phone || prev.phoneNumber,
+    }));
+  }, [loading, profile, profileUser]);
+
+  useEffect(() => {
+    if (!authUser) {
       localStorage.removeItem("customerProfileDraft");
       localStorage.removeItem("customerProfileStep");
       navigate("/login");
       return;
     }
-
-    // Omit the file blob — not serializable
     const { avatar, ...serializableData } = formData;
     localStorage.setItem("customerProfileDraft", JSON.stringify(serializableData));
     localStorage.setItem("customerProfileStep", String(step));
+  }, [formData, step, authUser]);
 
+  useEffect(() => {
     window.scrollTo(0, 0);
-  }, [formData, step, user]);
+  }, [step]);
 
   const nextStep = () => setStep((prev) => prev + 1);
   const prevStep = () => setStep((prev) => prev - 1);
 
-  // ─── Dynamic Submit: create vs. update ──────────────────────────
   const handleSubmit = async () => {
     const data = new FormData();
+    data.append("phone", formData.phoneNumber);
 
-    data.append("phone",   formData.phoneNumber);
-    data.append("street",  formData.address.street);
-    data.append("city",    formData.address.city);
-    data.append("state",   formData.address.state);
-    data.append("country", formData.address.country);
-    data.append("zipCode", formData.address.zipCode);
+    const primary = formData.addresses[0] || blankAddress;
+    data.append("street",  primary.street);
+    data.append("city",    primary.city);
+    data.append("state",   primary.state);
+    data.append("country", primary.country);
+    data.append("zipCode", primary.zipCode);
 
-    if (formData.avatar) {
+    const allAddressStrings = formData.addresses
+      .map(({ street, city, state, country, zipCode }) =>
+        [street, city, state, country, zipCode].filter(Boolean).join(", ")
+      )
+      .filter(Boolean);
+
+    if (allAddressStrings.length > 0) {
+      data.append("savedAddresses", JSON.stringify(allAddressStrings));
+    }
+
+    if (formData.avatar instanceof File) {
       data.append("avatar", formData.avatar);
     }
 
-    // Never send the string "null" — backend GeoJSON validation will reject it
     if (formData.location.longitude !== null && formData.location.latitude !== null) {
       data.append("longitude", formData.location.longitude);
       data.append("latitude",  formData.location.latitude);
     }
 
     try {
-      // If a Customer document already exists — update; otherwise — create
       const action   = profile ? updateCustomerProfile : createCustomerProfile;
       const response = await dispatch(action(data)).unwrap();
+
+      await dispatch(getCustomerProfile());
 
       localStorage.removeItem("customerProfileDraft");
       localStorage.removeItem("customerProfileStep");
@@ -128,9 +143,6 @@ const CustomerProfile = () => {
     }
   };
 
-  // ─── Loading State ───────────────────────────────────────────────
-  // Block render while GET is in-flight so the form doesn't flash
-  // blank defaults before server data arrives and re-fills it.
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -139,43 +151,35 @@ const CustomerProfile = () => {
     );
   }
 
+  // FIX: Merge authUser and profileUser so Verification ALWAYS knows if you're verified
+  const mergedUser = { ...authUser, ...profileUser };
+
   return (
     <div className="min-h-screen py-10 px-4">
       <div className="lg:p-8 md:p-6 p-2">
-
-        {/* ── 2-Step Stepper ── */}
         <div className="flex items-center justify-center mb-12 relative">
           {[1, 2].map((num) => (
             <React.Fragment key={num}>
               <div className="flex flex-col items-center z-10">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors ${
+                  onClick={() => setStep(num)}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors cursor-pointer ${
                     step >= num ? "bg-secondary text-white" : "bg-gray-400 text-primary"
                   }`}
                 >
                   {num}
                 </div>
-                <span
-                  className={`text-xs mt-2 font-semibold ${
-                    step === num ? "text-secondary" : "text-gray-400"
-                  }`}
-                >
+                <span className={`text-xs mt-2 font-semibold ${step === num ? "text-secondary" : "text-gray-400"}`}>
                   {num === 1 ? "Personal Info" : "Verification"}
                 </span>
               </div>
-
               {num < 2 && (
-                <div
-                  className={`w-24 md:w-40 h-[2px] mb-6 border-t-2 border-dashed ${
-                    step > num ? "border-secondary" : "border-gray-300"
-                  }`}
-                />
+                <div className={`w-24 md:w-40 h-[2px] mb-6 border-t-2 border-dashed ${step > num ? "border-secondary" : "border-gray-300"}`} />
               )}
             </React.Fragment>
           ))}
         </div>
 
-        {/* ── Step Renderer ── */}
         {step === 1 && (
           <CustomerPersonalInfo
             formData={formData}
@@ -189,6 +193,7 @@ const CustomerProfile = () => {
             setFormData={setFormData}
             onSubmit={handleSubmit}
             onBack={prevStep}
+            user={mergedUser}
           />
         )}
       </div>

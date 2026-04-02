@@ -59,14 +59,12 @@ const createCustomerProfile = asyncHandler(async (req, res) => {
 
   await User.findByIdAndUpdate(userId, { $set: userUpdate }, { new: true });
 
-  // 4. Create the Customer profile document
   const customerProfile = await Customer.create({ user: userId });
 
   res.status(201).json(
     new ApiResponse(201, customerProfile, "Customer profile created successfully.")
   );
 });
-
 
 const updateCustomerProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;
@@ -83,13 +81,11 @@ const updateCustomerProfile = asyncHandler(async (req, res) => {
     latitude,
   } = req.body;
 
-  // 1. Verify the Customer profile exists
   const customerProfile = await Customer.findOne({ user: userId });
   if (!customerProfile) {
     throw new ApiError(404, "Customer profile not found.");
   }
 
-  // 2. Upload new avatar if provided
   let avatarUrl;
   if (req.file?.path) {
     const uploadedAvatar = await uploadOnCloudinary(req.file.path, {
@@ -103,7 +99,6 @@ const updateCustomerProfile = asyncHandler(async (req, res) => {
     avatarUrl = uploadedAvatar.secure_url;
   }
 
-  // 3. Build partial User update — only include fields that were sent
   const userUpdate = {};
 
   if (name)      userUpdate.name    = name;
@@ -116,7 +111,6 @@ const updateCustomerProfile = asyncHandler(async (req, res) => {
   if (country)  userUpdate["location.address.country"] = country;
   if (zipCode)  userUpdate["location.address.zipCode"] = zipCode;
 
-  // Both coordinates must arrive together to form a valid GeoJSON Point
   if (longitude && latitude) {
     userUpdate["location.currentLocation"] = {
       type: "Point",
@@ -130,6 +124,22 @@ const updateCustomerProfile = asyncHandler(async (req, res) => {
     { returnDocument: "after", runValidators: true }
   );
 
+  let parsedAddresses = [];
+  if (req.body.savedAddresses) {
+    try {
+      parsedAddresses = JSON.parse(req.body.savedAddresses);
+    } catch (error) {
+      throw new ApiError(400, "Invalid format for saved addresses.");
+    }
+    
+    // Update the Customer document with the parsed addresses
+    await Customer.findOneAndUpdate(
+      { user: userId },
+      { $set: { savedAddresses: parsedAddresses } },
+      { new: true, runValidators: true }
+    );
+  }
+
   res.status(200).json(
     new ApiResponse(200, updatedUser, "Customer profile updated successfully.")
   );
@@ -138,9 +148,10 @@ const updateCustomerProfile = asyncHandler(async (req, res) => {
 const getCustomerProfile = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
+  // FIX: Explicitly added isPhoneVerified to the populate list
   const customerProfile = await Customer.findOne({ user: userId }).populate(
     "user",
-    "name email phone avatar location"
+    "name email phone avatar location isPhoneVerified" 
   );
 
   if (!customerProfile) {
@@ -152,5 +163,50 @@ const getCustomerProfile = asyncHandler(async (req, res) => {
   );
 });
 
+const addSavedAddress = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { address } = req.body;
 
-export { createCustomerProfile, updateCustomerProfile, getCustomerProfile};
+  if (!address?.trim()) {
+    throw new ApiError(400, "Address is required.");
+  }
+
+  const updatedProfile = await Customer.findOneAndUpdate(
+    { user: userId },
+    { $addToSet: { savedAddresses: address.trim() } },
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedProfile) {
+    throw new ApiError(404, "Customer profile not found.");
+  }
+
+  res.status(200).json(
+    new ApiResponse(200, updatedProfile, "Address saved successfully.")
+  );
+});
+
+const removeSavedAddress = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { address } = req.body;
+
+  if (!address?.trim()) {
+    throw new ApiError(400, "Address is required.");
+  }
+
+  const updatedProfile = await Customer.findOneAndUpdate(
+    { user: userId },
+    { $pull: { savedAddresses: address.trim() } },
+    { new: true }
+  );
+
+  if (!updatedProfile) {
+    throw new ApiError(404, "Customer profile not found.");
+  }
+
+  res.status(200).json(
+    new ApiResponse(200, updatedProfile, "Address removed successfully.")
+  );
+});
+
+export { createCustomerProfile, updateCustomerProfile, getCustomerProfile, addSavedAddress, removeSavedAddress };

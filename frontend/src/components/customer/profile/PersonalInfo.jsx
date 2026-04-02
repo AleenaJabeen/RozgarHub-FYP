@@ -1,12 +1,15 @@
 import React, { useState } from "react";
 import { IoPersonCircle } from "react-icons/io5";
-import { FaLocationCrosshairs } from "react-icons/fa6";
+import { FaLocationCrosshairs, FaTrash } from "react-icons/fa6";
+import { HiPlus } from "react-icons/hi";
+
+const blankAddress = { street: "", city: "", state: "", country: "", zipCode: "" };
 
 const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors]           = useState({});
   const [locationStatus, setLocationStatus] = useState("");
 
-  // ─── Geolocation ───────────────────────────────────────────────
+  // ─── Geolocation ────────────────────────────────────────────────
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
       setLocationStatus("Geolocation is not supported by your browser.");
@@ -14,8 +17,7 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
     }
     setLocationStatus("Requesting location...");
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
+      ({ coords: { latitude, longitude } }) => {
         setFormData((prev) => ({ ...prev, location: { latitude, longitude } }));
         setLocationStatus(`Location captured: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
       },
@@ -31,7 +33,7 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
     );
   };
 
-  // ─── Avatar Upload ──────────────────────────────────────────────
+  // ─── Avatar Upload ───────────────────────────────────────────────
   const handleAvatar = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -43,19 +45,43 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
     setErrors((prev) => ({ ...prev, avatar: "" }));
   };
 
-  // ─── Address ────────────────────────────────────────────────────
-  const handleAddressChange = (e) => {
+  // ─── Address Handlers ────────────────────────────────────────────
+  const handleAddressChange = (e, index) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, address: { ...prev.address, [name]: value } }));
-    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+    setFormData((prev) => {
+      const updated = [...prev.addresses];
+      updated[index] = { ...updated[index], [name]: value };
+      return { ...prev, addresses: updated };
+    });
+    // Clear per-field error
+    const key = `${name}_${index}`;
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
   };
 
-  // ─── Validation ─────────────────────────────────────────────────
+  const addAddress = () => {
+    if (formData.addresses.length >= 3) return;
+    setFormData((prev) => ({
+      ...prev,
+      addresses: [...prev.addresses, { ...blankAddress }],
+    }));
+  };
+
+  const removeAddress = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      addresses: prev.addresses.filter((_, i) => i !== index),
+    }));
+  };
+
+  // ─── Validation ──────────────────────────────────────────────────
   const validate = () => {
     const newErrors = {};
-    if (!formData.avatar)                    newErrors.avatar  = "Please upload a profile picture.";
-    if (!formData.address.street.trim())     newErrors.street  = "Street address is required.";
-    if (!formData.address.city.trim())       newErrors.city    = "City is required.";
+    if (!formData.avatar)
+      newErrors.avatar = "Please upload a profile picture.";
+    if (!formData.addresses[0]?.street?.trim())
+      newErrors["street_0"] = "Street address is required.";
+    if (!formData.addresses[0]?.city?.trim())
+      newErrors["city_0"] = "City is required.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -73,7 +99,11 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
             <div className="md:w-[250px] md:h-[250px] w-[150px] h-[150px] flex flex-col items-center justify-center text-center overflow-hidden">
               {formData.avatar ? (
                 <img
-                  src={URL.createObjectURL(formData.avatar)}
+                  src={
+                    formData.avatar instanceof File
+                      ? URL.createObjectURL(formData.avatar)
+                      : formData.avatar // existing Cloudinary URL string
+                  }
                   alt="Profile"
                   className="md:w-[250px] md:h-[250px] w-[150px] h-[150px] object-cover rounded-full"
                 />
@@ -88,7 +118,8 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
           {errors.avatar && <p className="text-red-500 text-xs mt-1">{errors.avatar}</p>}
         </div>
 
-        <div className="max-w-3xl flex-1 space-y-4 md:order-1">
+        {/* ── Left Fields ── */}
+        <div className="max-w-3xl flex-1 space-y-6 md:order-1">
 
           {/* ── Name & Email (Disabled) ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -112,63 +143,103 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
             </div>
           </div>
 
-          {/* ── Address ── */}
-          <div className="space-y-3 ms-3">
-            <label className="block text-base font-medium text-tertiary">Address Details</label>
+          {/* ── Address Blocks ── */}
+          {formData.addresses.map((addr, index) => (
+            <div
+              key={index}
+              className="space-y-3 ms-3 p-4 border border-gray-200 rounded-2xl relative"
+            >
+              {/* Block header */}
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-base font-medium text-tertiary">
+                  {index === 0 ? "Primary Address" : `Additional Address ${index}`}
+                </label>
 
-            <input
-              name="street"
-              type="text"
-              placeholder="Street Address"
-              className={`w-full px-4 py-2 border rounded-full focus:outline-none ${
-                errors.street ? "border-red-500" : "border-gray-300"
-              }`}
-              value={formData.address.street}
-              onChange={handleAddressChange}
-            />
-            {errors.street && <p className="text-red-500 text-xs">{errors.street}</p>}
+                {/* Remove button — only for index 1 and 2 */}
+                {index > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => removeAddress(index)}
+                    className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full transition-colors"
+                  >
+                    <FaTrash className="text-xs" />
+                    Remove
+                  </button>
+                )}
+              </div>
 
-            <div className="grid lg:grid-cols-2 grid-cols-1 gap-3">
               <input
-                name="city"
+                name="street"
                 type="text"
-                placeholder="City"
-                className={`px-4 py-2 border rounded-full focus:outline-none ${
-                  errors.city ? "border-red-500" : "border-gray-300"
+                placeholder="Street Address"
+                className={`w-full px-4 py-2 border rounded-full focus:outline-none ${
+                  errors[`street_${index}`] ? "border-red-500" : "border-gray-300"
                 }`}
-                value={formData.address.city}
-                onChange={handleAddressChange}
+                value={addr.street}
+                onChange={(e) => handleAddressChange(e, index)}
               />
-              <input
-                name="state"
-                type="text"
-                placeholder="State/Province"
-                className="px-4 py-2 border border-gray-300 rounded-full focus:outline-none"
-                value={formData.address.state}
-                onChange={handleAddressChange}
-              />
-            </div>
-            {errors.city && <p className="text-red-500 text-xs">{errors.city}</p>}
+              {errors[`street_${index}`] && (
+                <p className="text-red-500 text-xs">{errors[`street_${index}`]}</p>
+              )}
 
-            <div className="grid lg:grid-cols-2 grid-cols-1 gap-3">
-              <input
-                name="country"
-                type="text"
-                placeholder="Country"
-                className="px-4 py-2 border border-gray-300 rounded-full focus:outline-none"
-                value={formData.address.country}
-                onChange={handleAddressChange}
-              />
-              <input
-                name="zipCode"
-                type="text"
-                placeholder="Zip Code"
-                className="px-4 py-2 border border-gray-300 rounded-full focus:outline-none"
-                value={formData.address.zipCode}
-                onChange={handleAddressChange}
-              />
+              <div className="grid lg:grid-cols-2 grid-cols-1 gap-3">
+                <input
+                  name="city"
+                  type="text"
+                  placeholder="City"
+                  className={`px-4 py-2 border rounded-full focus:outline-none ${
+                    errors[`city_${index}`] ? "border-red-500" : "border-gray-300"
+                  }`}
+                  value={addr.city}
+                  onChange={(e) => handleAddressChange(e, index)}
+                />
+                <input
+                  name="state"
+                  type="text"
+                  placeholder="State/Province"
+                  className="px-4 py-2 border border-gray-300 rounded-full focus:outline-none"
+                  value={addr.state}
+                  onChange={(e) => handleAddressChange(e, index)}
+                />
+              </div>
+              {errors[`city_${index}`] && (
+                <p className="text-red-500 text-xs">{errors[`city_${index}`]}</p>
+              )}
+
+              <div className="grid lg:grid-cols-2 grid-cols-1 gap-3">
+                <input
+                  name="country"
+                  type="text"
+                  placeholder="Country"
+                  className="px-4 py-2 border border-gray-300 rounded-full focus:outline-none"
+                  value={addr.country}
+                  onChange={(e) => handleAddressChange(e, index)}
+                />
+                <input
+                  name="zipCode"
+                  type="text"
+                  placeholder="Zip Code"
+                  className="px-4 py-2 border border-gray-300 rounded-full focus:outline-none"
+                  value={addr.zipCode}
+                  onChange={(e) => handleAddressChange(e, index)}
+                />
+              </div>
             </div>
-          </div>
+          ))}
+
+          {/* ── Add Another Address Button ── */}
+          {formData.addresses.length < 3 && (
+            <div className="ms-3">
+              <button
+                type="button"
+                onClick={addAddress}
+                className="flex items-center gap-2 px-5 py-2.5 border-2 border-dashed border-secondary text-secondary rounded-full text-sm font-semibold hover:bg-secondary hover:text-white transition-all"
+              >
+                <HiPlus className="text-base" />
+                Add Another Address
+              </button>
+            </div>
+          )}
 
           {/* ── Geolocation ── */}
           <div className="ms-3">
