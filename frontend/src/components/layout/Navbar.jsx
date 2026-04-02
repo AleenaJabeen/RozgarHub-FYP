@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { IoMenu, IoClose, IoLogOutOutline, IoChevronDown   IoPersonOutline,
+import { 
+  IoMenu, IoClose, IoLogOutOutline, IoChevronDown, IoPersonOutline 
 } from "react-icons/io5";
 import { Logo2 } from "../../assets";
 import { useDispatch, useSelector } from "react-redux";
@@ -54,10 +55,11 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Close mobile menu on route change
+  // Close menus on route change
   useEffect(() => {
-    setIsOpen(false);
-    setIsDropdownOpen(false);
+    setMobileOpen(false);
+    setDropdownOpen(false);
+    setDesktopMegaOpen(false);
   }, [location.pathname]);
 
   const handleLogout = async () => {
@@ -86,27 +88,23 @@ const Navbar = () => {
       { name: "Inbox", href: "/inbox" },
     ],
     serviceprovider: [
-      { name: 'Home', href: '/serviceprovider' }, // Renamed from Dashboard to Home
+      { name: 'Home', href: '/serviceprovider' },
       { name: 'Gigs', href: '/serviceprovider/gigs' },
       { name: 'Orders', href: '/serviceprovider/orders' },
     ]
-      { name: "Dashboard", href: "/serviceprovider" },
-      { name: "Gigs", href: "/serviceprovider/gigs" },
-      { name: "Orders", href: "/serviceprovider/orders" },
-    ],
   };
 
   const currentLinks = navLinks[role] || navLinks.pending;
 
   const Avatar = ({ size = "sm" }) => {
-    const sizeClass = size === "sm" ? "w-10 h-10" : "w-16 h-16";
-    const textClass = size === "sm" ? "text-base" : "text-2xl";
+    const sizeClass = size === "sm" ? "w-10 h-10" : "w-14 h-14";
+    const textClass = size === "sm" ? "text-base" : "text-xl";
     return (
-      <div className={`${sizeClass} rounded-full border border-gray-300 overflow-hidden flex-shrink-0`}>
+      <div className={`${sizeClass} rounded-full border-2 border-gray-200 overflow-hidden flex-shrink-0 bg-white`}>
         {avatar ? (
           <img src={avatar} alt={name} className="w-full h-full object-cover" />
         ) : (
-          <div className={`w-full h-full flex items-center justify-center text-secondary font-bold ${textClass}`}>
+          <div className={`w-full h-full flex items-center justify-center text-secondary font-bold ${textClass} bg-secondary/10`}>
             {name[0]?.toUpperCase()}
           </div>
         )}
@@ -144,8 +142,8 @@ const Navbar = () => {
   );
 
   return (
-    <nav className="bg-primary shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border-b border-gray-100 sticky top-0 z-50 transition-all duration-300">
-      <div className="w-full px-4 sm:px-6 lg:px-8">
+    <nav className="bg-white shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border-b border-gray-100 sticky top-0 z-50 transition-all duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           
           {/* Logo */}
@@ -160,62 +158,53 @@ const Navbar = () => {
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
             <div className="flex space-x-8">
-              {currentLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  to={link.href}
-                  className="relative group text-gray-600 font-semibold transition-colors py-2"
-                >
-                  <span className="group-hover:text-secondary transition-colors duration-300">
-                    {link.name}
-                  </span>
-                  {/* Animated Underline */}
-                  <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-secondary transition-all duration-300 group-hover:w-full rounded-full"></span>
-                </Link>
-              ))}
-            </div>
-            {currentLinks.map((link) =>
-              link.isMega ? (
-                <div
-                  key={link.name}
-                  className="relative h-20 flex items-center"
-                  ref={megaMenuRef}
-                  onMouseEnter={() => setDesktopMegaOpen(true)}
-                  onMouseLeave={() => setDesktopMegaOpen(false)}
-                >
-                  <button
-                    onClick={() => setDesktopMegaOpen((prev) => !prev)}
-                    className={`flex items-center text-gray-600 hover:text-secondary font-semibold transition-colors ${desktopMegaOpen ? "text-secondary" : ""}`}
+              {currentLinks.map((link) =>
+                link.isMega ? (
+                  <div
+                    key={link.name}
+                    className="relative h-20 flex items-center"
+                    ref={megaMenuRef}
+                    onMouseEnter={() => setDesktopMegaOpen(true)}
+                    onMouseLeave={() => setDesktopMegaOpen(false)}
                   >
-                    {link.name}
-                  </button>
-
-                  {desktopMegaOpen && (
-                    <div
-                      className="absolute top-[90%] lg:right-[-5rem] md:right-[-7rem] w-[75vw] bg-white shadow-2xl border border-gray-300 p-8 animate-in fade-in slide-in-from-top-2 duration-300"
-                      style={{ zIndex: 100 }}
+                    <button
+                      onClick={() => setDesktopMegaOpen((prev) => !prev)}
+                      className={`flex items-center text-gray-600 hover:text-secondary font-semibold transition-colors ${desktopMegaOpen ? "text-secondary" : ""}`}
                     >
-                      <MegaMenuContent onLinkClick={() => setDesktopMegaOpen(false)} />
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Link
-                  key={link.name}
-                  to={link.href}
-                  className="text-gray-600 hover:text-secondary font-semibold"
-                >
-                  {link.name}
-                </Link>
-              )
-            )}
+                      {link.name}
+                    </button>
 
+                    {desktopMegaOpen && (
+                      <div
+                        className="absolute top-[90%] left-1/2 -translate-x-1/2 w-[75vw] max-w-5xl bg-white shadow-2xl rounded-2xl border border-gray-100 p-8 animate-in fade-in slide-in-from-top-2 duration-300"
+                        style={{ zIndex: 100 }}
+                      >
+                        <MegaMenuContent onLinkClick={() => setDesktopMegaOpen(false)} />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Link
+                    key={link.name}
+                    to={link.href}
+                    className="relative group text-gray-600 font-semibold transition-colors py-2 h-20 flex items-center"
+                  >
+                    <span className="group-hover:text-secondary transition-colors duration-300">
+                      {link.name}
+                    </span>
+                    <span className="absolute left-0 bottom-6 w-0 h-0.5 bg-secondary transition-all duration-300 group-hover:w-full rounded-full"></span>
+                  </Link>
+                )
+              )}
+            </div>
+
+            {/* Desktop Auth/Profile Actions */}
             {role === "pending" ? (
               <div className="flex items-center space-x-5 ml-4 border-l border-gray-200 pl-8">
                 <Link to="/auth?mode=login" className="text-gray-600 font-semibold hover:text-secondary transition-colors">
                   Sign In
                 </Link>
-                <Link to="/auth?mode=signup" className="bg-secondary text-white px-6 py-2.5 rounded-full font-bold shadow-md shadow-secondary/20 hover:bg-[#0e5641] hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+                <Link to="/auth?mode=signup" className="bg-secondary text-white px-6 py-2.5 rounded-full font-bold shadow-md shadow-secondary/20 hover:bg-[#0e5641] hover:-translate-y-0.5 transition-all duration-300">
                   Join Now
                 </Link>
               </div>
@@ -223,59 +212,24 @@ const Navbar = () => {
               <div className="relative ml-4 border-l border-gray-200 pl-8" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen((prev) => !prev)}
-                  className="flex items-center focus:outline-none"
+                  className="flex items-center focus:outline-none group"
                 >
-                  <div className={`w-11 h-11 rounded-full border-2 overflow-hidden transition-all duration-300 ${isDropdownOpen ? 'border-secondary shadow-md shadow-secondary/20' : 'border-gray-200 group-hover:border-secondary/50'}`}>
-                    {avatar ? (
-                      <img
-                        src={avatar}
-                        alt={name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-secondary/10 flex items-center justify-center text-secondary font-bold text-lg">
-                        {name[0]?.toUpperCase()}
-                      </div>
-                    )}
+                  <div className={`rounded-full transition-all duration-300 ${dropdownOpen ? 'ring-2 ring-secondary ring-offset-2' : 'group-hover:ring-2 group-hover:ring-secondary/50 group-hover:ring-offset-2'}`}>
+                    <Avatar size="sm" />
                   </div>
-                  <Avatar size="sm" />
                 </button>
 
                 {/* Desktop Dropdown */}
-                {isDropdownOpen && (
-                  <div className="absolute right-0 mt-4 w-60 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                    
-                    {/* Dropdown Header */}
-                    <div className="flex items-center p-4 bg-gray-50/50 border-b border-gray-100">
-                      <div className="w-10 h-10 rounded-full border border-gray-200 overflow-hidden flex-shrink-0">
-                        {avatar ? (
-                          <img src={avatar} alt={name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-white flex items-center justify-center text-secondary font-bold">
-                            {name[0]?.toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-                      <div className="ml-3 overflow-hidden">
-                        <p className="text-sm font-bold text-gray-800 truncate">
-                          {capitalizeWords(name)}
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">{email}</p>
-                      </div>
                 {dropdownOpen && (
-                  <div
-                    onClick={() => setDropdownOpen(false)}
-                    className="absolute right-0 mt-3 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 px-4 animate-in fade-in zoom-in duration-200 min-w-[200px]"
-                  >
-                    <div className="flex items-center gap-3 border-b p-2 border-gray-300">
+                  <div className="absolute right-0 mt-4 w-60 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="flex items-center p-4 bg-gray-50/50 border-b border-gray-100">
                       <Avatar size="sm" />
-                      <div>
+                      <div className="ml-3 overflow-hidden">
                         <p className="text-sm font-bold text-gray-800 truncate">{capitalizeWords(name)}</p>
                         <p className="text-xs text-gray-500 truncate">{email}</p>
                       </div>
                     </div>
 
-                    {/* Dropdown Links */}
                     <div className="py-2">
                       <Link
                         to={role === "serviceprovider" ? "/serviceprovider/view-profile" : "/customer/view-profile"}
@@ -286,7 +240,6 @@ const Navbar = () => {
                       </Link>
                     </div>
 
-                    {/* Dropdown Footer */}
                     <div className="border-t border-gray-100 p-2">
                       <button
                         onClick={handleLogout}
@@ -296,30 +249,6 @@ const Navbar = () => {
                         Log Out
                       </button>
                     </div>
-                    <Link
-
-                      to={
-                        role === "serviceprovider"
-                          ? "/serviceprovider"
-                          : "/customer"
-                      }
-                      className="flex cursor-pointer items-center px-4 py-4 text-base text-gray-600 hover:bg-gray-50"
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                 
-                      to={role === "serviceprovider" ? "/serviceprovider/view-profile" : "/customer/view-profile"}
-                      className="flex items-center cursor-pointer px-4 py-2.5 text-base text-gray-600 hover:bg-gray-50"
-                    >
-                      Profile
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center border-t border-gray-300 px-4 py-3 text-base text-gray-600"
-                    >
-                      Log Out <IoLogOutOutline className="ms-2 text-lg" />
-                    </button>
                   </div>
                 )}
               </div>
@@ -329,18 +258,12 @@ const Navbar = () => {
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
             <button
-              onClick={() => setIsOpen(!isOpen)}
+              onClick={() => setMobileOpen(!mobileOpen)}
               className="text-gray-600 hover:text-secondary transition-colors p-2 focus:outline-none"
             >
-              {isOpen ? <IoClose size={28} /> : <IoMenu size={28} />}
+              {mobileOpen ? <IoClose size={28} /> : <IoMenu size={28} />}
             </button>
           </div>
-          <button
-            onClick={() => setMobileOpen((prev) => !prev)}
-            className="md:hidden text-secondary"
-          >
-            {mobileOpen ? <IoClose size={30} /> : <IoMenu size={30} />}
-          </button>
         </div>
       </div>
 
@@ -350,15 +273,7 @@ const Navbar = () => {
           
           {role !== "pending" && (
             <div className="px-6 py-6 bg-gradient-to-b from-gray-50 to-white border-b border-gray-100 flex items-center space-x-4">
-              <div className="w-14 h-14 rounded-full border-2 border-secondary shadow-md overflow-hidden flex-shrink-0">
-                {avatar ? (
-                  <img src={avatar} alt={name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="bg-secondary/10 h-full w-full flex items-center justify-center text-secondary text-xl font-bold">
-                    {name[0]?.toUpperCase()}
-                  </div>
-                )}
-              </div>
+              <Avatar size="lg" />
               <div className="overflow-hidden">
                 <h3 className="font-bold text-lg text-gray-800 truncate">{capitalizeWords(name)}</h3>
                 <p className="text-sm text-gray-500 truncate">{email}</p>
@@ -373,14 +288,10 @@ const Navbar = () => {
                   <div className="w-full">
                     <button
                       onClick={() => setMobileMegaOpen((prev) => !prev)}
-                      className={`flex justify-between items-center w-full px-4 py-4 text-base font-semibold rounded-xl transition-colors ${
-                        mobileMegaOpen ? "bg-secondary/10 text-secondary" : "text-gray-600 hover:bg-gray-50"
-                      }`}
+                      className={`flex justify-between items-center w-full px-4 py-4 text-base font-semibold rounded-xl transition-colors ${mobileMegaOpen ? "bg-secondary/10 text-secondary" : "text-gray-600 hover:bg-gray-50"}`}
                     >
                       {link.name}
-                      <IoChevronDown
-                        className={`transition-transform duration-300 ${mobileMegaOpen ? "rotate-180" : ""}`}
-                      />
+                      <IoChevronDown className={`transition-transform duration-300 ${mobileMegaOpen ? "rotate-180" : ""}`} />
                     </button>
 
                     {mobileMegaOpen && (
@@ -417,22 +328,13 @@ const Navbar = () => {
                   </Link>
                 )}
               </React.Fragment>
-              <Link
-                key={link.name}
-                to={link.href}
-                className="block px-4 py-3 text-base font-semibold text-gray-700 hover:bg-secondary/10 hover:text-secondary rounded-xl transition-colors"
-              >
-                {link.name}
-              </Link>
             ))}
 
             {role !== "pending" && (
               <Link
                 to={role === "serviceprovider" ? "/serviceprovider/view-profile" : "/customer/view-profile"}
-                className="flex items-center gap-3 px-4 py-3 text-base font-semibold text-gray-700 hover:bg-secondary/10 hover:text-secondary rounded-xl transition-colors mt-2"
-                to="/profile"
                 onClick={closeMobileMenu}
-                className="block px-4 py-4 text-base text-gray-600 font-semibold hover:bg-secondary/10 rounded-xl"
+                className="flex items-center gap-3 px-4 py-4 text-base font-semibold text-gray-700 hover:bg-secondary/10 hover:text-secondary rounded-xl transition-colors mt-2"
               >
                 <IoPersonOutline className="text-xl text-gray-400" />
                 Profile Settings
@@ -445,16 +347,14 @@ const Navbar = () => {
                   <Link
                     to="/auth?mode=login"
                     onClick={closeMobileMenu}
-                    className="block text-center w-full py-4 font-medium text-gray-600 border-2 border-gray-200 rounded-xl"
                     className="block text-center w-full py-3.5 font-bold text-gray-700 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-xl transition-all"
                   >
                     Sign In
                   </Link>
                   <Link
                     to="/auth?mode=signup"
-                    className="block text-center w-full py-3.5 font-bold bg-secondary text-white rounded-xl shadow-md shadow-secondary/20 hover:bg-[#0e5641] transition-all"
                     onClick={closeMobileMenu}
-                    className="block text-center w-full py-4 font-medium bg-secondary text-white rounded-xl shadow-lg"
+                    className="block text-center w-full py-3.5 font-bold bg-secondary text-white rounded-xl shadow-md shadow-secondary/20 hover:bg-[#0e5641] transition-all"
                   >
                     Join RozgarHub
                   </Link>
@@ -462,9 +362,8 @@ const Navbar = () => {
               ) : (
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center justify-center items-center gap-2 p-3 text-base font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colorsfont-semibold hover:bg-red-50 rounded-xl"
+                  className="w-full flex items-center justify-center gap-2 p-3 text-base font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors"
                 >
-                  Log Out <IoLogOutOutline size={24} />
                   <IoLogOutOutline size={22} />
                   Log Out
                 </button>
