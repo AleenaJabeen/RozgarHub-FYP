@@ -1,16 +1,19 @@
 import React, { useEffect } from "react";
-import { useOutletContext, useLocation, useNavigate, Outlet } from "react-router-dom";
 import HeroSection from "../components/ui/HeroSection";
+import HowItWorks from "../components/ui/HowItWorks";
+import CategorySection from "../components/ui/CategorySection";
+import TutorialSection from "../components/ui/TutorialSection";
 
 function Home() {
-  const location = useLocation();
-  const navigate = useNavigate();
+
 
  
   return (
     <div>
       <HeroSection  />
-     
+      <CategorySection/>
+     <HowItWorks/>
+     <TutorialSection/>
     </div>
   );
 }
