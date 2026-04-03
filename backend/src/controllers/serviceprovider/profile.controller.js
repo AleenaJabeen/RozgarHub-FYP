@@ -5,8 +5,6 @@ import { ServiceProvider } from "../../models/serviceProvider.model.js";
 import {User} from '../../models/user.model.js';
 
 
-
-
 import { uploadOnCloudinary } from "../../utils/cloudinary.js";
 import twilio from "twilio";
 
@@ -233,7 +231,6 @@ const updateServiceProviderProfile = asyncHandler(async (req, res) => {
     latitude,
     
   } = req.body;
-
   // 1. Check if profile exists
   const providerProfile = await ServiceProvider.findOne({ user: userId });
   if (!providerProfile) {
@@ -253,11 +250,25 @@ const updateServiceProviderProfile = asyncHandler(async (req, res) => {
   // 3. Handle Avatar Update (if provided)
   let avatarUrl;
   if (req.files?.avatar?.[0]) {
-    const uploadedAvatar = await uploadOnCloudinary(req.files.avatar[0].path, {
-      folder: "providers/avatar",
-    });
-    avatarUrl = uploadedAvatar?.secure_url;
+  try {
+    // console.log("Uploading avatar:", req.files.avatar[0]);
+
+    const uploadedAvatar = await uploadOnCloudinary(
+      req.files.avatar[0].path,
+      { folder: "providers/avatar" }
+    );
+
+    if (!uploadedAvatar || !uploadedAvatar.secure_url) {
+      throw new Error("Avatar upload failed");
+    }
+
+    avatarUrl = uploadedAvatar.secure_url;
+  } catch (error) {
+    console.error("Avatar upload error:", error);
+    throw new ApiError(500, "Error uploading avatar");
   }
+}
+ 
 
   // 4. Parsing Skills (if provided)
   let parsedSkills = providerProfile.skills;

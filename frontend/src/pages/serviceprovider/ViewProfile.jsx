@@ -28,6 +28,7 @@ const ViewProfile = () => {
 
   const timerRef = useRef(null);
   const latestDataRef = useRef({});
+  const originalDataRef = useRef({});
 
   useEffect(
     () => () => {
@@ -40,82 +41,100 @@ const ViewProfile = () => {
     dispatch(getProviderProfile()).unwrap().catch(console.error);
   }, [dispatch]);
 
-  useEffect(() => {
-    if (profile && user && isInitialLoad.current) {
-      const initial = {
-        bio: profile.bio || "",
-        experienceDetails: profile.experienceDetails || "",
-        skills: profile.skills || [],
-        name: capitalizeWords(user.name) || "",
-        city: capitalizeWords(user.location?.address?.city) || "",
-        urgentHire: profile.urgentHire || "no",
-        experienceDocuments: profile.experienceDocuments || [],
-        certificates: profile.certificates || [],
-        education: profile.education || "",
-      };
+ useEffect(() => {
+  if (profile && user && isInitialLoad.current) {
+    const initial = {
+      bio: profile.bio || "",
+      experienceDetails: profile.experienceDetails || "",
+      skills: profile.skills || [],
+      name: capitalizeWords(user.name) || "",
+      city: capitalizeWords(user.location?.address?.city) || "",
+      urgentHire: profile.urgentHire ?? false,
+      experienceDocuments: profile.experienceDocuments || [],
+      certificates: profile.certificates || [],
+      education: profile.education || "",
+    };
 
-      setFormData(initial);
-      latestDataRef.current = initial;
+    setFormData(initial);
+    latestDataRef.current = initial;
+    originalDataRef.current = initial; // ✅ store original
 
-      isInitialLoad.current = false; // ✅ prevent future overrides
-    }
-  }, [profile, user]);
-  const scheduleSave = useCallback(
-    (nextData) => {
-      latestDataRef.current = nextData;
+    isInitialLoad.current = false;
+  }
+}, [profile, user]);
+ const scheduleSave = useCallback((nextData) => {
+  latestDataRef.current = nextData;
 
-      if (timerRef.current) clearTimeout(timerRef.current);
+  if (timerRef.current) clearTimeout(timerRef.current);
 
-      setSaving(true); // ✅ show saving
+  timerRef.current = setTimeout(() => {
+    const current = latestDataRef.current;
+    const original = originalDataRef.current;
 
-      timerRef.current = setTimeout(() => {
-        const d = latestDataRef.current;
-        const payload = new FormData();
+    const payload = new FormData();
+    let hasChanges = false;
 
-        payload.append("bio", d.bio || "");
-        payload.append("experienceDetails", d.experienceDetails || "");
-        payload.append(
-          "skills",
-          Array.isArray(d.skills) ? d.skills.join(",") : "",
-        );
-        payload.append("name", d.name || "");
-        payload.append("city", d.city || "");
-        payload.append("urgentHire", d.urgentHire); 
-        if (Array.isArray(d.experience)) {
-          payload.append("experience", JSON.stringify(d.experience));
-        }
-        // Handle Certificates
-        if (Array.isArray(d.certificates)) {
-          d.certificates.forEach((cert) => {
+    // 🔥 Compare fields
+    Object.keys(current).forEach((key) => {
+      const currentValue = current[key];
+      const originalValue = original[key];
+
+      // Handle arrays
+      const isEqual =
+        Array.isArray(currentValue)
+          ? JSON.stringify(currentValue) === JSON.stringify(originalValue)
+          : currentValue === originalValue;
+
+      if (!isEqual) {
+        hasChanges = true;
+
+        if (key === "skills") {
+          payload.append("skills", currentValue.join(","));
+        } else if (key === "education") {
+          payload.append("education", JSON.stringify(currentValue));
+        } else if (key === "certificates") {
+          currentValue.forEach((cert) => {
             if (cert.file) {
               payload.append("certificates", cert.file);
-            } else {
-              payload.append("existingCertificates", cert);
             }
           });
+        } else if (key === "avatar" && currentValue instanceof File) {
+          payload.append("avatar", currentValue);
+        } else {
+          payload.append(key, currentValue);
         }
-        payload.append("education", JSON.stringify(d.education || ""));
-        if (d.avatar) {
-          // If d.avatar is a Base64 string from FileReader
-          payload.append("avatar", d.avatar);
-        }
-        dispatch(updateProviderProfile(payload)).finally(() =>
-          setSaving(false),
-        ); // ✅ stop saving
-      }, 6000);
-    },
-    [dispatch],
-  );
-
-  const updateField = (updates) => {
-    setFormData((prev) => {
-      const next = { ...prev, ...updates };
-      scheduleSave(next);
-      return next;
+      }
     });
-  };
 
-  if (loading || (!profile && !user)) {
+    // 🚫 No changes → NO API CALL
+    if (!hasChanges) return;
+
+    setSaving(true);
+
+    dispatch(updateProviderProfile(payload))
+      .unwrap()
+      .then(() => {
+        originalDataRef.current = { ...current }; // ✅ update baseline
+      })
+      .finally(() => setSaving(false));
+  }, 2000); // ⏱ better UX than 6s
+}, [dispatch]);
+
+ const updateField = (updates) => {
+  setFormData((prev) => {
+    const next = { ...prev, ...updates };
+
+    // 🚫 prevent unnecessary scheduling
+    const isSame = JSON.stringify(prev) === JSON.stringify(next);
+    if (!isSame) {
+      scheduleSave(next);
+    }
+
+    return next;
+  });
+};
+
+  if ((!profile && !user)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary" />
