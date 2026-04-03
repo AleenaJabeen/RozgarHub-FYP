@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { IoMenu, IoClose, IoLogOutOutline, IoChevronDown } from "react-icons/io5";
+import { IoMenu, IoClose, IoLogOutOutline, IoChevronDown, IoSettingsOutline, IoPersonOutline, IoGridOutline, IoChatbubblesOutline } from "react-icons/io5";
 import { Logo2 } from "../../assets";
 import { useDispatch, useSelector } from "react-redux";
 import { logoutUser } from "../../store/auth-slice";
@@ -107,7 +107,7 @@ const Navbar = () => {
       {categories.map((cat) => (
         <div key={cat.name} className="space-y-3">
           <div className="group/cat mb-4">
-            <h4 className="relative pb-2 font-bold text-tertiary text-sm uppercase tracking-wider inline-block w-full">
+            <h4 className="cursor-pointer relative pb-2 font-bold text-tertiary text-sm uppercase tracking-wider inline-block w-full">
               {cat.name}
               <span className="absolute rounded-full bottom-0 left-0 w-0 h-[3px] bg-secondary transition-all duration-500 ease-in-out group-hover/cat:w-[70%]" />
               <span className="absolute rounded-full bottom-0 left-0 w-[70%] h-[1px] bg-gray-100 -z-10" />
@@ -116,7 +116,7 @@ const Navbar = () => {
               {cat.subcategories.map((sub) => (
                 <li key={sub}>
                   <Link
-                    to={`/services/${sub.toLowerCase().replace(/ /g, "-")}`}
+                    to={`/`}
                     onClick={onLinkClick}
                     className="text-sm text-gray-500 hover:text-secondary hover:translate-x-1 hover:font-bold transition-all inline-block"
                   >
@@ -152,14 +152,14 @@ const Navbar = () => {
                 >
                   <button
                     onClick={() => setDesktopMegaOpen((prev) => !prev)}
-                    className={`flex items-center text-gray-600 hover:text-secondary font-semibold transition-colors ${desktopMegaOpen ? "text-secondary" : ""}`}
+                    className={`flex cursor-pointer  items-center text-gray-600 hover:text-secondary font-semibold transition-colors ${desktopMegaOpen ? "text-secondary" : ""}`}
                   >
                     {link.name}
                   </button>
 
                   {desktopMegaOpen && (
                     <div
-                      className="absolute top-[90%] lg:right-[-5rem] md:right-[-7rem] w-[75vw] bg-white shadow-2xl border border-gray-300 p-8 animate-in fade-in slide-in-from-top-2 duration-300"
+                      className="absolute top-[90%] lg:right-[-5rem] md:right-[-7rem] w-[75vw] bg-white shadow-2xl border border-gray-300 p-8 animate-in fade-in slide-in-from-top-2 duration-300 rounded-xl"
                       style={{ zIndex: 100 }}
                     >
                       <MegaMenuContent onLinkClick={() => setDesktopMegaOpen(false)} />
@@ -178,7 +178,7 @@ const Navbar = () => {
             )}
 
             {role === "pending" ? (
-              <div className="flex items-center space-x-4">
+              <div className="cursor-pointer flex items-center space-x-4">
                 <Link to="/auth?mode=login" className="text-gray-600 font-semibold hover:text-secondary">
                   Sign In
                 </Link>
@@ -187,10 +187,10 @@ const Navbar = () => {
                 </Link>
               </div>
             ) : (
-              <div className="relative" ref={dropdownRef}>
+              <div className="cursor-pointer relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen((prev) => !prev)}
-                  className="flex items-center focus:outline-none"
+                  className="cursor-pointer flex items-center focus:outline-none"
                 >
                   <Avatar size="sm" />
                 </button>
@@ -212,24 +212,35 @@ const Navbar = () => {
                       to={
                         role === "serviceprovider"
                           ? "/serviceprovider"
-                          : "/customer"
+                          : ""
                       }
-                      className="flex cursor-pointer items-center px-4 py-4 text-base text-gray-600 hover:bg-gray-50"
+                      className={`${role === "customer"?"hidden":"flex"}  gap-2 cursor-pointer items-center px-2 py-4 text-base text-gray-600 hover:bg-gray-50`}
                     >
+                      <IoGridOutline className="text-lg" />
                       Dashboard
                     </Link>
                     <Link
                  
                       to={role === "serviceprovider" ? "/serviceprovider/view-profile" : "/customer/view-profile"}
-                      className="flex items-center cursor-pointer px-4 py-2.5 text-base text-gray-600 hover:bg-gray-50"
+                      className="flex items-center gap-2 cursor-pointer px-2 py-2.5 text-base text-gray-600 hover:bg-gray-50"
                     >
-                      Profile
+                     <IoPersonOutline className="text-lg" />
+                      Profile Settings
+                    </Link>
+                    <Link
+                 
+                      to="/"
+                      className="flex items-center gap-2 cursor-pointer px-2 py-2.5 text-base text-gray-600 hover:bg-gray-50"
+                    >
+                     <IoChatbubblesOutline className="text-lg" />
+                      Messages
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center border-t border-gray-300 px-4 py-3 text-base text-gray-600"
+                      className="w-full cursor-pointer flex items-center justify-center  border-t border-gray-300 px-4 py-3 text-base text-red-600"
                     >
-                      Log Out <IoLogOutOutline className="ms-2 text-lg" />
+                      <IoLogOutOutline className="me-2 text-lg" />
+                      Log Out 
                     </button>
                   </div>
                 )}

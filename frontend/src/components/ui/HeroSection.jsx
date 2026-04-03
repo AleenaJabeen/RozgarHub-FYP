@@ -8,7 +8,7 @@ const HeroSection = () => {
       {/* Announcement Banner */}
       <div className="w-full bg-gradient-to-r from-secondary to-emerald-500 px-6 py-4  rounded-3xl mb-6">
         <p className="text-primary text-sm md:text-base font-medium">
-          Get things done faster. Hire skilled local talent on Rozgar Hub.
+          Get things done faster. Hire skilled local talent on RozgarHub.
         </p>
       </div>
 

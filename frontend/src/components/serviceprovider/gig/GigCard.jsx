@@ -1,12 +1,26 @@
 import {useNavigate} from "react-router-dom";
 import { IoStar } from "react-icons/io5";
+import { MdOutlineEdit } from "react-icons/md";
 
 const GigCard = ({ gig }) => {
     const navigate = useNavigate();
     console.log("GigCard Rendered with gig:", gig);
 
+
+    const handleEdit=(e)=>{
+        e.stopProgation();
+        navigate(`/serviceprovider/gig-details/${gig._id}`)
+    }
+
     return (
-        <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow group flex flex-col h-full">
+        <div onClick={() => navigate(`/serviceprovider/gig-details/${gig._id}`)} className="relative cursor-pointer bg-primary border border-gray-300 shadow-xl shadow-gray-300 rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow group flex flex-col h-full">
+            <button 
+                onClick={handleEdit}
+                className="absolute cursor-pointer top-4 right-4 z-20  backdrop-blur-sm p-2 rounded-full shadow-lg  bg-secondary text-white transition-all transform active:scale-95 border border-white/50"
+                title="Edit Service"
+            >
+                <MdOutlineEdit size={20} />
+            </button>
             {/* Image & Status Badge */}
             <div className="h-44 bg-gray-100">
                 <img
@@ -29,7 +43,7 @@ const GigCard = ({ gig }) => {
                 </div>
 
                 {/* Title */}
-                <h3 onClick={() => navigate(`/serviceprovider/gig-details/${gig._id}`)} className="font-bold cursor-pointer text-base text-center leading-tight h-10 line-clamp-2 text-gray-900">
+                <h3  className="font-bold cursor-pointer text-base text-center leading-tight h-10 line-clamp-2 text-gray-900">
                     {gig.title}
                 </h3>
 

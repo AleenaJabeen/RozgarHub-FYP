@@ -36,7 +36,7 @@ const ProfileHeader = ({
     });
     const payload=new formData();
     payload.append({avatar:file});
-    await dispatch(updateServiceProviderProfile(payload));
+    await dispatch(updateProviderProfile(payload));
   }
 };
   // 4. Trigger the hidden input click
