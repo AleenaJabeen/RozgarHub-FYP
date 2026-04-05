@@ -3,43 +3,51 @@ import GigCard from "../../components/serviceprovider/gig/GigCard";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { getMyGigs } from "../../store/serviceProvider/gig-slice";
+import EmptyGigState from "../../components/serviceprovider/gig/EmptyGigState";
 
 function Gig() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const { gigs, loading } = useSelector((state) => state.gigs);
+  const { gigs = [], loading } = useSelector((state) => state.gigs);
 
   useEffect(() => {
     dispatch(getMyGigs());
   }, [dispatch]);
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-
+    <div className="w-full p-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-secondary">Gigs</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-4xl font-semibold text-secondary">Gigs</h1>
 
-        <button
-          className="bg-secondary text-white px-6 py-2.5 rounded-lg font-bold hover:bg-opacity-90 transition-all text-sm"
-          onClick={() => navigate("/serviceprovider/createGig")}
-        >
-          Create new Gig
-        </button>
+        {/* Only show this button if there are already gigs; otherwise EmptyState handles it */}
+        {gigs.length > 0 && (
+          <button
+            className="bg-secondary text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-95"
+            onClick={() => navigate("/serviceprovider/createGig")}
+          >
+            Create New Gig
+          </button>
+        )}
       </div>
 
-      {/* Loading */}
-      {loading && (
-        <p className="text-center text-gray-500">Loading gigs...</p>
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary"></div>
+        </div>
+      ) : gigs.length === 0 ? (
+        /* Empty State */
+        <EmptyGigState />
+      ) : (
+        /* Gigs Grid */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {gigs.map((gig) => (
+            <GigCard key={gig._id} gig={gig} />
+          ))}
+        </div>
       )}
-
-      {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-18">
-        {gigs?.map((gig) => (
-          <GigCard key={gig._id} gig={gig} />
-        ))}
-      </div>
     </div>
   );
 }

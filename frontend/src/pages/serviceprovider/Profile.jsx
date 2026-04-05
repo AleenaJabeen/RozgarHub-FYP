@@ -12,12 +12,10 @@ const Profile = () => {
   const navigate=useNavigate();
  
    const { user } = useSelector((state) => state.auth);
- // 1. Initialize state from localStorage (if it exists)
   const [formData, setFormData] = useState(() => {
     const savedData = localStorage.getItem("serviceProviderProfileDraft");
     if (savedData) {
       const parsed = JSON.parse(savedData);
-      // We don't save files (blobs) to localStorage, so we reset them to null
       return {
         ...parsed,
         certificates: null,
@@ -44,12 +42,20 @@ const Profile = () => {
       otp: ["", "", "", "", "", ""],
     };
   });
+  
   const [step, setStep] = useState(() => {
     const savedStep = localStorage.getItem("profileCurrentStep");
     return savedStep ? parseInt(savedStep, 10) : 1;
   });
 
-  // 2. Save to localStorage whenever formData or step changes
+  // Save draft to localStorage whenever formData or step changes
+useEffect(() => {
+  if (user) { // optional: only save if user exists
+    localStorage.setItem("serviceProviderProfileDraft", JSON.stringify(formData));
+    localStorage.setItem("profileCurrentStep", step.toString());
+  }
+}, [formData, step, user]);
+ 
   useEffect(() => {
    if (!user) {
     localStorage.removeItem("serviceProviderProfileDraft");
@@ -58,7 +64,8 @@ const Profile = () => {
     navigate('/login'); 
   }
      window.scrollTo(0, 0);
-  }, [formData, step,user]);
+  }, [step,user]);
+  
 
   const nextStep = () => setStep((prev) => prev + 1);
   const prevStep = () => setStep((prev) => prev - 1);

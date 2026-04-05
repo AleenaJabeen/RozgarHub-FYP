@@ -200,7 +200,7 @@ const CreateGig = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-8">
+    <div className="w-[95%] mx-auto p-6 space-y-8">
       <h2 className="text-2xl font-bold text-secondary">Create New Gig</h2>
 
       <form
@@ -244,55 +244,55 @@ const CreateGig = () => {
           </div>
 
           {/* Category & SubCategory */}
-            <div>
-              <label className="block text-sm font-semibold mb-1 text-gray-700">
-                Category
-              </label>
-              <select
-                name="categoryId"
-                className={`w-full px-4 py-2.5 border rounded-full bg-white focus:outline-none ${errors.categoryId ? "border-red-500" : "border-gray-300"}`}
-                value={formData.categoryId}
-                onChange={handleChange}
-              >
-                <option value="">Select Category</option>
-                {categories?.map((cat) => (
-                  <option key={cat._id} value={cat._id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
+          <div>
+            <label className="block text-sm font-semibold mb-1 text-gray-700">
+              Category
+            </label>
+            <select
+              name="categoryId"
+              className={`w-full px-4 py-2.5 border rounded-full bg-white focus:outline-none ${errors.categoryId ? "border-red-500" : "border-gray-300"}`}
+              value={formData.categoryId}
+              onChange={handleChange}
+            >
+              <option value="">Select Category</option>
+              {categories?.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              Subcategories (Max 3)
+            </label>
+
+            <div className="flex flex-wrap gap-2">
+              {selectedCategory?.subcategory.map((sub, i) => {
+                const isSelected = formData.subcategoryIds.includes(sub.name);
+
+                return (
+                  <button
+                    type="button"
+                    key={i}
+                    onClick={() => toggleSubcategory(sub.name)}
+                    className={`px-3 py-1.5 rounded-full text-sm border transition
+                      ${
+                        isSelected
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-700 border-gray-300 hover:border-blue-400"
+                      }`}
+                  >
+                    {sub.name}
+                  </button>
+                );
+              })}
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Subcategories (Max 3)
-              </label>
 
-              <div className="flex flex-wrap gap-2">
-                {selectedCategory?.subcategory.map((sub, i) => {
-                  const isSelected = formData.subcategoryIds.includes(sub.name);
-
-                  return (
-                    <button
-                      type="button"
-                      key={i}
-                      onClick={() => toggleSubcategory(sub.name)}
-                      className={`px-3 py-1.5 rounded-full text-sm border transition
-          ${
-            isSelected
-              ? "bg-blue-600 text-white border-blue-600"
-              : "bg-white text-gray-700 border-gray-300 hover:border-blue-400"
-          }`}
-                    >
-                      {sub.name}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <p className="ml-3 text-xs text-gray-500">
-                {formData.subcategoryIds.length}/3 selected
-              </p>
-            </div>
+            <p className="ml-3 text-xs text-gray-500">
+              {formData.subcategoryIds.length}/3 selected
+            </p>
+          </div>
 
           {/* Pricing */}
           <div className="grid grid-cols-2 gap-4">

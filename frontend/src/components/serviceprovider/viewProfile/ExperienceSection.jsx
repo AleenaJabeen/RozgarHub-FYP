@@ -15,7 +15,7 @@ const ExperienceSection = ({ formData, updateField }) => {
   const detailsRef = useRef(null);
 
   // Default to empty array if experience doesn't exist
-  const experienceList = formData.experience || [];
+  const experienceList = formData.experienceDocuments || [];
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -32,7 +32,7 @@ const ExperienceSection = ({ formData, updateField }) => {
   }, []);
 
   const updateExperience = (index, key, value) => {
-    const updated = [...(formData.experience || [])];
+    const updated = [...(formData.experienceDocuments || [])];
     updated[index] = { ...updated[index], [key]: value };
     updateField({ experience: updated });
   };

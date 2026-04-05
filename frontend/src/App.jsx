@@ -17,6 +17,7 @@ import ScrollToTop from "./components/layout/ScrollToTop";
 import AuthPage from "./components/auth/AuthPage";
 import ProviderHome from "./pages/serviceprovider/ProviderHome";
 import ViewProfile from "./pages/serviceprovider/ViewProfile";
+import GigDetails from "./components/serviceprovider/gig/GigDetails";
 import CustomerProfile from "./pages/customer/Profile";
 import CustomerHome from "./pages/customer/CustomerHome";
 import ServicesPage from "./pages/customer/ServicesPage";
@@ -79,26 +80,7 @@ function App() {
             }
           />
 
-          <Route
-            path="customer"
-            element={
-              <CheckAuth
-                isAuthenticated={isAuthenticated}
-                user={user}
-                loading={isLoading}
-              >
-                <CustomerHome/>
-              </CheckAuth>
-            }
-          >
-            <Route index element={<CustomerDashboard />} />
-            <Route path="view-profile" element={<CustomerViewProfile />} />
-            <Route path="services" element={<ServicesPage/>} />
-            <Route path="profile" element={<CustomerProfile/>}/>
-            </Route>
-
-          {/* Service Provider */}
-          <Route
+    <Route
             path="serviceprovider"
             element={
               <CheckAuth
@@ -115,7 +97,26 @@ function App() {
             <Route path="view-profile" element={<ViewProfile />} />
             <Route path="gigs" element={<Gig />} />
             <Route path="createGig" element={<CreateGig />} />
-            {/* <Route path="orders" element={<Orders />} /> */}
+            <Route path="gig-details/:id" element={<GigDetails />} />
+          </Route>
+
+          {/* Customer */}
+          <Route
+            path="customer"
+            element={
+              <CheckAuth
+                isAuthenticated={isAuthenticated}
+                user={user}
+                loading={isLoading}
+              >
+                <CustomerHome />
+              </CheckAuth>
+            }
+          >
+            <Route index element={<CustomerDashboard />} />
+            <Route path="view-profile" element={<CustomerViewProfile />} />
+            <Route path="services" element={<ServicesPage />} />
+            <Route path="profile" element={<CustomerProfile />} />
           </Route>
         </Route>
       </Routes>

@@ -19,6 +19,29 @@ export const createGig = createAsyncThunk(
     }
   },
 );
+
+// UPDATE GIG
+export const updateGigThunk = createAsyncThunk(
+  "gigs/updateGig",
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const res = await axios.patch(`${BASE_URL}/${id}`, data, {
+        withCredentials: true,
+        // ⚠️ important for FormData
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      return res.data.data; // backend returns updated gig
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update gig",
+      );
+    }
+  },
+);
+
 export const getMyGigs = createAsyncThunk(
   "gigs/getMyGigs",
   async (_, { rejectWithValue }) => {
@@ -32,6 +55,87 @@ export const getMyGigs = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch gigs",
       );
+    }
+  },
+);
+
+export const getGigById = createAsyncThunk(
+  "gigs/getGigById",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${BASE_URL}/${id}`, {
+        withCredentials: true,
+      });
+
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch gig",
+      );
+    }
+  },
+);
+
+// DELETE GIG
+export const deleteGigThunk = createAsyncThunk(
+  "gigs/deleteGig",
+  async (id, { rejectWithValue }) => {
+    try {
+      await axios.delete(`${BASE_URL}/${id}`, { withCredentials: true });
+      return id;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message);
+    }
+  },
+);
+
+// SET ONLINE
+export const setGigOnlineThunk = createAsyncThunk(
+  "gigs/setOnline",
+  async (id, { rejectWithValue }) => {
+    try {
+      const res = await axios.patch(
+        `${BASE_URL}/${id}/online`,
+        {},
+        { withCredentials: true },
+      );
+      return res.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message);
+    }
+  },
+);
+
+// SET OFFLINE
+export const setGigOfflineThunk = createAsyncThunk(
+  "gigs/setOffline",
+  async (id, { rejectWithValue }) => {
+    try {
+      const res = await axios.patch(
+        `${BASE_URL}/${id}/offline`,
+        {},
+        { withCredentials: true },
+      );
+      return res.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message);
+    }
+  },
+);
+
+// AUTO MODE
+export const enableAutoModeThunk = createAsyncThunk(
+  "gigs/autoMode",
+  async (id, { rejectWithValue }) => {
+    try {
+      const res = await axios.patch(
+        `${BASE_URL}/${id}/mode/auto`,
+        {},
+        { withCredentials: true },
+      );
+      return res.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message);
     }
   },
 );
@@ -78,6 +182,66 @@ const gigSlice = createSlice({
       })
 
       .addCase(getMyGigs.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(getGigById.pending, (state) => {
+        state.loading = true;
+      })
+
+      .addCase(getGigById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null; // ✅ IMPORTANT FIX
+
+        const existingIndex = state.gigs.findIndex(
+          (gig) => gig._id === action.payload._id,
+        );
+
+        if (existingIndex !== -1) {
+          state.gigs[existingIndex] = action.payload;
+        } else {
+          state.gigs.push(action.payload);
+        }
+      })
+
+      .addCase(getGigById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(deleteGigThunk.fulfilled, (state, action) => {
+        state.gigs = state.gigs.filter((gig) => gig._id !== action.payload);
+      })
+
+      .addCase(setGigOnlineThunk.fulfilled, (state, action) => {
+        const index = state.gigs.findIndex((g) => g._id === action.payload._id);
+        if (index !== -1) state.gigs[index] = action.payload;
+      })
+
+      .addCase(setGigOfflineThunk.fulfilled, (state, action) => {
+        const index = state.gigs.findIndex((g) => g._id === action.payload._id);
+        if (index !== -1) state.gigs[index] = action.payload;
+      })
+
+      .addCase(enableAutoModeThunk.fulfilled, (state, action) => {
+        const index = state.gigs.findIndex((g) => g._id === action.payload._id);
+        if (index !== -1) state.gigs[index] = action.payload;
+      })
+      .addCase(updateGigThunk.pending, (state) => {
+        state.loading = true;
+      })
+
+      .addCase(updateGigThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+
+        const index = state.gigs.findIndex((g) => g._id === action.payload._id);
+
+        if (index !== -1) {
+          state.gigs[index] = action.payload;
+        }
+      })
+
+      .addCase(updateGigThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
