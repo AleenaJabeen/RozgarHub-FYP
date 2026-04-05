@@ -1,6 +1,16 @@
 import React, { useState } from "react";
 import { IoPersonCircle } from "react-icons/io5";
-import { FaLocationCrosshairs, FaTrash } from "react-icons/fa6";
+import { FaLocationCrosshairs } from "react-icons/fa6";
+import { 
+  FaTrash, 
+  FaCamera,
+  FaMapMarkerAlt,
+  FaCity,
+  FaMap,
+  FaGlobeAmericas,
+  FaMailBulk
+} from "react-icons/fa"; 
+
 import { HiPlus } from "react-icons/hi";
 
 const blankAddress = { street: "", city: "", state: "", country: "", zipCode: "" };
@@ -104,7 +114,6 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
                     formData.avatar instanceof File
                       ? URL.createObjectURL(formData.avatar)
                       : formData.avatar
-                      : formData.avatar // existing Cloudinary URL string
                   }
                   alt="Profile"
                   className="w-full h-full object-cover rounded-full"
@@ -165,21 +174,11 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
                 </label>
 
                 {/* Remove button */}
-              className="space-y-3 ms-3 p-4 border border-gray-200 rounded-2xl relative"
-            >
-              {/* Block header */}
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-base font-medium text-tertiary">
-                  {index === 0 ? "Primary Address" : `Additional Address ${index}`}
-                </label>
-
-                {/* Remove button — only for index 1 and 2 */}
                 {index > 0 && (
                   <button
                     type="button"
                     onClick={() => removeAddress(index)}
                     className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full transition-colors"
-                    className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full transition-colors"
                   >
                     <FaTrash className="text-xs" />
                     Remove
@@ -272,61 +271,6 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
                     onChange={(e) => handleAddressChange(e, index)}
                   />
                 </div>
-              <input
-                name="street"
-                type="text"
-                placeholder="Street Address"
-                className={`w-full px-4 py-2 border rounded-full focus:outline-none ${
-                  errors[`street_${index}`] ? "border-red-500" : "border-gray-300"
-                }`}
-                value={addr.street}
-                onChange={(e) => handleAddressChange(e, index)}
-              />
-              {errors[`street_${index}`] && (
-                <p className="text-red-500 text-xs">{errors[`street_${index}`]}</p>
-              )}
-
-              <div className="grid lg:grid-cols-2 grid-cols-1 gap-3">
-                <input
-                  name="city"
-                  type="text"
-                  placeholder="City"
-                  className={`px-4 py-2 border rounded-full focus:outline-none ${
-                    errors[`city_${index}`] ? "border-red-500" : "border-gray-300"
-                  }`}
-                  value={addr.city}
-                  onChange={(e) => handleAddressChange(e, index)}
-                />
-                <input
-                  name="state"
-                  type="text"
-                  placeholder="State/Province"
-                  className="px-4 py-2 border border-gray-300 rounded-full focus:outline-none"
-                  value={addr.state}
-                  onChange={(e) => handleAddressChange(e, index)}
-                />
-              </div>
-              {errors[`city_${index}`] && (
-                <p className="text-red-500 text-xs">{errors[`city_${index}`]}</p>
-              )}
-
-              <div className="grid lg:grid-cols-2 grid-cols-1 gap-3">
-                <input
-                  name="country"
-                  type="text"
-                  placeholder="Country"
-                  className="px-4 py-2 border border-gray-300 rounded-full focus:outline-none"
-                  value={addr.country}
-                  onChange={(e) => handleAddressChange(e, index)}
-                />
-                <input
-                  name="zipCode"
-                  type="text"
-                  placeholder="Zip Code"
-                  className="px-4 py-2 border border-gray-300 rounded-full focus:outline-none"
-                  value={addr.zipCode}
-                  onChange={(e) => handleAddressChange(e, index)}
-                />
               </div>
             </div>
           ))}
@@ -340,9 +284,6 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
                 className="flex items-center gap-2 px-6 py-2.5 border-2 border-dashed border-secondary text-secondary rounded-full text-sm font-bold hover:bg-secondary hover:text-white transition-all shadow-sm"
               >
                 <HiPlus className="text-lg" />
-                className="flex items-center gap-2 px-5 py-2.5 border-2 border-dashed border-secondary text-secondary rounded-full text-sm font-semibold hover:bg-secondary hover:text-white transition-all"
-              >
-                <HiPlus className="text-base" />
                 Add Another Address
               </button>
             </div>

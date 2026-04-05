@@ -38,7 +38,7 @@ const CategorySection = () => {
           <h2 className="text-3xl md:text-4xl font-semibold text-slate-900 mb-4">
             Find Skilled <span className='text-secondary'>Physical Services</span>
           </h2>
-          <div className="w-48 h-1 mx-auto rounded-full mb-6 bg-amber-400" ></div>
+          <div className="w-48 h-1 ms-30 rounded-full mb-6 bg-amber-400" ></div>
           <p className="text-slate-600 text-lg md:text-xl">
             Reliable experts for your home and business across Pakistan.
           </p>

@@ -29,11 +29,7 @@ const CustomerProfile = () => {
     const savedData = localStorage.getItem("customerProfileDraft");
     if (savedData) {
       const parsed = JSON.parse(savedData);
-      return { 
-      ...parsed, 
-      avatar: null, 
-      addresses: parsed.addresses || [{ ...blankAddress }] 
-    };
+      return { ...parsed, avatar: null };
     }
     return {
       name:        authUser?.name  || "",
@@ -52,41 +48,36 @@ const CustomerProfile = () => {
   });
 
   useEffect(() => {
-  if (loading) return;
+    if (loading) return;
 
-  const coords = profileUser?.location?.currentLocation?.coordinates;
+    const coords = profileUser?.location?.currentLocation?.coordinates;
 
-  setFormData((prev) => ({
-    ...prev,
-    name: authUser?.name || prev.name || "",
-    email: authUser?.email || prev.email || "",
-    avatar: prev.avatar instanceof File ? prev.avatar : (profileUser?.avatar || null),
-    
-    // SAFE ADDRESS INITIALIZATION
-    addresses: [
-      {
-        street: profileUser?.location?.address?.street || "",
-        city: profileUser?.location?.address?.city || "",
-        state: profileUser?.location?.address?.state || "",
-        country: profileUser?.location?.address?.country || "",
-        zipCode: profileUser?.location?.address?.zipCode || "",
+    setFormData((prev) => ({
+      ...prev,
+      name:  authUser?.name  || prev.name,
+      email: authUser?.email || prev.email,
+      avatar: prev.avatar instanceof File ? prev.avatar : (profileUser?.avatar || null),
+      addresses: [
+        {
+          street:  profileUser?.location?.address?.street  || "",
+          city:    profileUser?.location?.address?.city    || "",
+          state:   profileUser?.location?.address?.state   || "",
+          country: profileUser?.location?.address?.country || "",
+          zipCode: profileUser?.location?.address?.zipCode || "",
+        },
+        ...(profile?.savedAddresses || []).slice(1, 3).map((raw) => {
+          const [street = "", city = "", state = "", country = "", zipCode = ""] =
+            raw.split(",").map((s) => s.trim());
+          return { street, city, state, country, zipCode };
+        }),
+      ],
+      location: {
+        longitude: coords?.[0] ?? prev.location.longitude,
+        latitude:  coords?.[1] ?? prev.location.latitude,
       },
-      // Ensure this part doesn't crash if savedAddresses is missing
-      ...(profile?.savedAddresses || []).slice(1, 3).map((raw) => {
-        if (typeof raw !== 'string') return { ...blankAddress }; // Safety check
-        const [street = "", city = "", state = "", country = "", zipCode = ""] =
-          raw.split(",").map((s) => s.trim());
-        return { street, city, state, country, zipCode };
-      }),
-    ].filter(Boolean), // Ensure no null items get in
-
-    location: {
-      longitude: coords?.[0] ?? prev.location?.longitude ?? null,
-      latitude: coords?.[1] ?? prev.location?.latitude ?? null,
-    },
-    phoneNumber: profileUser?.phone || authUser?.phone || prev.phoneNumber || "",
-  }));
-}, [loading, profile, profileUser, authUser]); // Added authUser to deps for safety
+      phoneNumber: profileUser?.phone || authUser?.phone || prev.phoneNumber,
+    }));
+  }, [loading, profile, profileUser]);
 
   useEffect(() => {
     if (!authUser) {
