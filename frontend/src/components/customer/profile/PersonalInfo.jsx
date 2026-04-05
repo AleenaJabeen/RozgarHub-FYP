@@ -94,28 +94,37 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
 
         {/* ── Avatar Upload ── */}
         <div className="flex flex-col items-center md:order-2">
-          <label className="cursor-pointer">
+          <label className="cursor-pointer relative group">
             <input type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
-            <div className="md:w-[250px] md:h-[250px] w-[150px] h-[150px] flex flex-col items-center justify-center text-center overflow-hidden">
+            <div className="md:w-[250px] md:h-[250px] w-[150px] h-[150px] flex flex-col items-center justify-center text-center overflow-hidden rounded-full bg-gray-50 border-2 border-dashed border-gray-300 relative transition-all group-hover:border-secondary">
+              
               {formData.avatar ? (
                 <img
                   src={
                     formData.avatar instanceof File
                       ? URL.createObjectURL(formData.avatar)
+                      : formData.avatar
                       : formData.avatar // existing Cloudinary URL string
                   }
                   alt="Profile"
-                  className="md:w-[250px] md:h-[250px] w-[150px] h-[150px] object-cover rounded-full"
+                  className="w-full h-full object-cover rounded-full"
                 />
               ) : (
                 <>
-                  <IoPersonCircle className="md:text-[200px] text-[120px] text-gray-300" />
-                  <p className="md:text-base text-sm">Upload Profile Picture</p>
+                  <IoPersonCircle className="md:text-[180px] text-[100px] text-gray-300" />
+                  <p className="md:text-sm text-xs text-gray-400 font-medium">Upload Picture</p>
                 </>
               )}
+
+              {/* Hover Overlay with Camera Icon */}
+              <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <FaCamera className="text-white text-3xl md:text-5xl mb-2" />
+                <span className="text-white text-xs md:text-sm font-semibold">Change Photo</span>
+              </div>
+
             </div>
           </label>
-          {errors.avatar && <p className="text-red-500 text-xs mt-1">{errors.avatar}</p>}
+          {errors.avatar && <p className="text-red-500 text-xs mt-2 font-medium">{errors.avatar}</p>}
         </div>
 
         {/* ── Left Fields ── */}
@@ -124,21 +133,21 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
           {/* ── Name & Email (Disabled) ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <label className="block text-base font-medium mb-2 ms-3">Name</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5 ms-3">Name</label>
               <input
                 type="text"
                 value={formData.name.toUpperCase()}
                 disabled
-                className="w-full ms-2 px-4 py-2 bg-gray-300 rounded-full outline-none"
+                className="w-full ms-2 px-4 py-2.5 bg-gray-100 text-gray-500 rounded-full border border-gray-200 outline-none cursor-not-allowed font-medium"
               />
             </div>
             <div>
-              <label className="block text-base font-medium mb-2 ms-3">Email</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5 ms-3">Email</label>
               <input
                 type="text"
                 value={formData.email}
                 disabled
-                className="w-full ms-2 px-4 py-2 bg-gray-300 rounded-full outline-none"
+                className="w-full ms-2 px-4 py-2.5 bg-gray-100 text-gray-500 rounded-full border border-gray-200 outline-none cursor-not-allowed font-medium"
               />
             </div>
           </div>
@@ -147,6 +156,15 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
           {formData.addresses.map((addr, index) => (
             <div
               key={index}
+              className="space-y-4 ms-3 p-5 border border-gray-200 rounded-2xl relative bg-white shadow-sm"
+            >
+              {/* Block header */}
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-bold text-tertiary">
+                  {index === 0 ? "Primary Address" : `Additional Address ${index}`}
+                </label>
+
+                {/* Remove button */}
               className="space-y-3 ms-3 p-4 border border-gray-200 rounded-2xl relative"
             >
               {/* Block header */}
@@ -160,6 +178,7 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
                   <button
                     type="button"
                     onClick={() => removeAddress(index)}
+                    className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full transition-colors"
                     className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full transition-colors"
                   >
                     <FaTrash className="text-xs" />
@@ -168,6 +187,91 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
                 )}
               </div>
 
+              {/* Street Input */}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <FaMapMarkerAlt className="text-gray-400" />
+                </div>
+                <input
+                  name="street"
+                  type="text"
+                  placeholder="Street Address"
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-full focus:outline-none focus:ring-2 focus:ring-secondary/20 transition-colors ${
+                    errors[`street_${index}`] ? "border-red-500 focus:border-red-500" : "border-gray-300 focus:border-secondary"
+                  }`}
+                  value={addr.street}
+                  onChange={(e) => handleAddressChange(e, index)}
+                />
+              </div>
+              {errors[`street_${index}`] && (
+                <p className="text-red-500 text-xs mt-1 ml-4">{errors[`street_${index}`]}</p>
+              )}
+
+              {/* City & State Inputs */}
+              <div className="grid lg:grid-cols-2 grid-cols-1 gap-4">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <FaCity className="text-gray-400" />
+                  </div>
+                  <input
+                    name="city"
+                    type="text"
+                    placeholder="City"
+                    className={`w-full pl-10 pr-4 py-2.5 border rounded-full focus:outline-none focus:ring-2 focus:ring-secondary/20 transition-colors ${
+                      errors[`city_${index}`] ? "border-red-500 focus:border-red-500" : "border-gray-300 focus:border-secondary"
+                    }`}
+                    value={addr.city}
+                    onChange={(e) => handleAddressChange(e, index)}
+                  />
+                  {errors[`city_${index}`] && (
+                    <p className="text-red-500 text-xs mt-1 ml-4">{errors[`city_${index}`]}</p>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <FaMap className="text-gray-400 text-sm" />
+                  </div>
+                  <input
+                    name="state"
+                    type="text"
+                    placeholder="State/Province"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-full focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-colors"
+                    value={addr.state}
+                    onChange={(e) => handleAddressChange(e, index)}
+                  />
+                </div>
+              </div>
+
+              {/* Country & Zip Code Inputs */}
+              <div className="grid lg:grid-cols-2 grid-cols-1 gap-4">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <FaGlobeAmericas className="text-gray-400" />
+                  </div>
+                  <input
+                    name="country"
+                    type="text"
+                    placeholder="Country"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-full focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-colors"
+                    value={addr.country}
+                    onChange={(e) => handleAddressChange(e, index)}
+                  />
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <FaMailBulk className="text-gray-400 text-sm" />
+                  </div>
+                  <input
+                    name="zipCode"
+                    type="text"
+                    placeholder="Zip Code"
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-full focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-colors"
+                    value={addr.zipCode}
+                    onChange={(e) => handleAddressChange(e, index)}
+                  />
+                </div>
               <input
                 name="street"
                 type="text"
@@ -233,6 +337,9 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
               <button
                 type="button"
                 onClick={addAddress}
+                className="flex items-center gap-2 px-6 py-2.5 border-2 border-dashed border-secondary text-secondary rounded-full text-sm font-bold hover:bg-secondary hover:text-white transition-all shadow-sm"
+              >
+                <HiPlus className="text-lg" />
                 className="flex items-center gap-2 px-5 py-2.5 border-2 border-dashed border-secondary text-secondary rounded-full text-sm font-semibold hover:bg-secondary hover:text-white transition-all"
               >
                 <HiPlus className="text-base" />
@@ -242,18 +349,22 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
           )}
 
           {/* ── Geolocation ── */}
-          <div className="ms-3">
-            <label className="block text-base font-medium mb-2">Location</label>
-            <div className="lg:w-1/2 w-full flex items-center justify-between px-4 py-2 border border-gray-300 rounded-full">
+          <div className="ms-3 pt-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Pinpoint Exact Location</label>
+            <div className="lg:w-1/2 w-full flex items-center justify-between pl-4 pr-2 py-1.5 border border-gray-300 bg-white rounded-full focus-within:border-secondary focus-within:ring-2 focus-within:ring-secondary/20 transition-all">
               <input
                 type="text"
-                placeholder="Click to capture location"
+                placeholder="Click the target to locate..."
                 value={locationStatus}
                 disabled
-                className="w-full focus:outline-none bg-transparent"
+                className="w-full focus:outline-none bg-transparent text-sm text-gray-600 truncate mr-2"
               />
-              <button type="button" onClick={handleGetLocation}>
-                <FaLocationCrosshairs className="text-secondary" />
+              <button 
+                type="button" 
+                onClick={handleGetLocation}
+                className="p-2 bg-secondary/10 hover:bg-secondary/20 rounded-full transition-colors group"
+              >
+                <FaLocationCrosshairs className="text-secondary text-lg group-hover:scale-110 transition-transform" />
               </button>
             </div>
           </div>
@@ -261,12 +372,12 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
         </div>
       </div>
 
-      <div className="flex justify-center pt-8">
+      <div className="flex justify-center pt-10 border-t border-gray-100 mt-8">
         <button
           onClick={() => validate() && onNext()}
-          className="md:w-md w-xs cursor-pointer bg-secondary text-white font-bold py-3 rounded-full mt-8 hover:bg-[#0e5641] transition-all"
+          className="md:w-[300px] w-full cursor-pointer bg-secondary text-white font-bold py-3.5 rounded-full hover:bg-emerald-800 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
         >
-          Next
+          Next Step
         </button>
       </div>
     </div>
