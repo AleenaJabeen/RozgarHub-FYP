@@ -32,6 +32,7 @@ const Profile = () => {
       location: { latitude: null, longitude: null },
       education: "",
       certificates: null,
+      urgentHire:false,
       cnicNo: "",
       cnicPicture: null,
       profilePicture: null,

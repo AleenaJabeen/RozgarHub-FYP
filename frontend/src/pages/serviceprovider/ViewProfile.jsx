@@ -12,6 +12,7 @@ import ProfileHeader from "../../components/serviceprovider/viewProfile/ProfileH
 import ExperienceSection from "../../components/serviceprovider/viewProfile/ExperienceSection";
 import SkillsSection from "../../components/serviceprovider/viewProfile/SkillsSection";
 import EducationSection from "../../components/serviceprovider/viewProfile/EducationSection";
+import { useNavigate } from "react-router-dom";
 const ViewProfile = () => {
   const dispatch = useDispatch();
   const isInitialLoad = useRef(true);
@@ -25,6 +26,7 @@ const ViewProfile = () => {
   const [editSection, setEditSection] = useState(null);
   const [newSkill, setNewSkill] = useState("");
   const [saving, setSaving] = useState(false);
+  const navigate=useNavigate();
 
   const timerRef = useRef(null);
   const latestDataRef = useRef({});
@@ -91,7 +93,7 @@ const ViewProfile = () => {
         if (key === "skills") {
           payload.append("skills", currentValue.join(","));
         } else if (key === "education") {
-          payload.append("education", JSON.stringify(currentValue));
+          payload.append("education",currentValue);
         } else if (key === "certificates") {
           currentValue.forEach((cert) => {
             if (cert.file) {
@@ -134,10 +136,36 @@ const ViewProfile = () => {
   });
 };
 
-  if ((!profile && !user)) {
+if (loading && isInitialLoad.current) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary" />
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          {/* Simple Tailwind Spinner */}
+          <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+          <p className="text-gray-500 font-medium">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+ if (!profile) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-300 text-center max-w-md w-full">
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            No Profile Found
+          </h2>
+
+          <p className="text-sm text-gray-500 mb-6">
+            You need to create a profile before you can start offering services and making gigs.
+          </p>
+
+          <button
+            onClick={() => navigate("/serviceprovider/createProfile")}
+            className="cursor-pointer bg-emerald-600 text-white px-6 py-2 rounded-full text-sm font-semibold hover:bg-emerald-700 transition-all"
+          >
+            Create Your Profile
+          </button>
+        </div>
       </div>
     );
   }

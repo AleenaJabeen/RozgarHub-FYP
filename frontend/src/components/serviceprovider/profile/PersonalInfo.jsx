@@ -94,6 +94,8 @@ const PersonalInfo = ({ formData, setFormData, onNext }) => {
     if (!formData.address.city.trim()) {
       newErrors.city = "City is required.";
     }
+    const education=formData.education;
+    console.log(education);
 
     // CNIC Number
     const plainCnic = formData.cnicNo.replace(/-/g, "");

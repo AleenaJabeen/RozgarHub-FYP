@@ -93,7 +93,7 @@ function App() {
             }
           >
             <Route index element={<Dashboard />} />
-            <Route path="profile" element={<Profile />} />
+            <Route path="createProfile" element={<Profile />} />
             <Route path="view-profile" element={<ViewProfile />} />
             <Route path="gigs" element={<Gig />} />
             <Route path="createGig" element={<CreateGig />} />
