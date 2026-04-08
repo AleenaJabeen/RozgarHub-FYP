@@ -15,3 +15,17 @@ export const requireServiceProvider = asyncHandler(
     next();
   }
 );
+
+
+
+export const requireCustomer = asyncHandler(async (req, res, next) => {
+  if (!req.user) {
+    throw new ApiError(401, "Unauthorized request");
+  }
+
+  if (req.user.role !== "customer") {
+    throw new ApiError(403, "Access denied. Customers only.");
+  }
+
+  next(); 
+});

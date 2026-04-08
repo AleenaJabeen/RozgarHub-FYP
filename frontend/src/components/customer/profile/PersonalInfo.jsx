@@ -139,15 +139,16 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
         {/* ── Left Fields ── */}
         <div className="max-w-3xl flex-1 space-y-6 md:order-1">
 
-          {/* ── Name & Email (Disabled) ── */}
+          {/* ── Name & Email ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5 ms-3">Name</label>
               <input
                 type="text"
-                value={formData.name.toUpperCase()}
-                disabled
-                className="w-full ms-2 px-4 py-2.5 bg-gray-100 text-gray-500 rounded-full border border-gray-200 outline-none cursor-not-allowed font-medium"
+                name="name"
+                value={formData.name || ""}
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                className="w-full ms-2 capitalize px-4 py-2.5 border border-gray-300 rounded-full focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-colors font-medium text-gray-900"
               />
             </div>
             <div>
