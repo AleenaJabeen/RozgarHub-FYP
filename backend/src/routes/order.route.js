@@ -7,7 +7,7 @@ import {
   startWork,
   completeOrder,
   cancelOrder,
-} from "../controllers/order/order.controller.js";
+} from "../controllers/orders/order.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import {
   requireCustomer,

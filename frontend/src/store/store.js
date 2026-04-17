@@ -5,6 +5,7 @@ import gigReducer from './serviceProvider/gig-slice';
 import categoryReducer from './serviceProvider/category-slice';
 import customerProfileReducer from './customer/profile-slice'
 import orderSliceReducer from './orders/order-slice';
+import gigSearchReducer from './customer/gigSearch-slice';
 
 const store=configureStore({
     reducer:{
@@ -14,6 +15,8 @@ const store=configureStore({
         categories: categoryReducer,
         customerProfile: customerProfileReducer,
         orders: orderSliceReducer,
+        gigSearch: gigSearchReducer,
+        customerProfile: customerProfileReducer,
     }
 });
 

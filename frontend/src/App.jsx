@@ -30,7 +30,7 @@ import OrderDetails from "./pages/orders/customer/OrderDetails";
 import ProviderProfileView from "./pages/customer/ProviderProfileView";
 import CustomerProfileView from "./pages/orders/serviceprovider/CustomerProfileView";
 import OrderDetailsSP from "./pages/orders/serviceprovider/OrderDetails";
-
+import CustomerGigDetails from "./pages/customer/CustomerGigDetails";
 function App() {
   const dispatch = useDispatch();
   const { user, isAuthenticated, isLoading } = useSelector(
@@ -108,6 +108,7 @@ function App() {
             <Route path="orders" element={<CustomerOrderManagement />} />
             <Route path="orders/:orderId" element={<OrderDetails />} />
             <Route path="provider/:providerId" element={<ProviderProfileView />} />
+            <Route path="services/:gigId" element={<CustomerGigDetails />} />
           </Route>
 
           {/* Service Provider */}
@@ -131,8 +132,10 @@ function App() {
             <Route path="gig-details/:id" element={<GigDetails />} />
             <Route path="orders" element={<SPOrderManagement />} />
             <Route path="orders/:orderId" element={<OrderDetailsSP />} />
-            <Route path="customer/:customerId" element={<CustomerProfileView />} />
+            <Route path="customer/:customerId" element={<CustomerProfileView />} /> 
           </Route>
+
+         
         </Route>
       </Routes>
     </>

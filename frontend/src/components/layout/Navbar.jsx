@@ -73,7 +73,7 @@ const Navbar = () => {
     pending: [{ name: "Services", href: "/services", isMega: true }],
     customer: [
       { name: "Home", href: "/customer" },
-      { name: "Services", href: "/services", isMega: true },
+      { name: "Services", href: "/customer/services", isMega: true },
       { name: "Orders", href: "/customer/orders" },
       { name: "Inbox", href: "/inbox" },
     ],
@@ -150,12 +150,13 @@ const Navbar = () => {
                   onMouseEnter={() => setDesktopMegaOpen(true)}
                   onMouseLeave={() => setDesktopMegaOpen(false)}
                 >
-                  <button
-                    onClick={() => setDesktopMegaOpen((prev) => !prev)}
+                  <Link
+                     to={link.href} 
+                      onClick={() => setDesktopMegaOpen(false)}
                     className={`flex cursor-pointer  items-center text-gray-600 hover:text-secondary font-semibold transition-colors ${desktopMegaOpen ? "text-secondary" : ""}`}
                   >
                     {link.name}
-                  </button>
+                  </Link>
 
                   {desktopMegaOpen && (
                     <div
@@ -276,17 +277,23 @@ const Navbar = () => {
               <React.Fragment key={link.name}>
                 {link.isMega ? (
                   <div className="w-full">
-                    <button
-                      onClick={() => setMobileMegaOpen((prev) => !prev)}
+                    <div
                       className={`flex justify-between items-center w-full px-4 py-4 text-base font-semibold rounded-xl transition-colors ${
                         mobileMegaOpen ? "bg-secondary/10 text-secondary" : "text-gray-600 hover:bg-gray-50"
                       }`}
                     >
-                      {link.name}
-                      <IoChevronDown
-                        className={`transition-transform duration-300 ${mobileMegaOpen ? "rotate-180" : ""}`}
+                      <Link to={link.href} onClick={closeMobileMenu} className="flex-grow py-2">
+                        {link.name}
+                      </Link>
+                      <button onClick={(e) => {
+                        e.stopPropagation();
+                        setMobileMegaOpen((prev) => !prev)}} className="p-2">
+                            <IoChevronDown
+                              className={`transition-transform duration-300 ${mobileMegaOpen ? "rotate-180" : ""}`}
                       />
-                    </button>
+                       </button>
+                      
+                    </div>
 
                     {mobileMegaOpen && (
                       <div className="pl-6 bg-gray-50 rounded-xl mt-2 py-4 animate-in slide-in-from-top-1">
