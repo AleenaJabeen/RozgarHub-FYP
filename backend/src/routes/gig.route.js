@@ -9,6 +9,7 @@ import {
   setGigOffline,
   setGigOnline,
   enableAutoMode,
+  searchPublicGigs
 } from "../controllers/serviceprovider/gig.controller.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -22,6 +23,7 @@ const router = Router();
 ===================================================== */
 
 // Public: View single gig
+router.get("/search", searchPublicGigs);
 router.get("/:id", getGigById);
 
 /* =====================================================

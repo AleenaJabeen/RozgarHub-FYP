@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
   HiArrowLeft, 
@@ -10,7 +10,9 @@ import {
   HiOutlineDocumentText,
   HiOutlineBadgeCheck,
   HiOutlineCalendar,
-  HiOutlineUser
+  HiOutlineUser,
+  HiOutlineClipboardCopy, 
+  HiCheck                 
 } from "react-icons/hi";
 import { IoPersonCircle } from "react-icons/io5";
 import { FaStar, FaBolt } from "react-icons/fa";
@@ -19,20 +21,63 @@ const ProviderProfileView = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // ── 1. Loading, Exit & Copy States ──
+  const [isRevealing, setIsRevealing] = useState(true);
+  const [isExiting, setIsExiting] = useState(false); // ✅ Added for smooth exit animation
+  const [copiedItem, setCopiedItem] = useState(null); 
+
   // Grab the fully populated data passed from the Order Details page
   const profile = location.state?.providerProfile;
 
-  // ── Missing State Handling (For Page Refreshes) ──
+  // ── 2. Simulate Network Delay for Smoothness ──
+  useEffect(() => {
+    const timer = setTimeout(() => setIsRevealing(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // ── 3. Smooth Navigation Handler ──
+  const handleGoBack = () => {
+    setIsExiting(true);
+    // Wait for the fade-out animation to finish before actually routing
+    setTimeout(() => {
+      navigate(-1);
+    }, 400); 
+  };
+
+  // ── 4. Copy Handler ──
+  const handleCopy = (text, type) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedItem(type);
+    setTimeout(() => setCopiedItem(null), 2000); 
+  };
+
+  // ── Loading Spinner View ──
+  if (isRevealing) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#f7f8fa] font-sans">
+        <div className="w-12 h-12 border-4 border-gray-200 border-t-secondary rounded-full animate-spin mb-4" />
+        <p className="text-gray-500 font-medium text-sm animate-pulse">Loading Provider Profile...</p>
+      </div>
+    );
+  }
+
+  // ── Missing State Handling ──
   if (!profile) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#f7f8fa] gap-4 font-sans">
+      <div className={`flex flex-col items-center justify-center min-h-screen bg-[#f7f8fa] gap-4 font-sans transition-opacity duration-300 ${isExiting ? 'opacity-0' : 'opacity-100'}`}>
         <p className="text-red-500 font-bold">Profile data not found.</p>
         <p className="text-gray-500 text-sm">Please access this profile directly from an active order.</p>
         <button
-          onClick={() => navigate(-1)}
-          className="px-6 py-2 bg-secondary text-white rounded-lg text-sm font-bold shadow-sm hover:opacity-90 transition-all"
+          onClick={handleGoBack}
+          disabled={isExiting}
+          className="px-6 py-2 bg-secondary text-white rounded-lg text-sm font-bold shadow-sm hover:opacity-90 transition-all flex items-center justify-center min-w-[120px]"
         >
-          Go Back
+          {isExiting ? (
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            "Go Back"
+          )}
         </button>
       </div>
     );
@@ -50,20 +95,28 @@ const ProviderProfileView = () => {
     : "Location not provided";
 
   return (
-    <div className="min-h-screen bg-[#f7f8fa] py-10 px-4 sm:px-6 lg:px-8 font-sans">
+    // ✅ Added dynamic classes to fade and slightly scale down the page on exit
+    <div className={`min-h-screen bg-[#f7f8fa] py-10 px-4 sm:px-6 lg:px-8 font-sans transition-all duration-400 ease-in-out ${
+      isExiting ? 'opacity-0 scale-[0.98] pointer-events-none' : 'opacity-100 animate-[fadeIn_0.5s_ease-out]'
+    }`}>
       <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Navigation Header */}
         <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-500 hover:text-secondary transition-colors font-medium text-sm w-max"
+          onClick={handleGoBack}
+          disabled={isExiting}
+          className="flex items-center gap-2 text-gray-500 hover:text-secondary transition-all font-medium text-sm w-max disabled:opacity-70"
         >
-          <HiArrowLeft className="text-lg" />
-          Back to Order
+          {isExiting ? (
+            <div className="w-4 h-4 border-2 border-secondary border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <HiArrowLeft className="text-lg" />
+          )}
+          {isExiting ? "Returning..." : "Back to Service"}
         </button>
 
-        {/* ── Top Profile Header Card (Matches Screenshot) ── */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-start justify-between gap-6">
+        {/* ── Top Profile Header Card ── */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-start justify-between gap-6 transition-all duration-500 hover:shadow-md">
           
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
             {/* Avatar */}
@@ -82,12 +135,37 @@ const ProviderProfileView = () => {
               </h1>
               
               <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-6 text-sm text-gray-500 mb-2">
-                <span className="flex items-center justify-center sm:justify-start gap-1.5">
-                  <HiOutlineMail className="text-lg" /> {user.email || "No email provided"}
+                
+                {/* Email with Copy Button */}
+                <span className="flex items-center justify-center sm:justify-start gap-1.5 group">
+                  <HiOutlineMail className="text-lg text-gray-400" /> 
+                  <span className="text-gray-600">{user.email || "No email provided"}</span>
+                  {user.email && (
+                    <button 
+                      onClick={() => handleCopy(user.email, 'email')}
+                      className="ml-1 p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-secondary transition-all active:scale-95"
+                      title="Copy Email"
+                    >
+                      {copiedItem === 'email' ? <HiCheck className="text-emerald-500 text-base" /> : <HiOutlineClipboardCopy className="text-base" />}
+                    </button>
+                  )}
                 </span>
-                <span className="flex items-center justify-center sm:justify-start gap-1.5">
-                  <HiOutlinePhone className="text-lg" /> {user.phone || "No phone provided"}
+
+                {/* Phone with Copy Button */}
+                <span className="flex items-center justify-center sm:justify-start gap-1.5 group">
+                  <HiOutlinePhone className="text-lg text-gray-400" /> 
+                  <span className="text-gray-600">{user.phone || "No phone provided"}</span>
+                  {user.phone && (
+                    <button 
+                      onClick={() => handleCopy(user.phone, 'phone')}
+                      className="ml-1 p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-secondary transition-all active:scale-95"
+                      title="Copy Phone Number"
+                    >
+                      {copiedItem === 'phone' ? <HiCheck className="text-emerald-500 text-base" /> : <HiOutlineClipboardCopy className="text-base" />}
+                    </button>
+                  )}
                 </span>
+
               </div>
               
               <div className="flex items-center justify-center sm:justify-start gap-1.5 text-sm text-gray-400">
@@ -96,7 +174,7 @@ const ProviderProfileView = () => {
             </div>
           </div>
 
-          {/* Badges / Rating (Replaces "Edit Profile") */}
+          {/* Badges / Rating */}
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
             {profile.urgentHire && (
               <div className="px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-sm font-medium flex items-center justify-center gap-2 w-full sm:w-auto">
@@ -117,8 +195,8 @@ const ProviderProfileView = () => {
           {/* LEFT COLUMN: Main Details */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Primary Location (Matches Screenshot) */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+            {/* Primary Location */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm hover:border-secondary/20 transition-all">
               <div className="flex items-center gap-2 mb-4">
                 <HiOutlineLocationMarker className="text-secondary text-xl font-bold" />
                 <h2 className="text-lg font-bold text-gray-900">Primary Location</h2>
@@ -130,7 +208,7 @@ const ProviderProfileView = () => {
             </div>
 
             {/* About / Bio */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm hover:border-secondary/20 transition-all">
               <div className="flex items-center gap-2 mb-4">
                 <HiOutlineUser className="text-secondary text-xl font-bold" />
                 <h2 className="text-lg font-bold text-gray-900">About Provider</h2>
@@ -142,7 +220,7 @@ const ProviderProfileView = () => {
 
             {/* Experience */}
             {profile.experienceDetails && (
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+              <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm hover:border-secondary/20 transition-all">
                 <div className="flex items-center gap-2 mb-4">
                   <HiOutlineBriefcase className="text-secondary text-xl font-bold" />
                   <h2 className="text-lg font-bold text-gray-900">Experience History</h2>
@@ -185,11 +263,11 @@ const ProviderProfileView = () => {
             )}
           </div>
 
-          {/* RIGHT COLUMN: Stats & Quick Info (Matches Screenshot) */}
+          {/* RIGHT COLUMN: Stats & Quick Info */}
           <div className="space-y-4">
             
             {/* Rating Card */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all">
               <div className="p-3 bg-[#ecfdf5] text-[#047857] rounded-xl flex-shrink-0">
                 <FaStar className="text-xl" />
               </div>
@@ -207,7 +285,7 @@ const ProviderProfileView = () => {
             </div>
 
             {/* Base Rate Card */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all">
               <div className="p-3 bg-gray-50 text-secondary rounded-xl flex-shrink-0">
                 <HiOutlineCurrencyDollar className="text-xl font-bold" />
               </div>
@@ -220,7 +298,7 @@ const ProviderProfileView = () => {
             </div>
 
             {/* Experience Level Card */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm flex items-center gap-4 hover:-translate-y-0.5 transition-all">
               <div className="p-3 bg-gray-50 text-secondary rounded-xl flex-shrink-0">
                 <HiOutlineBriefcase className="text-xl font-bold" />
               </div>
@@ -248,20 +326,7 @@ const ProviderProfileView = () => {
               )}
             </div>
 
-            {/* Hire CTA */}
-            <div className="bg-white border border-secondary rounded-2xl p-6 shadow-sm text-center">
-              <h3 className="font-bold text-gray-900 mb-2">Hire {providerName.split(" ")[0]}</h3>
-              <p className="text-xs text-gray-500 mb-4">View their active gigs in the marketplace to start a new order.</p>
-              <button 
-                onClick={() => navigate("/customer/services")}
-                className="w-full py-2.5 bg-secondary text-white font-bold rounded-xl shadow-sm hover:opacity-90 transition-all duration-200"
-              >
-                Browse Services
-              </button>
-            </div>
-
           </div>
-
         </div>
       </div>
     </div>

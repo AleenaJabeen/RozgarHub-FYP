@@ -32,11 +32,13 @@ const gigSchema = new Schema(
       type: String,
       required: true,
       trim: true,
+      maxLength: [100, "Title cannot exceed 100 characters"]
     },
 
     description: {
       type: String,
       required: true,
+      maxLength: [2000, "Description cannot exceed 2000 characters"]
     },
 
     images: [
@@ -68,11 +70,13 @@ const gigSchema = new Schema(
     hourlyRate: {
       type: Number,
       required: true,
+      min: [0, "Hourly rate cannot be negative"]
     },
 
     inspectionRate: {
       type: Number,
       default: 0,
+      min: [0, "Inspection rate cannot be negative"]
     },
 
     availabilityStatus: {
@@ -111,5 +115,6 @@ const gigSchema = new Schema(
 // Index for faster search
 gigSchema.index({ categoryId: 1 });
 gigSchema.index({ serviceProviderId: 1 });
+gigSchema.index({ title: "text", description: "text" });
 
 export const Gig = mongoose.model("Gig", gigSchema);

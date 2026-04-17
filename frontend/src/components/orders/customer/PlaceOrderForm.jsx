@@ -3,13 +3,29 @@ import { useDispatch, useSelector } from "react-redux";
 import { createOrder } from "../../../store/orders/order-slice";
 import { showToast } from "../../../utils/toastHelper";
 import { MdUploadFile } from "react-icons/md";
+import { 
+  HiOutlineLocationMarker, 
+  HiOutlineCalendar, 
+  HiOutlineClock, 
+  HiOutlineDocumentText 
+} from "react-icons/hi";
 
-const PlaceOrderForm = ({ gig, serviceProviderId, onSuccess }) => {
+// ✅ Added bookingType to the props
+const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", onSuccess }) => {
   const dispatch = useDispatch();
   const { loading } = useSelector((state) => state.orders);
 
+  // ✅ Automatically translate the UI type to the exact string your backend expects
+  const getBackendOrderType = () => {
+    if (bookingType === "urgent") return "UrgentHire";
+    if (bookingType === "inspection") return "InspectionHire";
+    return "DirectHire";
+  };
+  
+  const backendOrderType = getBackendOrderType();
+
+  // orderType is removed from state since it's strictly handled by the prop now
   const [formData, setFormData] = useState({
-    orderType: "DirectHire",
     serviceLocation: "",
     requirements: "",
     scheduledDate: "",
@@ -17,6 +33,7 @@ const PlaceOrderForm = ({ gig, serviceProviderId, onSuccess }) => {
     inspectionTime: "",
     inspectionNotes: "",
   });
+  
   const [images, setImages] = useState([]);
 
   const handleChange = (e) => {
@@ -38,16 +55,19 @@ const PlaceOrderForm = ({ gig, serviceProviderId, onSuccess }) => {
     const submitData = new FormData();
     submitData.append("gigId", gig._id);
     submitData.append("serviceProviderId", serviceProviderId);
-    submitData.append("orderType", formData.orderType);
+    
+    // ✅ Inject the calculated backend type
+    submitData.append("orderType", backendOrderType);
     submitData.append("serviceLocation", formData.serviceLocation);
     
     if (formData.requirements) submitData.append("requirements", formData.requirements);
     if (formData.scheduledDate) submitData.append("scheduledDate", formData.scheduledDate);
 
-    if (formData.orderType === "UrgentHire") {
+    // Conditional appends based on the exact type
+    if (backendOrderType === "UrgentHire") {
       submitData.append("responseTimeLimit", formData.responseTimeLimit);
       submitData.append("isUrgent", true);
-    } else if (formData.orderType === "InspectionHire") {
+    } else if (backendOrderType === "InspectionHire") {
       submitData.append("inspectionTime", formData.inspectionTime);
       if (formData.inspectionNotes) submitData.append("inspectionNotes", formData.inspectionNotes);
     }
@@ -67,135 +87,198 @@ const PlaceOrderForm = ({ gig, serviceProviderId, onSuccess }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">Order Type <span className="text-red-500">*</span></label>
-        <select
-          name="orderType"
-          value={formData.orderType}
-          onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-secondary transition-colors"
-        >
-          <option value="DirectHire">Standard Direct Hire</option>
-          <option value="UrgentHire">Urgent Hire (Fast Response Needed)</option>
-          <option value="InspectionHire">Inspection / Survey Hire</option>
-        </select>
-      </div>
-
+      
+      {/* ── Standard Logistics ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Service Location */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Service Location <span className="text-red-500">*</span></label>
-          <input
-            type="text"
-            name="serviceLocation"
-            required
-            placeholder="E.g., 123 Main St, Lahore"
-            value={formData.serviceLocation}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-secondary transition-colors"
-          />
+          <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">
+            Service Location <span className="text-red-500">*</span>
+          </label>
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <HiOutlineLocationMarker className="text-gray-400 group-focus-within:text-secondary transition-colors text-lg" />
+            </div>
+            <input
+              type="text"
+              name="serviceLocation"
+              required
+              placeholder="E.g., 123 Main St, Lahore"
+              value={formData.serviceLocation}
+              onChange={handleChange}
+              className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all text-sm font-medium text-gray-800 placeholder-gray-400 bg-gray-50/50 hover:bg-white focus:bg-white"
+            />
+          </div>
         </div>
 
+        {/* Scheduled Date */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Scheduled Date</label>
-          <input
-            type="date"
-            name="scheduledDate"
-            value={formData.scheduledDate}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-secondary transition-colors text-gray-600"
-          />
+          <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">
+            Scheduled Date <span className="text-gray-400 font-normal normal-case">(Optional)</span>
+          </label>
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <HiOutlineCalendar className="text-gray-400 group-focus-within:text-secondary transition-colors text-lg" />
+            </div>
+            <input
+              type="date"
+              name="scheduledDate"
+              value={formData.scheduledDate}
+              onChange={handleChange}
+              className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all text-sm font-medium text-gray-800 bg-gray-50/50 hover:bg-white focus:bg-white"
+            />
+          </div>
         </div>
       </div>
 
-      {formData.orderType === "UrgentHire" && (
-        <div className="p-5 bg-amber-50 border border-amber-200 rounded-xl">
-          <label className="block text-sm font-semibold text-amber-800 mb-2">Required Response Time Limit <span className="text-red-500">*</span></label>
-          <input
-            type="text"
-            name="responseTimeLimit"
-            required
-            placeholder="E.g., 2 hours"
-            value={formData.responseTimeLimit}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border border-amber-300 rounded-xl focus:outline-none focus:border-amber-500 transition-colors"
-          />
+      {/* ── Conditional Fields based on Order Type ── */}
+      
+      {backendOrderType === "UrgentHire" && (
+        <div className="p-6 bg-amber-50/50 border border-amber-200 rounded-2xl shadow-sm">
+          <label className="block text-xs font-bold text-amber-800 uppercase tracking-wide mb-2">
+            Required Response Time Limit <span className="text-red-500">*</span>
+          </label>
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <HiOutlineClock className="text-amber-400 group-focus-within:text-amber-600 transition-colors text-lg" />
+            </div>
+            <input
+              type="text"
+              name="responseTimeLimit"
+              required
+              placeholder="E.g., Within 2 hours, ASAP"
+              value={formData.responseTimeLimit}
+              onChange={handleChange}
+              className="w-full pl-11 pr-4 py-3.5 border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-sm font-medium text-gray-800 bg-white placeholder-amber-900/30"
+            />
+          </div>
         </div>
       )}
 
-      {formData.orderType === "InspectionHire" && (
-        <div className="p-5 bg-blue-50 border border-blue-200 rounded-xl space-y-4">
+      {backendOrderType === "InspectionHire" && (
+        <div className="p-6 bg-purple-50/50 border border-purple-200 rounded-2xl shadow-sm space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-blue-800 mb-2">Inspection Time <span className="text-red-500">*</span></label>
-            <input
-              type="datetime-local"
-              name="inspectionTime"
-              required
-              value={formData.inspectionTime}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-blue-300 rounded-xl focus:outline-none focus:border-blue-500 transition-colors"
-            />
+            <label className="block text-xs font-bold text-purple-800 uppercase tracking-wide mb-2">
+              Specific Inspection Time <span className="text-red-500">*</span>
+            </label>
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <HiOutlineClock className="text-purple-400 group-focus-within:text-purple-600 transition-colors text-lg" />
+              </div>
+              <input
+                type="datetime-local"
+                name="inspectionTime"
+                required
+                value={formData.inspectionTime}
+                onChange={handleChange}
+                className="w-full pl-11 pr-4 py-3.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium text-gray-800 bg-white"
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-blue-800 mb-2">Inspection Notes</label>
+            <label className="block text-xs font-bold text-purple-800 uppercase tracking-wide mb-2">
+              Inspection Notes <span className="text-purple-400 font-normal normal-case">(Optional)</span>
+            </label>
             <textarea
               name="inspectionNotes"
               rows={2}
-              placeholder="Details for the inspection..."
+              placeholder="Any details the provider should know before arriving..."
               value={formData.inspectionNotes}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-blue-300 rounded-xl focus:outline-none focus:border-blue-500 transition-colors resize-none"
+              className="w-full px-4 py-3.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium text-gray-800 bg-white resize-none placeholder-purple-900/30"
             />
           </div>
         </div>
       )}
 
+      {/* ── Job Requirements ── */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">Job Requirements & Details</label>
-        <textarea
-          name="requirements"
-          rows={4}
-          placeholder="Describe exactly what you need done..."
-          value={formData.requirements}
-          onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-secondary transition-colors resize-none"
-        />
+        <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">
+          Job Requirements & Details <span className="text-gray-400 font-normal normal-case">(Recommended)</span>
+        </label>
+        <div className="relative group">
+          <div className="absolute top-4 left-0 pl-4 flex items-start pointer-events-none">
+            <HiOutlineDocumentText className="text-gray-400 group-focus-within:text-secondary transition-colors text-lg" />
+          </div>
+          <textarea
+            name="requirements"
+            rows={4}
+            placeholder="Describe exactly what you need done in detail..."
+            value={formData.requirements}
+            onChange={handleChange}
+            className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all text-sm font-medium text-gray-800 placeholder-gray-400 bg-gray-50/50 hover:bg-white focus:bg-white resize-none"
+          />
+        </div>
       </div>
 
+      {/* ── Reference Images Upload ── */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">Reference Images (Max 5)</label>
-        <div className="flex items-center justify-center w-full">
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide">
+            Reference Images
+          </label>
+          <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">Max 5 limits</span>
+        </div>
+        
+        <div className="flex items-center justify-center w-full group">
+          <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-gray-200 border-dashed rounded-2xl cursor-pointer bg-gray-50/50 hover:bg-gray-50 hover:border-secondary transition-all group-focus-within:ring-2 group-focus-within:ring-secondary/20">
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              <MdUploadFile className="text-3xl text-gray-400 mb-2" />
-              <p className="text-sm text-gray-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+              <div className="p-3 bg-white shadow-sm rounded-full mb-3 group-hover:scale-110 transition-transform">
+                <MdUploadFile className="text-2xl text-secondary" />
+              </div>
+              <p className="text-sm text-gray-500 font-medium"><span className="text-secondary font-bold">Click to upload</span> or drag and drop</p>
+              <p className="text-xs text-gray-400 mt-1">PNG, JPG or JPEG</p>
             </div>
             <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageChange} />
           </label>
         </div>
+
+        {/* Image Previews */}
         {images.length > 0 && (
-          <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
+          <div className="flex gap-3 mt-4 overflow-x-auto pb-2 custom-scrollbar">
             {images.map((img, idx) => (
-              <div key={idx} className="relative w-20 h-20 flex-shrink-0">
-                <img src={URL.createObjectURL(img)} alt="preview" className="w-full h-full object-cover rounded-lg border border-gray-200" />
-                <button type="button" onClick={() => setImages(images.filter((_, i) => i !== idx))} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold hover:bg-red-600">×</button>
+              <div key={idx} className="relative w-24 h-24 flex-shrink-0 group/img">
+                <img src={URL.createObjectURL(img)} alt="preview" className="w-full h-full object-cover rounded-xl border border-gray-200 shadow-sm" />
+                <button 
+                  type="button" 
+                  onClick={() => setImages(images.filter((_, i) => i !== idx))} 
+                  className="absolute -top-2 -right-2 bg-white text-gray-500 hover:text-red-500 rounded-full w-6 h-6 flex items-center justify-center shadow-md border border-gray-100 transition-colors opacity-0 group-hover/img:opacity-100"
+                >
+                  <IoClose className="text-base" />
+                </button>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className={`w-full py-4 text-white font-bold rounded-xl transition-all flex justify-center items-center ${
-          loading ? "bg-gray-400 cursor-not-allowed" : "bg-secondary hover:bg-[#0e5641]"
-        }`}
-      >
-        {loading ? "Placing Order..." : "Confirm & Place Order"}
-      </button>
+      {/* ── Submit Button ── */}
+      <div className="pt-4 border-t border-gray-100">
+        <button
+          type="submit"
+          disabled={loading}
+          className={`w-full py-4 text-white font-extrabold text-base rounded-xl transition-all flex justify-center items-center shadow-lg active:scale-[0.98] ${
+            loading 
+              ? "bg-gray-400 cursor-not-allowed shadow-none" 
+              : "bg-secondary hover:bg-[#0e5641] shadow-secondary/30 hover:shadow-secondary/40"
+          }`}
+        >
+          {loading ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              Placing Order...
+            </>
+          ) : (
+            "Confirm & Place Order"
+          )}
+        </button>
+      </div>
 
     </form>
   );
 };
+
+// Simple import injected at bottom if missing from your original setup
+import { IoClose } from "react-icons/io5";
 
 export default PlaceOrderForm;

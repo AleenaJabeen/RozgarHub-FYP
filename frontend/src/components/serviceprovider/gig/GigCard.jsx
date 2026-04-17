@@ -36,10 +36,10 @@ const GigCard = ({ gig }) => {
                 <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                         <span className="text-[10px] font-bold text-gray-500 uppercase">
-                            {gig.serviceProviderId?.name?.charAt(0) || "A"}
+                            {gig.serviceProviderId?.user?.name?.charAt(0) || gig.serviceProviderId?.name?.charAt(0) || "P"}
                         </span>
                     </div>
-                    <p className="text-xs font-bold text-gray-800">{gig.serviceProviderId?.name}</p>
+                    <p className="text-xs font-bold text-gray-800">{gig.serviceProviderId?.user?.name || gig.serviceProviderId?.name}</p>
                 </div>
 
                 {/* Title */}
