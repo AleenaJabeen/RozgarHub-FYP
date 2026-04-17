@@ -42,7 +42,7 @@ const HeroSection = () => {
             transition={{ duration: 0.9, ease: "easeOut" }}
           >
            Connect directly with trusted local 
-service providers on <span className="text-secondary">RozgarHub</span>
+ <span className="text-secondary/80"> Service Providers</span> on <span className="text-secondary">RozgarHub</span>
           </motion.h1>
 
           {/* Subtitle */}
