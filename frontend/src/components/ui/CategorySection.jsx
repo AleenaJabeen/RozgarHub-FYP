@@ -49,7 +49,7 @@ const CategorySection = () => {
          {visibleCategories.map((cat, index) => (
             <div 
               key={index}
-              className="group flex flex-col items-center p-6 md:p-10 bg-white rounded-3xl shadow-sm border border-gray-300 hover:border-transparent transition-all duration-500 hover:shadow-2xl hover:-translate-y-3 cursor-pointer relative overflow-hidden"
+              className="group flex lg:h-48  md:h-42 h-32  flex-col items-center p-6 md:p-10 bg-white rounded-3xl shadow-sm border border-gray-300 hover:border-transparent transition-all duration-500 hover:shadow-2xl hover:-translate-y-3 cursor-pointer relative overflow-hidden"
             >
               {/* Animated Background Gradient on Hover */}
               <div className="absolute inset-0 bg-gradient-to-br from-secondary/100 to-secondary/70 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0"></div>

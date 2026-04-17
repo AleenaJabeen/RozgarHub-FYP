@@ -136,7 +136,7 @@ const Navbar = () => {
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <Link to="/" className="flex-shrink-0">
-            <img src={Logo2} alt="RozgarHub" className="h-10 w-auto" />
+            <img src={Logo2} alt="RozgarHub" className="h-12 w-auto" />
           </Link>
 
           {/* Desktop Menu */}
