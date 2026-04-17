@@ -74,7 +74,7 @@ const Navbar = () => {
     customer: [
       { name: "Home", href: "/customer" },
       { name: "Services", href: "/services", isMega: true },
-      { name: "Orders", href: "/orders" },
+      { name: "Orders", href: "/customer/orders" },
       { name: "Inbox", href: "/inbox" },
     ],
     serviceprovider: [

@@ -1,140 +1,177 @@
-import mongoose, { Schema } from "mongoose";
-import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
+import mongoose from "mongoose";
 
-const serviceLocationSchema = new Schema(
-  {
-    street: { type: String, trim: true },
-    city: { type: String, required: [true, "City is required"], trim: true },
-    state: { type: String, trim: true },
-    zipCode: { type: String, trim: true },
-    coordinates: {
-      type: { type: String, enum: ["Point"], default: "Point" },
-      coordinates: {
-        type: [Number], // [longitude, latitude]
-        required: [true, "Geospatial coordinates are required."],
-        validate: {
-          validator: (v) =>
-            Array.isArray(v) && v.length === 2 &&
-            v[0] >= -180 && v[0] <= 180 &&
-            v[1] >= -90  && v[1] <= 90,
-          message: "Coordinates must be a valid [longitude, latitude] pair.",
-        },
-      },
-    },
-  },
-  { _id: false }
-);
+const { Schema, model } = mongoose;
 
 const orderSchema = new Schema(
   {
-    // ── Relationships ──
-    customer: {
+    // ─── Core References ───────────────────────────────────────────────────────
+    customerId: {
       type: Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "An order must belong to a customer."],
+      ref: "Customer",
+      required: [true, "Customer reference is required."],
       index: true,
     },
-    provider: {
+    serviceProviderId: {
       type: Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "An order must be assigned to a provider."],
+      ref: "ServiceProvider",
+      required: [true, "ServiceProvider reference is required."],
       index: true,
     },
-    gig: {
+    gigId: {
       type: Schema.Types.ObjectId,
       ref: "Gig",
-      required: [true, "An order must reference a gig."],
+      required: [true, "Gig reference is required."],
       index: true,
     },
 
-    // ── Job Details ──
+    // ─── Order Classification ──────────────────────────────────────────────────
     orderType: {
       type: String,
-      enum: ["hourly", "inspection"],
+      enum: {
+        values: ["DirectHire", "UrgentHire", "InspectionHire"],
+        message: '"{VALUE}" is not a valid order type.',
+      },
       required: [true, "Order type is required."],
+    },
+
+    // ─── General Order Fields ──────────────────────────────────────────────────
+    orderImages: {
+      type: [String],
+      default: [],
     },
     requirements: {
       type: String,
       trim: true,
-      maxlength: [1000, "Requirements cannot exceed 1000 characters."],
-    },
-    hoursWorked: {
-      type: Number,
-      min: [0, "Hours worked cannot be negative."],
-      default: null, // Only used if orderType is 'hourly'
     },
     scheduledDate: {
       type: Date,
-      required: [true, "A scheduled date is required."],
     },
     serviceLocation: {
-      type: serviceLocationSchema,
-      required: [true, "A service location is required."],
+      type: String,
+      trim: true,
+      required: [true, "Service location is required."],
     },
 
-    // ── Financials ──
-    price: {
+    // ─── UrgentHire Fields ─────────────────────────────────────────────────────
+    responseTimeLimit: {
+      type: String,
+      default: null,
+    },
+    isUrgent: {
+      type: Boolean,
+      default: null,
+    },
+
+    // ─── InspectionHire Fields ─────────────────────────────────────────────────
+    inspectionTime: {
+      type: Date,
+      default: null,
+    },
+    inspectionNotes: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    // ─── Billing / Work Completion Fields ─────────────────────────────────────
+    hoursWorked: {
       type: Number,
-      required: [true, "Price is required."],
-      min: [0, "Price cannot be negative."],
+      min: [0, "Hours worked cannot be negative."],
+      default: null,
     },
-    paymentMethod: {
-      type: String,
-      enum:  ["online transaction"],
-      required: [true, "Payment method is required."],
+    hourlyRate: {
+      type: Number,
+      min: [0, "Hourly rate cannot be negative."],
+      default: null,
     },
-    paymentStatus: {
+    totalAmount: {
+      type: Number,
+      min: [0, "Total amount cannot be negative."],
+      default: null,
+    },
+    finalDescription: {
       type: String,
-      enum: ["pending", "escrow", "released", "refunded"],
-      default: "pending",
-      index: true,
+      trim: true,
+      default: null,
     },
 
-    // ── Status & Lifecycle ──
+    // ─── Lifecycle / Status ────────────────────────────────────────────────────
     status: {
       type: String,
-      enum: ["pending", "accepted", "rejected", "in-progress", "completed", "cancelled"],
+      enum: {
+        values: [
+          "pending",
+          "accepted",
+          "rejected",
+          "in-progress",
+          "completed",
+          "cancelled",
+        ],
+        message: '"{VALUE}" is not a valid order status.',
+      },
       default: "pending",
       index: true,
     },
     cancellationReason: {
       type: String,
       trim: true,
-      maxlength: [500],
       default: null,
     },
     cancelledBy: {
       type: Schema.Types.ObjectId,
-      ref: "User",
       default: null,
+      // Intentionally no ref — could be Customer or ServiceProvider
     },
 
-    // ── Reviews ──
-    isReviewedByCustomer: { type: Boolean, default: false },
-    isReviewedByProvider: { type: Boolean, default: false },
+    // ─── Review Flags ──────────────────────────────────────────────────────────
+    isReviewedByCustomer: {
+      type: Boolean,
+      default: false,
+    },
+    isReviewedByProvider: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+    timestamps: true, // adds createdAt & updatedAt automatically
+    versionKey: false,
   }
 );
 
-// ── Indexes ──
-orderSchema.index({ provider: 1, status: 1, createdAt: -1 });
-orderSchema.index({ customer: 1, status: 1, createdAt: -1 });
-orderSchema.index({ "serviceLocation.coordinates": "2dsphere" });
+// ─── Pre-validate Hook: Nullify fields that don't belong to the orderType ──────
+//
+// This is the single source of truth for field hygiene. Before Mongoose
+// runs its validators, we clear any stale fields so no "ghost" data
+// from a previous orderType ever gets persisted.
+//
+orderSchema.pre("validate", function (next) {
+  const type = this.orderType;
 
-// ── Pre-Save Hooks ──
-orderSchema.pre("save", function (next) {
-  // Clear hours worked if not an hourly job
-  if (this.orderType !== "hourly" && this.hoursWorked != null) {
-    this.hoursWorked = null;
+  if (type === "DirectHire") {
+    // UrgentHire-only fields
+    this.responseTimeLimit = null;
+    this.isUrgent = null;
+    // InspectionHire-only fields
+    this.inspectionTime = null;
+    this.inspectionNotes = null;
+  } else if (type === "UrgentHire") {
+    // InspectionHire-only fields
+    this.inspectionTime = null;
+    this.inspectionNotes = null;
+  } else if (type === "InspectionHire") {
+    // UrgentHire-only fields
+    this.responseTimeLimit = null;
+    this.isUrgent = null;
   }
-  next();
+
 });
 
-// ── Plugins ──
-orderSchema.plugin(mongooseAggregatePaginate);
+// ─── Compound Index ────────────────────────────────────────────────────────────
+// Useful for dashboard queries: "all orders for a customer under a gig"
+orderSchema.index({ customerId: 1, gigId: 1 });
+orderSchema.index({ serviceProviderId: 1, status: 1 });
 
-export const Order = mongoose.model("Order", orderSchema);
+const Order = model("Order", orderSchema);
+
+export default Order;

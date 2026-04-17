@@ -23,6 +23,13 @@ import CustomerHome from "./pages/customer/CustomerHome";
 import ServicesPage from "./pages/customer/ServicesPage";
 import CustomerDashboard from "./pages/customer/Dashboard";
 import CustomerViewProfile from "./pages/customer/ViewProfile";
+import SPOrderManagement from "./pages/orders/serviceprovider/OrderManagement";
+import CustomerOrderPage from "./pages/orders/customer/PlaceOrder";
+import CustomerOrderManagement from "./pages/orders/customer/OrderManagement";
+import OrderDetails from "./pages/orders/customer/OrderDetails";
+import ProviderProfileView from "./pages/customer/ProviderProfileView";
+import CustomerProfileView from "./pages/orders/serviceprovider/CustomerProfileView";
+import OrderDetailsSP from "./pages/orders/serviceprovider/OrderDetails";
 
 function App() {
   const dispatch = useDispatch();
@@ -80,7 +87,31 @@ function App() {
             }
           />
 
-    <Route
+          <Route
+            path="customer"
+            element={
+              <CheckAuth
+                isAuthenticated={isAuthenticated}
+                user={user}
+                loading={isLoading}
+              >
+                <CustomerHome/>
+              </CheckAuth>
+            }
+          >
+            <Route index element={<CustomerDashboard />} />
+            <Route path="view-profile" element={<CustomerViewProfile />} />
+            <Route path="services" element={<ServicesPage/>} />
+            <Route path="profile" element={<CustomerProfile/>}/>
+
+            <Route path="place-order" element={<CustomerOrderPage />} />
+            <Route path="orders" element={<CustomerOrderManagement />} />
+            <Route path="orders/:orderId" element={<OrderDetails />} />
+            <Route path="provider/:providerId" element={<ProviderProfileView />} />
+          </Route>
+
+          {/* Service Provider */}
+          <Route
             path="serviceprovider"
             element={
               <CheckAuth
@@ -98,25 +129,9 @@ function App() {
             <Route path="gigs" element={<Gig />} />
             <Route path="createGig" element={<CreateGig />} />
             <Route path="gig-details/:id" element={<GigDetails />} />
-          </Route>
-
-          {/* Customer */}
-          <Route
-            path="customer"
-            element={
-              <CheckAuth
-                isAuthenticated={isAuthenticated}
-                user={user}
-                loading={isLoading}
-              >
-                <CustomerHome />
-              </CheckAuth>
-            }
-          >
-            <Route index element={<CustomerDashboard />} />
-            <Route path="view-profile" element={<CustomerViewProfile />} />
-            <Route path="services" element={<ServicesPage />} />
-            <Route path="profile" element={<CustomerProfile />} />
+            <Route path="orders" element={<SPOrderManagement />} />
+            <Route path="orders/:orderId" element={<OrderDetailsSP />} />
+            <Route path="customer/:customerId" element={<CustomerProfileView />} />
           </Route>
         </Route>
       </Routes>

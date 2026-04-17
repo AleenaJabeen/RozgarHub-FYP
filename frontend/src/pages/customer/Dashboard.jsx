@@ -2,11 +2,12 @@ import React from 'react';
 import { LiaHeartSolid, LiaShoppingBagSolid } from 'react-icons/lia';
 import { HiChevronRight } from 'react-icons/hi';
 import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // ✅ Added useNavigate
 import { capitalizeWords } from '../../utils/capitalize';
 
 const CustomerDashboard = () => {
   const { user } = useSelector((state) => state.auth);
+  const navigate = useNavigate(); // ✅ Initialize navigate
 
   // --- Profile Strength Logic ---
   const hasAvatar = !!user?.avatar;
@@ -15,6 +16,23 @@ const CustomerDashboard = () => {
   const totalPoints        = 100;
   const currentPoints      = (hasAvatar ? 60 : 0) + (hasPhone ? 40 : 0);
   const completionPercentage = ((currentPoints / totalPoints) * 100).toFixed(0);
+
+  
+  const testPlaceOrderFlow = () => {
+    navigate("/customer/place-order", {
+      state: {
+        // Fake gig data that the PlaceOrder page is expecting
+        gig: { 
+          _id: "69d29df863cba9bd7f97c2e5", // Can be a real Gig ID
+          title: "Test Plumbing Service" 
+        },
+        // IMPORTANT: Replace this string with a REAL Service Provider ID from your database 
+        // to test actual backend submission!
+        serviceProviderId: "69d29b5563cba9bd7f97c2d3" 
+        
+      }
+    });
+  };
 
   return (
     <div className="min-h-screen bg-[#f7f7f7] p-4 md:p-8 font-sans text-[#222325]">
@@ -57,6 +75,18 @@ const CustomerDashboard = () => {
 
           {/* ── Main Content Column ── */}
           <div className="lg:col-span-8 space-y-6">
+
+            {/* ✅ TEMPORARY DEV TESTING AREA */}
+            <section className="bg-blue-50 rounded-xl border border-blue-200 p-6 shadow-sm">
+              <h2 className="text-xl font-bold tracking-tight text-blue-800 mb-2">Dev Testing Area</h2>
+              <p className="text-sm text-blue-600 mb-4">Click here to test the Place Order flow without needing a real Gig page.</p>
+              <button 
+                onClick={testPlaceOrderFlow}
+                className="px-6 py-3 bg-secondary text-white font-bold rounded-xl hover:bg-[#0e5641] transition-colors"
+              >
+                Test Place Order
+              </button>
+            </section>
 
             {/* Recent Bookings */}
             <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
