@@ -87,7 +87,7 @@ const handleSubmit = async() => {
   data.append("zipCode", formData.address.zipCode);
   data.append("longitude", formData.location.longitude);
   data.append("latitude", formData.location.latitude);
-  data.append("urgentHire", false);
+  data.append("urgentHire", formData.urgentHire);
 
   if (formData.profilePicture) data.append("avatar", formData.profilePicture);
   if (formData.cnicPicture) data.append("cnicImg", formData.cnicPicture);
