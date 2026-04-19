@@ -6,12 +6,14 @@ import { showToast } from "../../utils/toastHelper";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
 import VerifyEmailModal from "./VerifyEmailModal";
+import { useLocation } from "react-router-dom";
 
 const AuthPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [searchParams] = useSearchParams(); 
   const mode = searchParams.get("mode");
+  const location = useLocation();
 
   const [isLogin, setIsLogin] = useState(false);
   const [errors, setErrors] = useState({});
@@ -72,10 +74,10 @@ const AuthPage = () => {
       } else {
         const data = await dispatch(registerUser(formData)).unwrap();
         showToast(data.message);
-
-        // Open the Verify Modal instead of navigating
-        setTempUserData({ email: formData.email, password: formData.password });
-        setIsVerifyModalOpen(true);
+        console.log("email template")
+      navigate("/auth", {
+  state: { showVerifyModal: true, email: formData.email, password: formData.password },
+});
       }
     } catch (error) {
       showToast(error, "error");
@@ -89,6 +91,16 @@ const AuthPage = () => {
       setIsLogin(false);
     }
   }, [mode]);
+  useEffect(() => {
+  if (location.state?.showVerifyModal) {
+    setTempUserData({
+      email: location.state.email,
+      password: location.state.password,
+    });
+    setIsVerifyModalOpen(true);
+  }
+}, [location.state]);
+
 
   return (
     <div className="flex justify-center lg:p-12 md:p-6 p-4">
@@ -96,7 +108,10 @@ const AuthPage = () => {
       {isVerifyModalOpen && (
         <VerifyEmailModal
           isOpen={isVerifyModalOpen}
-          onClose={() => setIsVerifyModalOpen(false)}
+         onClose={() => {
+  setIsVerifyModalOpen(false);
+  navigate("/choose-role"); // or wherever you want
+}}
           email={tempUserData.email}
           password={tempUserData.password}
         />
