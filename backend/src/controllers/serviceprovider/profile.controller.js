@@ -47,7 +47,10 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 
   const userId = req.user._id;
   const { phone, otp } = req.body;
-  // console.log(phone,otp)
+  console.log(phone)
+  if (!phone || !otp) {
+    throw new ApiError(400, "Phone and OTP are required");
+  }
 
   const user = await User.findById(userId);
 

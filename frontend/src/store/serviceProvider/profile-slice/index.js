@@ -71,44 +71,37 @@ export const updateProviderProfile = createAsyncThunk(
   }
 );
 
+// profile-slice.js
+
 export const sendPhoneOTP = createAsyncThunk(
   "profile/sendPhoneOTP",
-  async (phone, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => { // Change 'phone' to 'payload' for clarity
     try {
-
       const response = await axios.post(
         `${BASE_URL}/send-otp`,
-        { phone },
+        payload, // This is already { phone: "03..." } from your component
         { withCredentials: true }
       );
-
       return response.data;
-
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to send OTP"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to send OTP");
     }
   }
 );
 
 export const verifyPhoneOTP = createAsyncThunk(
   "profile/verifyPhoneOTP",
-  async ({ phone, otp }, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-
+      console.log(payload)
       const response = await axios.post(
-          `${BASE_URL}/verify-phone-otp`,
-        { phone, otp },
+        `${BASE_URL}/verify-phone-otp`,
+        payload, // This is { phone: "...", otp: "..." }
         { withCredentials: true }
       );
-
       return response.data;
-
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "OTP verification failed"
-      );
+      return rejectWithValue(error.response?.data?.message || "OTP verification failed");
     }
   }
 );

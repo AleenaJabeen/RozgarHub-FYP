@@ -48,7 +48,7 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
     try {
       // Clear previous OTP errors when resending
       setErrors((prev) => ({ ...prev, otp: null })); 
-      // await dispatch(sendPhoneOTP(formData.phoneNumber)).unwrap();
+      // await dispatch(sendPhoneOTP({ phone: formData.phoneNumber })).unwrap();
       setOtpSent(true);
     } catch (err) {
       setErrors((prev) => ({ ...prev, phone: err || "Failed to send OTP" }));
@@ -68,9 +68,10 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
     try {
       // 2. Verify OTP via Redux first
       // await dispatch(verifyPhoneOTP({ 
-      //   phoneNumber: formData.phoneNumber, 
+      //   phone: formData.phoneNumber, 
       //   otp: otpString 
       // })).unwrap();
+      // console.log("hello",formData.phoneNumber)
 
       // 3. If verification passes, call the parent onSubmit (e.g., to save the whole profile)
       await onSubmit();
