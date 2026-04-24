@@ -19,11 +19,11 @@ export const createProviderProfile = createAsyncThunk(
         formData,
         {
           withCredentials: true,
-          // ✅ No Content-Type — axios handles it automatically for FormData
         }
       );
       return res.data;
     } catch (error) {
+
       return rejectWithValue(
         error.response?.data?.message || "Profile creation failed"
       );
@@ -35,11 +35,10 @@ export const getProviderProfile = createAsyncThunk(
   "profile/getProviderProfile",
   async (_, { rejectWithValue }) => {
     try {
-      // Typically fetching is a GET request
+      
       const res = await axios.get(`${BASE_URL}/get-profile`, {
         withCredentials: true,
       });
-            console.log(res.data)
 
       return res.data; 
     } catch (error) {
@@ -75,11 +74,11 @@ export const updateProviderProfile = createAsyncThunk(
 
 export const sendPhoneOTP = createAsyncThunk(
   "profile/sendPhoneOTP",
-  async (payload, { rejectWithValue }) => { // Change 'phone' to 'payload' for clarity
+  async (payload, { rejectWithValue }) => { 
     try {
       const response = await axios.post(
         `${BASE_URL}/send-otp`,
-        payload, // This is already { phone: "03..." } from your component
+        payload, 
         { withCredentials: true }
       );
       return response.data;
@@ -96,7 +95,7 @@ export const verifyPhoneOTP = createAsyncThunk(
       console.log(payload)
       const response = await axios.post(
         `${BASE_URL}/verify-phone-otp`,
-        payload, // This is { phone: "...", otp: "..." }
+        payload, 
         { withCredentials: true }
       );
       return response.data;

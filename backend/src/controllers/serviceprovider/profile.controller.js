@@ -16,7 +16,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
 
   const userId = req.user._id;
   const { phone } = req.body;
-  // console.log("Phone",phone)
+
 
   const user = await User.findById(userId);
 
@@ -105,12 +105,12 @@ const createServiceProviderProfile = asyncHandler(async (req, res) => {
     longitude,
     latitude,
   } = req.body;
-  console.log(req.body)
-   console.log("FILES:", req.files);
-    console.log("BODY:", req.body);
-    console.log("USER:", req.user);
-  
+ 
 
+  const requiredFields = [cnicNo, bio,  phone, city, country, longitude,latitude];
+if (requiredFields.some(field => !field || field.trim() === "")) {
+    throw new ApiError(400, "All mandatory fields must be filled");
+}
   const existingProfile = await ServiceProvider.findOne({ user: userId });
 
   if (existingProfile) {
@@ -125,7 +125,10 @@ const createServiceProviderProfile = asyncHandler(async (req, res) => {
   const uploadedCnic = await uploadOnCloudinary(req.files.cnicImg[0].path, {
     folder: "providers/cnic",
   });
-  console.log("STEP 4 - cnic upload result:", uploadedCnic);
+  if (!uploadedCnic?.secure_url) {
+    throw new ApiError(500, "Failed to upload CNIC image to Cloudinary");
+}
+  
 
   // AVATAR (optional)
   let avatarUrl;
@@ -184,13 +187,12 @@ const createServiceProviderProfile = asyncHandler(async (req, res) => {
     bio,
     education,
     experienceDetails,
-    skills: parsedSkills,
+   skills:Array.isArray(parsedSkills) ? parsedSkills : [],
     urgentHire,
     certificates,
     experienceDocuments,
   });
 
-  // UPDATE USER PROFILE DATA
   const userUpdate = {
     phone,
     "location.address.street": street,

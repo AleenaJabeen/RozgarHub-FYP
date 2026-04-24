@@ -6,22 +6,25 @@ import { useNavigate } from "react-router-dom";
 
 const MAX_ATTEMPTS = 3;
 
-const VerifyEmailModal = ({ email,password, isOpen, onClose }) => {
+const VerifyEmailModal = ({ email, password, isOpen, onClose }) => {
   const dispatch = useDispatch();
-  const navigate=useNavigate();
+  const navigate = useNavigate();
   const timerRef = useRef(null);
+  
+  // Use a ref to track if an OTP is currently "in flight" or already sent
+  // so we don't trigger it again on re-renders
+  const initialized = useRef(false);
 
   const [otp, setOtp] = useState("");
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const [resendAttempts, setResendAttempts] = useState(0);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const startTimer = () => {
     setCanResend(false);
     setTimer(60);
-
     if (timerRef.current) clearInterval(timerRef.current);
-
     timerRef.current = setInterval(() => {
       setTimer((prev) => {
         if (prev <= 1) {
@@ -34,20 +37,25 @@ const VerifyEmailModal = ({ email,password, isOpen, onClose }) => {
     }, 1000);
   };
 
-  
   const handleVerify = async (e) => {
     e.preventDefault();
+  
+    if (!otp.trim()) {
+      return showToast("Please enter the verification code", "error");
+    }
 
-    if (otp.length !== 6)
-      return showToast("Enter valid 6 digit OTP", "error");
+    if (otp.length !== 6) return showToast("Enter valid 6 digit OTP", "error");
+    if (isVerifying) return; // Prevent double clicks
 
     try {
-      const data = await dispatch(
-        verifyEmailOTP({ email, otp })
-      ).unwrap();
-
+      setIsVerifying(true);
+      const data = await dispatch(verifyEmailOTP({ email, otp })).unwrap();
       showToast(data.message);
+
       const loginData = await dispatch(loginUser({ email, password })).unwrap();
+      
+      // Stop everything before navigating
+      clearInterval(timerRef.current);
       onClose();
 
       if (loginData.user?.role && loginData.user.role !== "pending") {
@@ -55,98 +63,95 @@ const VerifyEmailModal = ({ email,password, isOpen, onClose }) => {
       } else {
         navigate("/choose-role");
       }
-      
     } catch (error) {
+      setIsVerifying(false);
       showToast(error, "error");
     }
   };
 
   const handleResend = async () => {
-  if (resendAttempts >= MAX_ATTEMPTS) {
-    showToast("Maximum resend attempts reached. Please try again later.", "error");
-    onClose();
-    return;
-  }
-
-  try {
-    await dispatch(sendEmailOTP(email)).unwrap();
-    setResendAttempts((prev) => prev + 1);
-    showToast(`OTP Resent (${resendAttempts + 1}/${MAX_ATTEMPTS})`);
-    startTimer();
-  } catch (error) {
-    showToast(error, "error");
-  }
-};
-
-  // ✅ Only handles timer
-  // ✅ Send OTP when modal opens
-useEffect(() => {
-  if (!isOpen) return;
-
-  const sendOtp = async () => {
+    if (resendAttempts >= MAX_ATTEMPTS) {
+      showToast("Maximum resend attempts reached.", "error");
+      return;
+    }
     try {
       await dispatch(sendEmailOTP(email)).unwrap();
-      showToast("OTP sent to your email");
+      setResendAttempts((prev) => prev + 1);
+      showToast(`OTP Resent (${resendAttempts + 1}/${MAX_ATTEMPTS})`);
+      startTimer();
     } catch (error) {
       showToast(error, "error");
     }
   };
 
-  sendOtp();
-  startTimer();
+  useEffect(() => {
+    // If modal is closed, reset the initialization lock
+    if (!isOpen) {
+      initialized.current = false;
+      return;
+    }
 
-  return () => clearInterval(timerRef.current);
-}, [isOpen]);
+    // Only run this logic ONCE when isOpen becomes true
+    if (!initialized.current) {
+      initialized.current = true; 
+      
+      const triggerInitialOtp = async () => {
+        try {
+          await dispatch(sendEmailOTP(email)).unwrap();
+          showToast("OTP sent to your email");
+          startTimer();
+        } catch (error) {
+          // If the very first send fails, allow a retry
+          initialized.current = false;
+          showToast(error, "error");
+        }
+      };
 
+      triggerInitialOtp();
+    }
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isOpen, email, dispatch]); // Strictly tied to these
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
       <div className="bg-primary rounded-2xl shadow-2xl w-full max-w-md p-8">
-        <h2 className="text-2xl font-semibold mb-2 text-center">
-          Verify Your Email
-        </h2>
-
+        <h2 className="text-2xl font-semibold mb-2 text-center">Verify Your Email</h2>
         <p className="text-gray-500 text-sm text-center mb-6">
-          Enter the 6-digit code sent to{" "}
-          <span className="font-medium text-tertiary">
-            {email}
-          </span>
+          Enter the 6-digit code sent to <span className="font-medium text-tertiary">{email}</span>
         </p>
 
         <form onSubmit={handleVerify}>
           <input
             type="text"
             maxLength="6"
+            disabled={isVerifying}
             value={otp}
-            onChange={(e) =>
-              setOtp(e.target.value.replace(/\D/g, ""))
-            }
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
             className="w-full border rounded-lg px-4 py-3 text-center text-xl tracking-[0.5em] font-mono"
             placeholder="000000"
           />
 
           <button
             type="submit"
-            className="w-full bg-secondary text-white py-3 rounded-full mt-4"
+            disabled={isVerifying}
+            className={`cursor-pointer w-full text-white py-3 rounded-full mt-4 ${isVerifying ? 'bg-gray-400' : 'bg-secondary'}`}
           >
-            Verify Email
+            {isVerifying ? "Verifying..." : "Verify Email"}
           </button>
         </form>
 
         <div className="text-center mt-6">
           {canResend ? (
-            <button
-              onClick={handleResend}
-              className="text-secondary font-semibold hover:underline"
-            >
+            <button onClick={handleResend} className="cursor-pointer text-secondary font-semibold hover:underline">
               Resend OTP
             </button>
           ) : (
-            <p className="text-gray-600">
-              Resend in {timer}s
-            </p>
+            <p className="text-gray-600">Resend in {timer}s</p>
           )}
         </div>
       </div>

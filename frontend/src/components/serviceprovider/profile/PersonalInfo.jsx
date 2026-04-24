@@ -84,6 +84,9 @@ const PersonalInfo = ({ formData, setFormData, onNext }) => {
     if (!formData.bio.trim()) {
       newErrors.bio = "Bio is required.";
     }
+    if (!formData.location || !formData.location.latitude) {
+    newErrors.location = "Please capture your location using the crosshair icon.";
+  }
 
     // Street
     if (!formData.address.street.trim()) {

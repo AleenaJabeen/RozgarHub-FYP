@@ -19,6 +19,10 @@ const createCustomerProfile = asyncHandler(async (req, res) => {
     latitude,
   } = req.body;
 
+   const requiredFields = [ city, country, longitude,latitude];
+  if (requiredFields.some(field => !field || field.trim() === "")) {
+      throw new ApiError(400, "All mandatory fields must be filled");
+  }
   const existingProfile = await Customer.findOne({ user: userId });
   if (existingProfile) {
     throw new ApiError(409, "A customer profile already exists for this account.");
