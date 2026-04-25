@@ -2,21 +2,16 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ServiceProvider } from "../../models/serviceProvider.model.js";
-import {User} from '../../models/user.model.js';
-
+import { User } from "../../models/user.model.js";
 
 import { uploadOnCloudinary } from "../../utils/cloudinary.js";
 import twilio from "twilio";
 
 const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH);
 
-
-
 export const sendOtp = asyncHandler(async (req, res) => {
-
   const userId = req.user._id;
   const { phone } = req.body;
-
 
   const user = await User.findById(userId);
 
@@ -32,7 +27,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
     .services(process.env.TWILIO_SERVICE_ID)
     .verifications.create({
       to: formattedPhone,
-      channel: "sms"
+      channel: "sms",
     });
 
   user.phone = formattedPhone;
@@ -40,14 +35,12 @@ export const sendOtp = asyncHandler(async (req, res) => {
   // console.log(verification);
 
   res.json(new ApiResponse(200, verification, "OTP sent successfully"));
-
 });
 
 export const verifyOtp = asyncHandler(async (req, res) => {
-
   const userId = req.user._id;
   const { phone, otp } = req.body;
-  console.log(phone)
+  console.log(phone);
   if (!phone || !otp) {
     throw new ApiError(400, "Phone and OTP are required");
   }
@@ -66,10 +59,10 @@ export const verifyOtp = asyncHandler(async (req, res) => {
     .services(process.env.TWILIO_SERVICE_ID)
     .verificationChecks.create({
       to: formattedPhone,
-      code: otp
+      code: otp,
     });
 
-    // console.log(verificationCheck.status);
+  // console.log(verificationCheck.status);
   if (verificationCheck.status !== "approved") {
     throw new ApiError(400, "Invalid or expired OTP");
   }
@@ -77,19 +70,16 @@ export const verifyOtp = asyncHandler(async (req, res) => {
   user.isPhoneVerified = true;
   await user.save();
 
-  res.status(200).json(
-    new ApiResponse(200, null, "Phone verified successfully")
-  );
-
+  res
+    .status(200)
+    .json(new ApiResponse(200, null, "Phone verified successfully"));
 });
-
-
-
 
 const createServiceProviderProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   const {
+    name,
     cnicNo,
     bio,
     education,
@@ -105,12 +95,20 @@ const createServiceProviderProfile = asyncHandler(async (req, res) => {
     longitude,
     latitude,
   } = req.body;
- 
 
-  const requiredFields = [cnicNo, bio,  phone, city, country, longitude,latitude];
-if (requiredFields.some(field => !field || field.trim() === "")) {
+  const requiredFields = [
+    cnicNo,
+    bio,
+    phone,
+    city,
+    country,
+    longitude,
+    latitude,
+    name,
+  ];
+  if (requiredFields.some((field) => !field || field.trim() === "")) {
     throw new ApiError(400, "All mandatory fields must be filled");
-}
+  }
   const existingProfile = await ServiceProvider.findOne({ user: userId });
 
   if (existingProfile) {
@@ -127,8 +125,7 @@ if (requiredFields.some(field => !field || field.trim() === "")) {
   });
   if (!uploadedCnic?.secure_url) {
     throw new ApiError(500, "Failed to upload CNIC image to Cloudinary");
-}
-  
+  }
 
   // AVATAR (optional)
   let avatarUrl;
@@ -187,13 +184,14 @@ if (requiredFields.some(field => !field || field.trim() === "")) {
     bio,
     education,
     experienceDetails,
-   skills:Array.isArray(parsedSkills) ? parsedSkills : [],
+    skills: Array.isArray(parsedSkills) ? parsedSkills : [],
     urgentHire,
     certificates,
     experienceDocuments,
   });
 
   const userUpdate = {
+    name,
     phone,
     "location.address.street": street,
     "location.address.city": city,
@@ -215,9 +213,15 @@ if (requiredFields.some(field => !field || field.trim() === "")) {
 
   await User.findByIdAndUpdate(userId, userUpdate, { new: true });
 
-  res.status(201).json(
-    new ApiResponse(200, provider, "Service provider profile created successfully")
-  );
+  res
+    .status(201)
+    .json(
+      new ApiResponse(
+        200,
+        provider,
+        "Service provider profile created successfully",
+      ),
+    );
 });
 const updateServiceProviderProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;
@@ -237,7 +241,6 @@ const updateServiceProviderProfile = asyncHandler(async (req, res) => {
     zipCode,
     longitude,
     latitude,
-    
   } = req.body;
   // 1. Check if profile exists
   const providerProfile = await ServiceProvider.findOne({ user: userId });
@@ -258,25 +261,24 @@ const updateServiceProviderProfile = asyncHandler(async (req, res) => {
   // 3. Handle Avatar Update (if provided)
   let avatarUrl;
   if (req.files?.avatar?.[0]) {
-  try {
-    // console.log("Uploading avatar:", req.files.avatar[0]);
+    try {
+      // console.log("Uploading avatar:", req.files.avatar[0]);
 
-    const uploadedAvatar = await uploadOnCloudinary(
-      req.files.avatar[0].path,
-      { folder: "providers/avatar" }
-    );
+      const uploadedAvatar = await uploadOnCloudinary(
+        req.files.avatar[0].path,
+        { folder: "providers/avatar" },
+      );
 
-    if (!uploadedAvatar || !uploadedAvatar.secure_url) {
-      throw new Error("Avatar upload failed");
+      if (!uploadedAvatar || !uploadedAvatar.secure_url) {
+        throw new Error("Avatar upload failed");
+      }
+
+      avatarUrl = uploadedAvatar.secure_url;
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      throw new ApiError(500, "Error uploading avatar");
     }
-
-    avatarUrl = uploadedAvatar.secure_url;
-  } catch (error) {
-    console.error("Avatar upload error:", error);
-    throw new ApiError(500, "Error uploading avatar");
   }
-}
- 
 
   // 4. Parsing Skills (if provided)
   let parsedSkills = providerProfile.skills;
@@ -321,25 +323,25 @@ const updateServiceProviderProfile = asyncHandler(async (req, res) => {
         cnicNo: cnicNo || providerProfile.cnicNo,
         cnicImg: cnicImgUrl,
         bio: bio || providerProfile.bio,
-        education:education || providerProfile.education,
-        experienceDetails: experienceDetails || providerProfile.experienceDetails,
+        education: education || providerProfile.education,
+        experienceDetails:
+          experienceDetails || providerProfile.experienceDetails,
         skills: parsedSkills,
-        urgentHire: urgentHire !== undefined ? urgentHire : providerProfile.urgentHire,
+        urgentHire:
+          urgentHire !== undefined ? urgentHire : providerProfile.urgentHire,
         certificates: updatedCertificates,
         experienceDocuments: updatedExpDocs,
       },
     },
-    { returnDocument: 'after',
-       runValidators: true
-     }
+    { returnDocument: "after", runValidators: true },
   );
 
   // 8. Update User Model (Basic info & Location)
   const userUpdate = {};
-  if(name) userUpdate.name=name;
+  if (name) userUpdate.name = name;
   if (phone) userUpdate.phone = phone;
   if (avatarUrl) userUpdate.avatar = avatarUrl;
-  
+
   // Update Address fields if any are provided
   if (street || city || state || country || zipCode) {
     if (street) userUpdate["location.address.street"] = street;
@@ -357,13 +359,18 @@ const updateServiceProviderProfile = asyncHandler(async (req, res) => {
     };
   }
 
-  await User.findByIdAndUpdate(userId, { $set: userUpdate }, { returnDocument: 'after', runValidators: true});
-
-  res.status(200).json(
-    new ApiResponse(200, updatedProvider, "Profile updated successfully")
+  await User.findByIdAndUpdate(
+    userId,
+    { $set: userUpdate },
+    { returnDocument: "after", runValidators: true },
   );
-});
 
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedProvider, "Profile updated successfully"),
+    );
+});
 
 const getServiceProviderProfile = asyncHandler(async (req, res) => {
   const userId = req.user._id;
@@ -371,16 +378,26 @@ const getServiceProviderProfile = asyncHandler(async (req, res) => {
   // Find provider and populate all necessary user fields for the UI
   const provider = await ServiceProvider.findOne({ user: userId }).populate(
     "user",
-    "name email avatar location"
+    "name email avatar location",
   );
 
   if (!provider) {
     throw new ApiError(404, "Service Provider profile not found");
   }
 
-  res.status(200).json(
-    new ApiResponse(200, provider, "Service provider profile fetched successfully")
-  );
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        provider,
+        "Service provider profile fetched successfully",
+      ),
+    );
 });
 
-export { createServiceProviderProfile, updateServiceProviderProfile ,getServiceProviderProfile};
+export {
+  createServiceProviderProfile,
+  updateServiceProviderProfile,
+  getServiceProviderProfile,
+};

@@ -74,6 +74,7 @@ useEffect(() => {
 const handleSubmit = async() => {
   const data = new FormData();
 
+  data.append("name", formData.name);
   data.append("bio", formData.bio);
   data.append("cnicNo", formData.cnicNo);
   data.append("experienceDetails", formData.experienceDetails);
@@ -96,7 +97,6 @@ const handleSubmit = async() => {
   console.log("cnicPicture:", formData.cnicPicture instanceof File); // must be true
 console.log("cnicPicture name:", formData.cnicPicture?.name);
 
-  // ✅ Correct way to log FormData contents
   for (let [key, value] of data.entries()) {
     console.log(key, value instanceof File ? `FILE: ${value.name}` : value);
   }

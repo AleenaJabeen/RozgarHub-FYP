@@ -7,13 +7,10 @@ import { useNavigate } from "react-router-dom";
 const MAX_ATTEMPTS = 3;
 
 const VerifyEmailModal = ({ email, password, isOpen, onClose }) => {
+ 
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const timerRef = useRef(null);
-  
-  // Use a ref to track if an OTP is currently "in flight" or already sent
-  // so we don't trigger it again on re-renders
-  const initialized = useRef(false);
 
   const [otp, setOtp] = useState("");
   const [timer, setTimer] = useState(60);
@@ -45,7 +42,7 @@ const VerifyEmailModal = ({ email, password, isOpen, onClose }) => {
     }
 
     if (otp.length !== 6) return showToast("Enter valid 6 digit OTP", "error");
-    if (isVerifying) return; // Prevent double clicks
+    if (isVerifying) return; 
 
     try {
       setIsVerifying(true);
@@ -54,7 +51,6 @@ const VerifyEmailModal = ({ email, password, isOpen, onClose }) => {
 
       const loginData = await dispatch(loginUser({ email, password })).unwrap();
       
-      // Stop everything before navigating
       clearInterval(timerRef.current);
       onClose();
 
@@ -84,36 +80,14 @@ const VerifyEmailModal = ({ email, password, isOpen, onClose }) => {
     }
   };
 
-  useEffect(() => {
-    // If modal is closed, reset the initialization lock
-    if (!isOpen) {
-      initialized.current = false;
-      return;
-    }
-
-    // Only run this logic ONCE when isOpen becomes true
-    if (!initialized.current) {
-      initialized.current = true; 
-      
-      const triggerInitialOtp = async () => {
-        try {
-          await dispatch(sendEmailOTP(email)).unwrap();
-          showToast("OTP sent to your email");
-          startTimer();
-        } catch (error) {
-          // If the very first send fails, allow a retry
-          initialized.current = false;
-          showToast(error, "error");
-        }
-      };
-
-      triggerInitialOtp();
-    }
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isOpen, email, dispatch]); // Strictly tied to these
+useEffect(() => {
+   if (isOpen) {
+    startTimer();
+  }
+  return () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
+}, [isOpen]);
 
   if (!isOpen) return null;
 
