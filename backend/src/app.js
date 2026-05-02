@@ -29,6 +29,7 @@ import categoryRouter from './routes/category.route.js';
 import customerRouter from './routes/customer.route.js'
 import orderRouter from './routes/order.route.js';
 import chatRouter     from './routes/chat.route.js';
+import messageRouter from './routes/message.route.js'
 
 
 app.use('/api/v1/categories',categoryRouter);
@@ -42,6 +43,7 @@ app.use('/api/v1/customer',customerRouter);
 app.use('/api/v1/orders', orderRouter);
 
 app.use('/api/v1/chat',          chatRouter);  
+app.use('/api/v1/messages',     messageRouter     ); 
 
 
 // sending error as json

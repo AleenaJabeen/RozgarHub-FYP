@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
 import { Chat } from "../models/chat.model.js";
 import { Message } from "../models/message.model.js";
+import cookie from "cookie";
 
 let io;
 const onlineUsers = new Map();
@@ -23,20 +24,33 @@ export const initSocket = (httpServer) => {
   // Reads the JWT from the handshake auth token (sent by the client as:
   //   socket = io(URL, { auth: { token: "Bearer <jwt>" } })
   // Attaches req.user to the socket so handlers can identify the caller.
-  io.use((socket, next) => {
-    try {
-      const raw = socket.handshake.auth?.token;
-      if (!raw) return next(new Error("Authentication required"));
+ 
 
-      const token = raw.startsWith("Bearer ") ? raw.slice(7) : raw;
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      socket.user = decoded; // { _id, ... }
-      next();
-    } catch {
-      next(new Error("Invalid or expired token"));
+io.use((socket, next) => {
+  try {
+    const rawCookies = socket.handshake.headers.cookie;
+
+    if (!rawCookies) {
+      return next(new Error("No cookies"));
     }
-  });
 
+    const parsed = cookie.parse(rawCookies);
+
+    const token = parsed.accessToken; // 👈 use your actual cookie name
+
+    if (!token) {
+      return next(new Error("No access token"));
+    }
+
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+    socket.user = decoded;
+
+    next();
+  } catch (err) {
+    next(new Error("Invalid or expired token"));
+  }
+});
   // ─── Connection ────────────────────────────────────────────────────────────
   io.on("connection", (socket) => {
     const userId = socket.user._id.toString();
@@ -52,6 +66,8 @@ export const initSocket = (httpServer) => {
     // Server joins the socket to the chat room so it receives real-time messages.
     socket.on("join_chat", async ({ chatId }) => {
       try {
+                 console.log("JOIN REQUEST:", chatId, "USER:", userId);
+
         // Verify the user is actually a participant
         const chat = await Chat.findOne({
           _id: chatId,
@@ -59,9 +75,10 @@ export const initSocket = (httpServer) => {
         });
         if (!chat) return socket.emit("error", { message: "Chat not found" });
 
+         console.log("✅ JOINED ROOM:", chatId);
         socket.join(chatId);
         console.log(`User ${userId} joined chat room ${chatId}`);
-
+console.log("JOIN EVENT DATA:", chatId);
         await Message.updateMany(
           {
             chatId,
@@ -106,6 +123,10 @@ export const initSocket = (httpServer) => {
             message: "Only text messages allowed via Socket.IO",
           });
         }
+        const validTypes = ["text", "image", "file"];
+if (!validTypes.includes(type)) {
+   return socket.emit("error", { message: "Invalid message type" });
+}
 
         // Verify participant
         const chat = await Chat.findOne({ _id: chatId, participants: userId });
@@ -136,7 +157,8 @@ export const initSocket = (httpServer) => {
 
         // Populate sender for the emitted payload
         await message.populate("senderId", "name avatar");
-
+const roomMembers = io.sockets.adapter.rooms.get(chatId);
+console.log("ROOM MEMBERS:", roomMembers);
         // Broadcast to everyone in the room (including sender — client can use
         // this as the "delivered" confirmation and replace the optimistic copy)
         io.to(chatId).emit("new_message", message);

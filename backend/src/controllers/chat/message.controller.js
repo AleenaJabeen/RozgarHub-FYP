@@ -1,9 +1,9 @@
-import { Message } from "../models/message.model.js";
-import { Chat } from "../models/chat.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
-import { ApiError } from "../utils/ApiError.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import { Message } from "../../models/message.model.js";
+import { Chat } from "../../models/chat.model.js";
+import { uploadOnCloudinary } from "../../utils/cloudinary.js";
+import { ApiResponse } from "../../utils/ApiResponse.js";
+import { ApiError } from "../../utils/ApiError.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
 export const sendMessage = asyncHandler(async (req, res) => {
   const { chatId, type, content } = req.body;

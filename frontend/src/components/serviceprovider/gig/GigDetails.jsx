@@ -249,7 +249,7 @@ const GigDetails = () => {
     setIsEditing(false);
   };
 
-  // ================= UI =================
+
 
   return (
     <div className="flex justify-center items-center z-50 overflow-y-auto">
@@ -533,6 +533,7 @@ const GigDetails = () => {
           </div>
         </div>
       </div>
+ 
     </div>
   );
 };

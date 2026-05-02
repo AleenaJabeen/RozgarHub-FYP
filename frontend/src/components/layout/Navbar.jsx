@@ -75,7 +75,7 @@ const Navbar = () => {
       { name: "Home", href: "/customer" },
       { name: "Services", href: "/customer/services", isMega: true },
       { name: "Orders", href: "/customer/orders" },
-      { name: "Inbox", href: "/inbox" },
+      { name: "Inbox", href: "/messages" },
     ],
     serviceprovider: [
       { name: "Dashboard", href: "/serviceprovider" },
@@ -230,7 +230,7 @@ const Navbar = () => {
                     </Link>
                     <Link
                  
-                      to="/"
+                      to="/messages"
                       className="flex items-center gap-2 cursor-pointer px-2 py-2.5 text-base text-gray-600 hover:bg-gray-50"
                     >
                      <IoChatbubblesOutline className="text-lg" />
