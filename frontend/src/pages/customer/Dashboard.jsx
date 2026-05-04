@@ -1,157 +1,211 @@
-import React from 'react';
-import { LiaHeartSolid, LiaShoppingBagSolid } from 'react-icons/lia';
-import { HiChevronRight } from 'react-icons/hi';
-import { useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom'; // ✅ Added useNavigate
-import { capitalizeWords } from '../../utils/capitalize';
+import React, { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { Link } from "react-router-dom";
+import { capitalizeWords } from "../../utils/capitalize";
+import CustomerGigCard from "../../components/customer/gigs/CustomerGigCard";
+import { getOrders } from '../../store/orders/order-slice';
+
+const STATUS_STYLES = {
+  pending: "bg-amber-50 text-amber-700 border-amber-200",
+  accepted: "bg-blue-50 text-blue-700 border-blue-200",
+  "in-progress": "bg-purple-50 text-purple-700 border-purple-200",
+  completed: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  rejected: "bg-red-50 text-red-700 border-red-200",
+  cancelled: "bg-gray-100 text-gray-500 border-gray-200",
+};
+
+const StatusBadge = ({ status }) => (
+  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border capitalize ${STATUS_STYLES[status] || "bg-gray-100 text-gray-500"}`}>
+    {status}
+  </span>
+);
+
+const OrderRow = ({ order }) => {
+  const title = order.isBroadcast ? order.requestTitle : (order.gigId?.title || "Order");
+  const date = order.scheduledDate ? new Date(order.scheduledDate).toLocaleDateString("en-PK", { day: "numeric", month: "short" }) : "—";
+
+  return (
+    <Link to={`/customer/orders/${order._id}`} className="flex items-center gap-4 py-3 px-4 rounded-xl hover:bg-[#f7f7f7] transition-colors group">
+      <div className="w-9 h-9 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center flex-shrink-0">
+        <span className="text-gray-400 text-xs font-bold">#</span>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-[#222325] truncate">{title}</p>
+        <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+          {order.serviceLocation && <span className="truncate">{order.serviceLocation}</span>}
+          <span className="flex-shrink-0">{date}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <StatusBadge status={order.status} />
+        <span className="text-gray-300 group-hover:text-[#0d7a5f] transition-colors text-sm">&rarr;</span>
+      </div>
+    </Link>
+  );
+};
 
 const CustomerDashboard = () => {
   const { user } = useSelector((state) => state.auth);
-  const navigate = useNavigate(); // ✅ Initialize navigate
+  const { profile } = useSelector((state) => state.customerProfile) || {};
+  const { orders } = useSelector((state) => state.orders) || { orders: [] };
+  const dispatch = useDispatch();
 
-  // --- Profile Strength Logic ---
+  const [savedGigs, setSavedGigs] = useState([]);
+
+  useEffect(() => {
+    dispatch(getOrders({ status: '' }));
+    try {
+      const storedGigs = JSON.parse(localStorage.getItem("rozgar_saved_gigs")) || [];
+      setSavedGigs(storedGigs);
+    } catch (error) {
+      console.error(error);
+    }
+  }, [dispatch]);
+
   const hasAvatar = !!user?.avatar;
-  const hasPhone  = !!user?.isPhoneVerified;
-
-  const totalPoints        = 100;
-  const currentPoints      = (hasAvatar ? 60 : 0) + (hasPhone ? 40 : 0);
+  const hasPhone = !!user?.isPhoneVerified;
+  const totalPoints = 100;
+  const currentPoints = (hasAvatar ? 60 : 0) + (hasPhone ? 40 : 0);
   const completionPercentage = ((currentPoints / totalPoints) * 100).toFixed(0);
 
-  
-  const testPlaceOrderFlow = () => {
-    navigate("/customer/place-order", {
-      state: {
-        // Fake gig data that the PlaceOrder page is expecting
-        gig: { 
-          _id: "69d29df863cba9bd7f97c2e5", // Can be a real Gig ID
-          title: "Test Plumbing Service" 
-        },
-        // IMPORTANT: Replace this string with a REAL Service Provider ID from your database 
-        // to test actual backend submission!
-        serviceProviderId: "69d29b5563cba9bd7f97c2d3" 
-        
-      }
-    });
-  };
+  const recentOrders = [...(orders || [])].slice(0, 4);
+  const hasMoreOrders = (orders || []).length > 4;
 
   return (
     <div className="min-h-screen bg-[#f7f7f7] p-4 md:p-8 font-sans text-[#222325]">
       <div className="max-w-6xl mx-auto">
-
-        {/* ── Top Profile Header ── */}
-        <header className="bg-white rounded-lg border border-gray-200 p-4 mb-6 flex flex-wrap items-center justify-between shadow-sm">
+        <header className="bg-white rounded-xl border border-gray-200 p-4 mb-6 flex flex-wrap items-center justify-between shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="relative">
-              {user?.avatar ? (
-                <img
-                  src={user?.avatar}
-                  alt="Profile"
-                  className="w-16 h-16 rounded-full object-cover border border-gray-100"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-full text-primary bg-secondary flex items-center justify-center font-bold text-xl uppercase">
-                  {user?.name?.charAt(0) || "?"}
-                </div>
-              )}
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">
-                {capitalizeWords(user?.name) || "Loading..."}
-              </h1>
-              <div className="flex items-center gap-3 mt-1 text-sm">
-                <p className="text-gray-500">{user?.email || "Email is Loading..."}</p>
+            {user?.avatar ? (
+              <img src={user.avatar} alt="Profile" className="w-14 h-14 rounded-full object-cover border border-gray-200" />
+            ) : (
+              <div className="w-14 h-14 rounded-full bg-[#0d7a5f] flex items-center justify-center font-bold text-xl text-white uppercase">
+                {user?.name?.charAt(0) || "?"}
               </div>
+            )}
+            <div>
+              <h1 className="text-lg font-bold leading-tight">
+                Welcome back, {capitalizeWords(user?.name) || "Customer"}!
+              </h1>
+              <p className="text-sm text-gray-400 mt-0.5">{user?.email}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-transparent">
-            <span className="font-semibold text-sm text-gray-600">Customer</span>
-            <HiChevronRight className="text-gray-400 text-lg" />
+          <div className="flex items-center gap-1.5 text-sm text-gray-500">
+            <span className="font-medium">Customer</span>
           </div>
         </header>
 
-        {/* ── Dashboard Grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-          {/* ── Main Content Column ── */}
           <div className="lg:col-span-8 space-y-6">
+            <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <h2 className="text-base font-bold">Recent Bookings</h2>
+                <Link to="/customer/orders" className="text-xs font-semibold text-[#0d7a5f] hover:text-[#0e5641] transition-colors">
+                  View All &rarr;
+                </Link>
+              </div>
 
-            {/* ✅ TEMPORARY DEV TESTING AREA */}
-            <section className="bg-blue-50 rounded-xl border border-blue-200 p-6 shadow-sm">
-              <h2 className="text-xl font-bold tracking-tight text-blue-800 mb-2">Dev Testing Area</h2>
-              <p className="text-sm text-blue-600 mb-4">Click here to test the Place Order flow without needing a real Gig page.</p>
-              <button 
-                onClick={testPlaceOrderFlow}
-                className="px-6 py-3 bg-secondary text-white font-bold rounded-xl hover:bg-[#0e5641] transition-colors"
-              >
-                Test Place Order
-              </button>
+              {recentOrders.length > 0 ? (
+                <div className="divide-y divide-gray-50 px-2">
+                  {recentOrders.map((order) => (
+                    <OrderRow key={order._id} order={order} />
+                  ))}
+                  {hasMoreOrders && (
+                    <div className="px-4 py-3 text-center">
+                      <Link to="/customer/orders" className="text-xs font-semibold text-[#0d7a5f] hover:underline">
+                        View all orders
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="py-12 flex flex-col items-center justify-center text-center">
+                  <p className="text-sm font-semibold text-gray-400">No bookings yet</p>
+                  <p className="text-xs text-gray-300 mt-1">Your recent orders will appear here.</p>
+                  <Link to="/customer/services" className="mt-4 px-5 py-2 text-xs font-bold text-[#0d7a5f] border border-[#0d7a5f] rounded-lg hover:bg-[#0d7a5f] hover:text-white transition-all">
+                    Browse Services
+                  </Link>
+                </div>
+              )}
             </section>
 
-            {/* Recent Bookings */}
-            <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold tracking-tight">Recent Bookings</h2>
-                <button className="flex items-center gap-2 bg-[#efeff0] hover:bg-gray-200 px-4 py-2 rounded-lg text-sm font-bold transition-colors">
-                  View All <LiaShoppingBagSolid size={18} />
-                </button>
+            <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <h2 className="text-base font-bold">Saved Gigs</h2>
+                <Link to="/customer/services" className="text-xs font-semibold text-[#0d7a5f] hover:text-[#0e5641] transition-colors">
+                  Browse More &rarr;
+                </Link>
               </div>
-              <div className="bg-[#f5f5f5] border border-gray-100 rounded-lg py-10 flex justify-center items-center">
-                <p className="text-gray-500 font-semibold">No recent bookings</p>
-              </div>
-            </section>
 
-            {/* Saved Gigs & Favorites */}
-            <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold tracking-tight">Saved Gigs & Favorites</h2>
-                <button className="flex items-center gap-2 bg-[#efeff0] hover:bg-gray-200 px-4 py-2 rounded-lg text-sm font-bold transition-colors">
-                  Browse Gigs <LiaHeartSolid size={18} />
-                </button>
-              </div>
-              <div className="bg-[#f5f5f5] border border-gray-100 rounded-lg py-10 flex justify-center items-center">
-                <p className="text-gray-500 font-semibold">You haven't saved any gigs yet</p>
-              </div>
+              {savedGigs.length > 0 ? (
+                <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {savedGigs.map((gig) => (
+                    <CustomerGigCard key={gig._id || gig} gig={gig} initialSaved={true} />
+                  ))}
+                </div>
+              ) : (
+                <div className="py-12 flex flex-col items-center justify-center text-center">
+                  <p className="text-sm font-semibold text-gray-400">No saved gigs</p>
+                  <p className="text-xs text-gray-300 mt-1">Tap the heart on any gig to save it here.</p>
+                </div>
+              )}
             </section>
-
           </div>
 
-          {/* ── Sidebar Column ── */}
-          <div className="lg:col-span-4 space-y-6">
-
-            {/* Profile Strength Widget */}
-            <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <div className="flex justify-between items-start mb-2">
-                <h2 className="text-xl font-bold leading-tight text-secondary">Profile Strength</h2>
-                <div className="text-[28px] font-bold italic flex items-baseline leading-none">
+          <div className="lg:col-span-4 space-y-5">
+            <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-[#222325]">Profile Strength</h2>
+                <span className="text-sm font-bold text-[#0d7a5f]">
                   {completionPercentage}
-                  <span className="text-gray-400 text-sm not-italic font-normal ml-0.5">
-                    /{totalPoints}
-                  </span>
-                </div>
+                  <span className="text-gray-300 font-normal text-xs">/{totalPoints}</span>
+                </span>
               </div>
-              <p className="text-[15px] text-gray-600 mb-6 leading-relaxed">
-                {completionPercentage === "100"
-                  ? "Your profile is fully verified and complete!"
-                  : "Complete your profile to get the best experience on RozgarHub."}
-              </p>
 
-              {/* Progress Bar */}
-              <div className="w-full bg-gray-100 h-2 rounded-full mb-8">
-                <div
-                  className="bg-secondary h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${completionPercentage}%` }}
-                />
+              <div className="w-full bg-gray-100 h-1.5 rounded-full mb-3">
+                <div className="bg-[#0d7a5f] h-1.5 rounded-full transition-all duration-500" style={{ width: `${completionPercentage}%` }} />
+              </div>
+
+              <div className="space-y-1.5 mb-4">
+                {[
+                  { label: "Profile picture", done: hasAvatar, pts: 60 },
+                  { label: "Phone verified", done: hasPhone, pts: 40 },
+                ].map(({ label, done, pts }) => (
+                  <div key={label} className="flex items-center justify-between text-xs">
+                    <span className={`flex items-center gap-2 ${done ? "text-gray-500" : "text-gray-400"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${done ? "bg-[#0d7a5f]" : "bg-gray-300"}`} />
+                      {label}
+                    </span>
+                    <span className={`font-semibold ${done ? "text-[#0d7a5f]" : "text-gray-300"}`}>
+                      +{pts}
+                    </span>
+                  </div>
+                ))}
               </div>
 
               {completionPercentage < 100 && (
-                <Link
-                  to="/customer/profile"
-                  className="block cursor-pointer text-center w-full py-2.5 px-4 border border-secondary rounded-lg font-bold text-secondary hover:bg-gray-50 transition-colors"
-                >
-                  Complete profile
+                <Link to="/customer/profile" className="block text-center w-full py-2 text-xs font-bold text-[#0d7a5f] border border-[#0d7a5f] rounded-lg hover:bg-[#0d7a5f] hover:text-white transition-all">
+                  Complete Profile
                 </Link>
               )}
+            </section>
+
+            <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+              <h2 className="text-sm font-bold text-[#222325] mb-4">Your Activity</h2>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "Orders", value: profile?.totalOrdersPlaced ?? 0 },
+                  { label: "Saved Gigs", value: savedGigs.length },
+                ].map(({ label, value }) => (
+                  <div key={label} className="p-3 bg-[#f7f7f7] rounded-xl border border-gray-100 text-center">
+                    <p className="text-xl font-extrabold text-[#222325]">{value}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{label}</p>
+                  </div>
+                ))}
+              </div>
             </section>
 
           </div>

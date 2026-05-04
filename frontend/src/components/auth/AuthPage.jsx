@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { login } from "../../assets";
 import { useDispatch } from "react-redux";
-import { checkAuth, loginUser, registerUser } from "../../store/auth-slice";
+import { checkAuth, loginUser, registerUser, sendEmailOTP } from "../../store/auth-slice";
 import { showToast } from "../../utils/toastHelper";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
 import VerifyEmailModal from "./VerifyEmailModal";
+import { useLocation } from "react-router-dom";
 
 const AuthPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [searchParams] = useSearchParams(); 
+  const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode");
+  const location = useLocation();
 
   const [isLogin, setIsLogin] = useState(false);
   const [errors, setErrors] = useState({});
@@ -62,9 +64,7 @@ const AuthPage = () => {
         const authData = await dispatch(checkAuth()).unwrap();
         if (authData?.role && authData.role !== "pending") {
           navigate(
-            authData.role === "customer"
-              ? "/customer"
-              : "/serviceprovider",
+            authData.role === "customer" ? "/customer" : "/serviceprovider",
           );
         } else {
           navigate("/choose-role");
@@ -72,16 +72,22 @@ const AuthPage = () => {
       } else {
         const data = await dispatch(registerUser(formData)).unwrap();
         showToast(data.message);
-
-        // Open the Verify Modal instead of navigating
-        setTempUserData({ email: formData.email, password: formData.password });
-        setIsVerifyModalOpen(true);
+        await dispatch(sendEmailOTP(formData.email)).unwrap();
+      showToast("OTP sent to your email");
+       
+        navigate("/auth", {
+          state: {
+            showVerifyModal: true,
+            email: formData.email,
+            password: formData.password,
+          },
+        });
       }
     } catch (error) {
       showToast(error, "error");
     }
   };
-  // based on what is click from navbar
+
   useEffect(() => {
     if (mode === "login") {
       setIsLogin(true);
@@ -90,13 +96,23 @@ const AuthPage = () => {
     }
   }, [mode]);
 
+ useEffect(() => {
+  if (location.state?.showVerifyModal) {
+    const { email, password } = location.state;
+    setTempUserData({ email, password });
+    setIsVerifyModalOpen(true);
+    navigate(location.pathname, { replace: true, state: null });
+  }
+}, [location.state]);
   return (
     <div className="flex justify-center lg:p-12 md:p-6 p-4">
       {/* Verify Modal Integration */}
       {isVerifyModalOpen && (
         <VerifyEmailModal
           isOpen={isVerifyModalOpen}
-          onClose={() => setIsVerifyModalOpen(false)}
+          onClose={() => {
+            setIsVerifyModalOpen(false);
+          }}
           email={tempUserData.email}
           password={tempUserData.password}
         />

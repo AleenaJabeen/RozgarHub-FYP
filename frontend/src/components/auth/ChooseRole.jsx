@@ -92,7 +92,7 @@ const ChooseRole = () => {
         <button 
           disabled={!selectedRole}
           onClick={onContinue}
-          className={`mt-10 w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all
+          className={`cursor-pointer mt-10 w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all
             ${selectedRole 
               ? "bg-secondary text-white hover:scale-[1.02] shadow-lg" 
               : "bg-white/10 text-gray-500 cursor-not-allowed"}`}

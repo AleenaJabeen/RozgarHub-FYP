@@ -1,32 +1,27 @@
 import React, { useState, useRef } from "react";
 import { useDispatch } from "react-redux";
-import { sendPhoneOTP,verifyPhoneOTP } from "../../../store/serviceProvider/profile-slice";
-import { useNavigate } from "react-router-dom";
+import { sendPhoneOTP, verifyPhoneOTP } from "../../../store/serviceProvider/profile-slice";
 
-const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
-  const dispatch=useDispatch();
+const Verification = ({ formData, setFormData, onSubmit, onBack }) => {
+  const dispatch = useDispatch();
   const [errors, setErrors] = useState({});
   const [otpSent, setOtpSent] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Loading state
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false); // New State
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const otpRefs = useRef([]);
 
   const handleOtpChange = (value, index) => {
-    // Only allow single digits
     if (!/^\d?$/.test(value)) return;
-
     const newOtp = [...formData.otp];
     newOtp[index] = value;
-
     setFormData((prev) => ({ ...prev, otp: newOtp }));
 
-    // Move to next input if value is entered
     if (value && index < 5) {
       otpRefs.current[index + 1]?.focus();
     }
   };
 
   const handleOtpKeyDown = (e, index) => {
-    // Move to previous input on backspace if current is empty
     if (e.key === "Backspace" && !formData.otp[index] && index > 0) {
       otpRefs.current[index - 1]?.focus();
     }
@@ -43,20 +38,26 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
     return Object.keys(newErrors).length === 0;
   };
 
- const handleSendOtp = async () => {
+  const handleSendOtp = async () => {
     if (!validatePhone()) return;
     try {
-      // Clear previous OTP errors when resending
-      setErrors((prev) => ({ ...prev, otp: null })); 
-      // await dispatch(sendPhoneOTP(formData.phoneNumber)).unwrap();
+      setErrors((prev) => ({ ...prev, otp: null, phone: null }));
+      await dispatch(sendPhoneOTP({ phone: formData.phoneNumber })).unwrap();
       setOtpSent(true);
+      setIsPhoneVerified(false); // Reset if they change number and resend
     } catch (err) {
       setErrors((prev) => ({ ...prev, phone: err || "Failed to send OTP" }));
     }
   };
 
   const handleSubmit = async () => {
-    // 1. Validate UI
+    // 1. Check if OTP was even sent
+    if (!otpSent) {
+      setErrors((prev) => ({ ...prev, phone: "Please send and verify OTP first." }));
+      return;
+    }
+
+    // 2. Check if OTP fields are filled
     if (formData.otp.some((d) => d === "")) {
       setErrors((prev) => ({ ...prev, otp: "Please enter the complete 6-digit OTP." }));
       return;
@@ -66,16 +67,18 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
     const otpString = formData.otp.join("");
 
     try {
-      // 2. Verify OTP via Redux first
-      // await dispatch(verifyPhoneOTP({ 
-      //   phoneNumber: formData.phoneNumber, 
-      //   otp: otpString 
-      // })).unwrap();
+      // 3. Verify OTP
+      await dispatch(verifyPhoneOTP({ 
+        phone: formData.phoneNumber, 
+        otp: otpString 
+      })).unwrap();
 
-      // 3. If verification passes, call the parent onSubmit (e.g., to save the whole profile)
+      setIsPhoneVerified(true);
+      
+      // 4. If verification passes, proceed to final submit
       await onSubmit();
     } catch (err) {
-      // Handle server-side verification errors
+      setIsPhoneVerified(false);
       setErrors((prev) => ({ ...prev, otp: err || "Invalid OTP. Please try again." }));
     } finally {
       setIsSubmitting(false);
@@ -99,34 +102,44 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
         </div>
 
         {/* Phone */}
-        <div className="mb-8 ms-3">
+        <div className="mb-4 ms-3">
           <label className="block text-base font-medium mb-2 ms-1">Phone Number</label>
-          <input
-            type="text"
-            placeholder="03XX------"
-            className={`w-full px-4 py-2 border rounded-full focus:outline-none transition-colors ${
-              errors.phone ? "border-red-500" : "border-gray-300 focus:border-secondary"
-            }`}
-            value={formData.phoneNumber}
-            onChange={(e) => setFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))}
-          />
-          {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+          <div className="relative">
+             <input
+              type="text"
+              placeholder="03XX------"
+              disabled={otpSent && isPhoneVerified} // Lock if verified
+              className={`w-full px-4 py-2 border rounded-full focus:outline-none transition-colors ${
+                errors.phone ? "border-red-500" : "border-gray-300 focus:border-secondary"
+              } ${isPhoneVerified ? "bg-green-50 border-green-500" : ""}`}
+              value={formData.phoneNumber}
+              onChange={(e) => setFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))}
+            />
+            {isPhoneVerified && (
+              <span className="absolute right-4 top-2 text-green-600 font-bold">✓ Verified</span>
+            )}
+          </div>
+          {errors.phone && <p className="text-red-500 text-xs mt-1 ml-4">{errors.phone}</p>}
         </div>
 
         {/* Send OTP Button */}
-        <div className="mb-4 ms-4">
-          <button
-            onClick={handleSendOtp}
-            className="px-8 py-2 cursor-pointer bg-secondary text-white rounded-full text-base font-medium hover:bg-[#0e5641] transition-all"
-          >
-            {otpSent ? "Resend OTP" : "Send OTP"}
-          </button>
+        <div className="mb-6 ms-4">
+          {!isPhoneVerified && (
+            <button
+              onClick={handleSendOtp}
+              className="px-8 py-2 cursor-pointer bg-secondary text-white rounded-full text-base font-medium hover:bg-[#0e5641] transition-all"
+            >
+              {otpSent ? "Resend OTP" : "Send OTP"}
+            </button>
+          )}
         </div>
 
         {/* OTP Inputs */}
         {otpSent && (
           <div className="mb-8 ms-3">
-            <label className="block text-base font-medium mb-4 ms-1">Enter OTP</label>
+            <label className="block text-base font-medium mb-4 ms-1">
+              Enter OTP {isPhoneVerified && <span className="text-green-600">(Confirmed)</span>}
+            </label>
             <div className="flex md:gap-4 gap-2 ms-3">
               {[0, 1, 2, 3, 4, 5].map((i) => (
                 <input
@@ -134,31 +147,34 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
                   ref={(el) => (otpRefs.current[i] = el)}
                   type="text"
                   maxLength="1"
+                  disabled={isPhoneVerified}
                   value={formData.otp[i] || ""}
                   onChange={(e) => handleOtpChange(e.target.value, i)}
                   onKeyDown={(e) => handleOtpKeyDown(e, i)}
                   className={`w-12 h-12 md:w-16 md:h-12 border-2 rounded-lg text-center text-xl font-bold transition-all focus:outline-none ${
                     errors.otp 
                       ? "border-red-500" 
-                      : formData.otp[i] 
-                        ? "border-secondary" // Green border if value exists
-                        : "border-gray-300" // Gray border if empty
+                      : isPhoneVerified 
+                        ? "border-green-500 bg-green-50"
+                        : formData.otp[i] 
+                          ? "border-secondary" 
+                          : "border-gray-300"
                   }`}
                 />
               ))}
             </div>
-            {errors.otp && <p className="text-red-500 text-xs mt-1">{errors.otp}</p>}
+            {errors.otp && <p className="text-red-500 text-xs mt-2 ml-4">{errors.otp}</p>}
           </div>
         )}
       </div>
 
-      {/* Submit Button */}
+      {/* Action Buttons */}
       <div className="flex justify-center items-center gap-4 pt-8">
         <button
           type="button"
           onClick={onBack}
-          className="md:w-sm w-xs  cursor-pointer bg-secondary text-white font-bold py-3 rounded-full  hover:bg-[#0e5641] transition-all">
-        
+          className="md:w-sm w-xs cursor-pointer bg-gray-500 text-white font-bold py-3 rounded-full hover:bg-gray-600 transition-all"
+        >
           Back
         </button>
         <button
@@ -168,17 +184,7 @@ const Verification = ({ formData, setFormData, onSubmit ,onBack}) => {
             isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-secondary hover:bg-[#0e5641]"
           }`}
         >
-          {isSubmitting ? (
-            <>
-              <svg className="animate-spin h-5 w-5 mr-3 text-white" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              Processing...
-            </>
-          ) : (
-            "Submit Profile"
-          )}
+          {isSubmitting ? "Verifying..." : isPhoneVerified ? "Finish Registration" : "Verify & Submit"}
         </button>
       </div>
     </div>

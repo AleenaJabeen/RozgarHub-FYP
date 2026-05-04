@@ -19,11 +19,11 @@ export const createProviderProfile = createAsyncThunk(
         formData,
         {
           withCredentials: true,
-          // ✅ No Content-Type — axios handles it automatically for FormData
         }
       );
       return res.data;
     } catch (error) {
+
       return rejectWithValue(
         error.response?.data?.message || "Profile creation failed"
       );
@@ -35,11 +35,10 @@ export const getProviderProfile = createAsyncThunk(
   "profile/getProviderProfile",
   async (_, { rejectWithValue }) => {
     try {
-      // Typically fetching is a GET request
+      
       const res = await axios.get(`${BASE_URL}/get-profile`, {
         withCredentials: true,
       });
-            console.log(res.data)
 
       return res.data; 
     } catch (error) {
@@ -71,44 +70,37 @@ export const updateProviderProfile = createAsyncThunk(
   }
 );
 
+// profile-slice.js
+
 export const sendPhoneOTP = createAsyncThunk(
   "profile/sendPhoneOTP",
-  async (phone, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => { 
     try {
-
       const response = await axios.post(
         `${BASE_URL}/send-otp`,
-        { phone },
+        payload, 
         { withCredentials: true }
       );
-
       return response.data;
-
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to send OTP"
-      );
+      return rejectWithValue(error.response?.data?.message || "Failed to send OTP");
     }
   }
 );
 
 export const verifyPhoneOTP = createAsyncThunk(
   "profile/verifyPhoneOTP",
-  async ({ phone, otp }, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-
+      console.log(payload)
       const response = await axios.post(
-          `${BASE_URL}/verify-phone-otp`,
-        { phone, otp },
+        `${BASE_URL}/verify-phone-otp`,
+        payload, 
         { withCredentials: true }
       );
-
       return response.data;
-
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "OTP verification failed"
-      );
+      return rejectWithValue(error.response?.data?.message || "OTP verification failed");
     }
   }
 );

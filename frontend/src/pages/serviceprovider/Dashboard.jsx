@@ -179,7 +179,7 @@ const Dashboard = () => {
               </div>
 
               {completionPercentage < 100 && (
-                <Link to="profile" className="block cursor-pointer text-center w-full py-2.5 px-4 border border-secondary rounded-lg font-bold text-secondary hover:bg-gray-50 transition-colors">
+                <Link to="createProfile" className="block cursor-pointer text-center w-full py-2.5 px-4 border border-secondary rounded-lg font-bold text-secondary hover:bg-gray-50 transition-colors">
                   Complete profile
                 </Link>
               )}

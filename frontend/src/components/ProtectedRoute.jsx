@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 
+
 function CheckAuth({ isAuthenticated, user, loading, children }) {
   const location = useLocation();
   const path = location.pathname;
@@ -25,13 +26,16 @@ function CheckAuth({ isAuthenticated, user, loading, children }) {
   }
 
   // 2️⃣ AUTHENTICATED BUT ROLE NOT SET
-  if (user?.role === "pending" || !user?.role) {
-    if (path !== "/choose-role") {
-      return <Navigate to="/choose-role" replace />;
-    }
-    return children;
+ if (user?.role === "pending" || !user?.role) {
+  // ✅ allow auth page ONLY when verifying email
+  if (
+    path !== "/choose-role" &&
+    !(path === "/auth" && location.state?.showVerifyModal)
+  ) {
+    return <Navigate to="/choose-role" replace />;
   }
-
+  return children;
+}
   // 3️⃣ AUTHENTICATED WITH ROLE - PREVENT LANDING/AUTH ACCESS
   const dashboardPath = user.role === "customer" ? "/customer" : "/serviceprovider";
 

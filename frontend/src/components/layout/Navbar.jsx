@@ -75,7 +75,7 @@ const Navbar = () => {
       { name: "Home", href: "/customer" },
       { name: "Services", href: "/customer/services", isMega: true },
       { name: "Orders", href: "/customer/orders" },
-      { name: "Inbox", href: "/inbox" },
+      { name: "Inbox", href: "/messages" },
     ],
     serviceprovider: [
       { name: "Dashboard", href: "/serviceprovider" },
@@ -136,7 +136,7 @@ const Navbar = () => {
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <Link to="/" className="flex-shrink-0">
-            <img src={Logo2} alt="RozgarHub" className="h-10 w-auto" />
+            <img src={Logo2} alt="RozgarHub" className="h-12 w-auto" />
           </Link>
 
           {/* Desktop Menu */}
@@ -230,7 +230,7 @@ const Navbar = () => {
                     </Link>
                     <Link
                  
-                      to="/"
+                      to="/messages"
                       className="flex items-center gap-2 cursor-pointer px-2 py-2.5 text-base text-gray-600 hover:bg-gray-50"
                     >
                      <IoChatbubblesOutline className="text-lg" />

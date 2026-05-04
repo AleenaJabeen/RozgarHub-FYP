@@ -5,7 +5,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../../utils/cloudinary.js";
-import { getIo } from "../../utils/socket.js";
+import { getIO } from "../../socket/socket.js";
 
 const getCustomerProfileId = async (userId) => {
   const customer = await Customer.findOne({ user: userId }).select("_id");
@@ -78,8 +78,8 @@ const createOrder = asyncHandler(async (req, res) => {
     isUrgent,
     inspectionTime,
     inspectionNotes,
-    longitude, // NEW: Expecting coordinates from frontend
-    latitude   // NEW: Expecting coordinates from frontend
+    longitude, 
+    latitude   
   } = req.body;
 
   const isBroadcastFlag = isBroadcast === "true" || isBroadcast === true;
@@ -126,7 +126,6 @@ const createOrder = asyncHandler(async (req, res) => {
     }
   }
 
-  // Create Order with GeoJSON Point
   const orderData = {
     customerId:        customerProfileId,
     serviceProviderId: serviceProviderId || null,
@@ -158,11 +157,8 @@ const createOrder = asyncHandler(async (req, res) => {
   if (isBroadcastFlag && category) {
     try {
       const targetMinutes = parseTimeLimit(responseTimeLimit);
-      
-      // Calculate max distance: 30km (30,000 meters) per 60 minutes.
       const maxDistanceMeters = (targetMinutes / 60) * 30000;
 
-      // GEOSPATIAL QUERY: Find SPs within the calculated radius
       const nearbyProviders = await ServiceProvider.find({
         location: {
           $near: {
@@ -172,10 +168,11 @@ const createOrder = asyncHandler(async (req, res) => {
         }
       }).select("user");
 
-      const io = getIo();
+      const io = getIO();
       
       nearbyProviders.forEach(provider => {
-        io.to(`provider_${provider.user.toString()}`).emit("new_urgent_request", order);
+        const targetRoom = provider.user.toString();
+        io.to(targetRoom).emit("new_urgent_request", order);
       });
 
       const halfTimeMs = (targetMinutes / 2) * 60 * 1000;
@@ -430,12 +427,12 @@ const claimBroadcastOrder = asyncHandler(async (req, res) => {
   }
 
   order.serviceProviderId = providerProfileId;
-  order.hourlyRate = Number(hourlyRate); // <-- NEW: Save it to the order instantly
+  order.hourlyRate = Number(hourlyRate); 
   order.status = "accepted";
   await order.save();
 
   try {
-    const io = getIo();
+    const io = getIO();
     io.emit("broadcast_claimed", order._id);
   } catch (err) {
     console.error("Socket emission failed:", err);
@@ -474,7 +471,6 @@ const rebroadcastOrder = asyncHandler(async (req, res) => {
     const targetMinutes = parseTimeLimit(order.responseTimeLimit);
     const maxDistanceMeters = (targetMinutes / 60) * 30000;
 
-    // Use the exact coordinates saved on the order from the first attempt
     const [lng, lat] = order.location.coordinates;
 
     const nearbyProviders = await ServiceProvider.find({
@@ -486,9 +482,10 @@ const rebroadcastOrder = asyncHandler(async (req, res) => {
       }
     }).select("user");
 
-    const io = getIo();
+    const io = getIO();
     nearbyProviders.forEach(provider => {
-      io.to(`provider_${provider.user.toString()}`).emit("new_urgent_request", order);
+      const targetRoom = provider.user.toString();
+      io.to(targetRoom).emit("new_urgent_request", order);
     });
 
     const halfTimeMs = (targetMinutes / 2) * 60 * 1000;

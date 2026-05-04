@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import socket from "../../../utils/socket";
+import { getSocket, connectSocket } from "../../../socket/socket"; 
 import { claimBroadcastOrderThunk, getOrders } from "../../../store/orders/order-slice";
 import { showToast } from "../../../utils/toastHelper";
 
@@ -147,16 +147,10 @@ const GlobalUrgentOverlay = () => {
   useEffect(() => {
     if (!user || user.role !== "serviceprovider" || !profile) return;
 
-    const joinPersonalRoom = () => {
-      socket.emit("join_personal_room", user._id);
-    };
-
-    socket.on("connect", joinPersonalRoom);
-
-    if (socket.connected) {
-      joinPersonalRoom();
-    } else {
-      socket.connect();
+    // ✅ Get the shared socket, or create it if the user just refreshed the page
+    let socket = getSocket();
+    if (!socket) {
+      socket = connectSocket();
     }
 
     const providerSkills = profile.skills || [];
@@ -186,10 +180,10 @@ const GlobalUrgentOverlay = () => {
       });
     };
 
+    // ✅ Listen for the backend event
     socket.on("new_urgent_request", handleNewRequest);
 
     return () => {
-      socket.off("connect", joinPersonalRoom);
       socket.off("new_urgent_request", handleNewRequest);
     };
   }, [user, profile]);

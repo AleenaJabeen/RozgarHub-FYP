@@ -11,7 +11,8 @@ import { showToast } from "../../../utils/toastHelper";
 import { HiArrowLeft, HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineClock } from "react-icons/hi";
 import { MdOutlineShoppingBag, MdOutlineAccountBalanceWallet } from "react-icons/md";
 import { IoPersonCircle, IoChevronForward, IoImageOutline } from "react-icons/io5";
-import socket from "../../../utils/socket";
+
+import { getSocket, connectSocket } from "../../../socket/socket";
 
 const STATUS_STYLES = {
   pending:       "bg-amber-100 text-amber-700 border-amber-200",
@@ -53,26 +54,37 @@ const OrderDetails = () => {
   useEffect(() => {
     dispatch(getOrderById(orderId));
 
-    socket.connect();
+    let socket = getSocket();
+    if (!socket) {
+      socket = connectSocket();
+    }
 
-    socket.on("broadcast_claimed", (claimedOrderId) => {
+    // Define named handlers so we can cleanly remove them later
+    const handleBroadcastClaimed = (claimedOrderId) => {
       if (claimedOrderId === orderId) {
         showToast("A provider has accepted your urgent request.", "success");
         dispatch(getOrderById(orderId)); 
       }
-    });
+    };
 
-    socket.on("order_auto_cancelled", (cancelledOrderId) => {
+    const handleOrderAutoCancelled = (cancelledOrderId) => {
       if (cancelledOrderId === orderId) {
         showToast("Order was auto-cancelled. No provider accepted in time.", "error");
         dispatch(getOrderById(orderId));
       }
-    });
+    };
+
+    // Attach listeners
+    socket.on("broadcast_claimed", handleBroadcastClaimed);
+    socket.on("order_auto_cancelled", handleOrderAutoCancelled);
 
     return () => { 
       dispatch(clearActiveOrder()); 
-      socket.off("broadcast_claimed");
-      socket.off("order_auto_cancelled");
+      
+      if (socket) {
+        socket.off("broadcast_claimed", handleBroadcastClaimed);
+        socket.off("order_auto_cancelled", handleOrderAutoCancelled);
+      }
     };
   }, [dispatch, orderId]);
 

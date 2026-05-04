@@ -32,6 +32,9 @@ import CustomerProfileView from "./pages/orders/serviceprovider/CustomerProfileV
 import OrderDetailsSP from "./pages/orders/serviceprovider/OrderDetails";
 import CustomerGigDetails from "./pages/customer/CustomerGigDetails";
 import GlobalUrgentOverlay from "./components/orders/serviceprovider/GlobalUrgentOverlay";
+import Chat from "./pages/customer/Chat";
+import ChatWindow from "./components/chat/ChatWindow";
+
 function App() {
   const dispatch = useDispatch();
   const { user, isAuthenticated, isLoading } = useSelector(
@@ -74,7 +77,6 @@ function App() {
 
           <Route path="reset-password" element={<ForgotPassword />} />
           <Route path="reset-password/:token" element={<ChangePassword />} />
-
           <Route
             path="choose-role"
             element={
@@ -87,6 +89,10 @@ function App() {
               </CheckAuth>
             }
           />
+          <Route path="/messages" element={<Chat />}>
+  <Route index element={<Chat/>}/>
+  <Route path=":chatId" element={<ChatWindow />} />
+</Route>
 
           <Route
             path="customer"
@@ -96,19 +102,22 @@ function App() {
                 user={user}
                 loading={isLoading}
               >
-                <CustomerHome/>
+                <CustomerHome />
               </CheckAuth>
             }
           >
             <Route index element={<CustomerDashboard />} />
             <Route path="view-profile" element={<CustomerViewProfile />} />
-            <Route path="services" element={<ServicesPage/>} />
-            <Route path="profile" element={<CustomerProfile/>}/>
+            <Route path="services" element={<ServicesPage />} />
+            <Route path="profile" element={<CustomerProfile />} />
 
             <Route path="place-order" element={<CustomerOrderPage />} />
             <Route path="orders" element={<CustomerOrderManagement />} />
             <Route path="orders/:orderId" element={<OrderDetails />} />
-            <Route path="provider/:providerId" element={<ProviderProfileView />} />
+            <Route
+              path="provider/:providerId"
+              element={<ProviderProfileView />}
+            />
             <Route path="services/:gigId" element={<CustomerGigDetails />} />
           </Route>
 
@@ -129,17 +138,19 @@ function App() {
             }
           >
             <Route index element={<Dashboard />} />
-            <Route path="profile" element={<Profile />} />
+            <Route path="createProfile" element={<Profile />} />
+
             <Route path="view-profile" element={<ViewProfile />} />
             <Route path="gigs" element={<Gig />} />
             <Route path="createGig" element={<CreateGig />} />
             <Route path="gig-details/:id" element={<GigDetails />} />
             <Route path="orders" element={<SPOrderManagement />} />
             <Route path="orders/:orderId" element={<OrderDetailsSP />} />
-            <Route path="customer/:customerId" element={<CustomerProfileView />} /> 
+            <Route
+              path="customer/:customerId"
+              element={<CustomerProfileView />}
+            />
           </Route>
-
-         
         </Route>
       </Routes>
     </>
