@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { getPublicGigById } from "../../store/customer/gigSearch-slice";
 import { HiArrowLeft, HiOutlineLocationMarker, HiOutlineClock, HiChevronRight } from "react-icons/hi";
 import { MdOutlineWifiTethering, MdOutlineAccountBalanceWallet } from "react-icons/md";
-import { FaStar, FaRegStar, FaStarHalfAlt, FaBolt } from "react-icons/fa";
+import { FaStar, FaRegStar, FaStarHalfAlt } from "react-icons/fa";
 import { IoPersonCircle, IoCheckmarkCircle, IoTimeOutline } from "react-icons/io5";
 import { TbCalendarTime } from "react-icons/tb";
 
@@ -31,7 +31,7 @@ const CustomerGigDetails = () => {
 
   const [activeImage, setActiveImage] = useState(0);
   const [bookingType, setBookingType] = useState("hourly"); // Default booking type
-  const [isNavigating, setIsNavigating] = useState(false); // ✅ Added for smooth animation
+  const [isNavigating, setIsNavigating] = useState(false); 
 
   useEffect(() => {
     if (gigId) dispatch(getPublicGigById(gigId));
@@ -65,22 +65,18 @@ const CustomerGigDetails = () => {
   const isOnline     = gig.availabilityStatus === "online";
   const images       = gig.images || [];
 
-  // Calculate Urgent Rate (Example: 1.5x standard hourly rate)
-  const urgentRate = gig.hourlyRate ? Math.round(gig.hourlyRate * 1.5) : "—";
-
   const sortedHours = [...(gig.availabilityHours || [])].sort(
     (a, b) => DAY_ORDER.indexOf(a.days?.[0]) - DAY_ORDER.indexOf(b.days?.[0])
   );
 
   // ── Action Handlers ──
   const handleBookNow = () => {
-    setIsNavigating(true); // Trigger animation
+    setIsNavigating(true);
 
     const spId = typeof gig.serviceProviderId === 'object' 
       ? gig.serviceProviderId._id 
       : gig.serviceProviderId;
 
-    // Simulate a brief loading state for smooth UI transition
     setTimeout(() => {
       navigate("/customer/place-order", {
         state: {
@@ -92,7 +88,7 @@ const CustomerGigDetails = () => {
             categoryId:       gig.categoryId,
           },
           serviceProviderId: spId, 
-          bookingType: bookingType // ✅ Pass the selected type to the next page!
+          bookingType: bookingType 
         },
       });
     }, 600); 
@@ -118,9 +114,7 @@ const CustomerGigDetails = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* ════════════════════════════════════
-              LEFT COLUMN — Gallery + Details
-          ════════════════════════════════════ */}
+          {/* LEFT COLUMN — Gallery + Details */}
           <div className="lg:col-span-2 space-y-6">
             
             {/* Image Gallery */}
@@ -165,7 +159,7 @@ const CustomerGigDetails = () => {
                 <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{gig.description || <span className="italic text-gray-300">No description provided.</span>}</p>
               </div>
 
-              {/* ── Clickable Service Provider Card ── */}
+              {/* Clickable Service Provider Card */}
               <div className="mt-8 border-t border-gray-100 pt-6">
                 <h2 className="text-base font-bold text-gray-800 mb-4">Service Provider</h2>
                 
@@ -232,9 +226,7 @@ const CustomerGigDetails = () => {
             )}
           </div>
 
-          {/* ════════════════════════════════════
-              RIGHT COLUMN — Sticky Booking CTA
-          ════════════════════════════════════ */}
+          {/* RIGHT COLUMN — Sticky Booking CTA */}
           <div className="lg:col-span-1">
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm sticky top-32 space-y-6">
               
@@ -267,32 +259,6 @@ const CustomerGigDetails = () => {
                   <span className={`text-lg font-extrabold ${bookingType === 'hourly' ? "text-blue-700" : "text-gray-500"}`}>
                     <span className="text-xs font-medium mr-1 text-gray-400">Rs</span>
                     {gig.hourlyRate ?? "—"}
-                  </span>
-                </label>
-
-                {/* ✅ NEW: Urgent Option */}
-                <label className={`flex items-center justify-between p-4 border-2 rounded-2xl cursor-pointer transition-all ${
-                  bookingType === 'urgent' ? "bg-amber-50/50 border-amber-400 shadow-sm" : "bg-white border-gray-100 hover:border-amber-200"
-                }`}>
-                  <div className="flex items-center gap-3">
-                    <input 
-                      type="radio" 
-                      name="bookingType" 
-                      value="urgent" 
-                      checked={bookingType === 'urgent'} 
-                      onChange={(e) => setBookingType(e.target.value)}
-                      className="w-4 h-4 text-amber-600 focus:ring-amber-500 border-gray-300"
-                    />
-                    <div>
-                      <span className={`flex items-center gap-1.5 text-sm font-bold ${bookingType === 'urgent' ? "text-amber-900" : "text-gray-700"}`}>
-                        Urgent Hire <FaBolt className={bookingType === 'urgent' ? "text-amber-500" : "text-gray-400"} />
-                      </span>
-                      <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mt-0.5 block">Priority Response</span>
-                    </div>
-                  </div>
-                  <span className={`text-lg font-extrabold ${bookingType === 'urgent' ? "text-amber-700" : "text-gray-500"}`}>
-                    <span className="text-xs font-medium mr-1 text-gray-400">Rs</span>
-                    {urgentRate}
                   </span>
                 </label>
 

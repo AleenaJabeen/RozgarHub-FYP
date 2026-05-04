@@ -7,6 +7,8 @@ import {
   startWork,
   completeOrder,
   cancelOrder,
+  claimBroadcastOrder,
+  rebroadcastOrder,
 } from "../controllers/orders/order.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import {
@@ -41,7 +43,9 @@ router.route("/:orderId").get(verifyJWT, getOrderById);
 
 // [Service Provider Only] Accept or reject a pending order.
 router.route("/:orderId/respond").patch(verifyJWT, requireServiceProvider, respondToOrder);
-
+// Add this alongside your other order routes:
+router.route("/:orderId/claim").patch(verifyJWT, claimBroadcastOrder);
+router.route("/:orderId/rebroadcast").patch(verifyJWT, requireCustomer, rebroadcastOrder);
 // [Service Provider Only] Mark an accepted order as "in-progress" to begin work.
 router.route("/:orderId/start").patch(verifyJWT, requireServiceProvider, startWork);
 

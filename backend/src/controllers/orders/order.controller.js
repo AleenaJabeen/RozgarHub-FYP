@@ -5,16 +5,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../../utils/cloudinary.js";
-
-// ─────────────────────────────────────────────
-// Internal Helper: Resolve Profile IDs
-//
-// The auth middleware gives us req.user._id (User ObjectId).
-// The Order model stores Customer and ServiceProvider
-// profile ObjectIds — not the base User _id.
-// These helpers do ONE targeted query to translate
-// between them, and throw clearly if no profile exists.
-// ─────────────────────────────────────────────
+import { getIo } from "../../utils/socket.js";
 
 const getCustomerProfileId = async (userId) => {
   const customer = await Customer.findOne({ user: userId }).select("_id");
@@ -32,12 +23,6 @@ const getProviderProfileId = async (userId) => {
   return provider._id;
 };
 
-// ─────────────────────────────────────────────
-// Internal Helper: Fetch order and verify access
-//
-// Centralises the "does this user belong to this order"
-// check so every controller doesn't repeat it.
-// ─────────────────────────────────────────────
 const getOrderOrThrow = async (orderId, callerProfileId, role) => {
   const order = await Order.findById(orderId)
     .populate({
@@ -48,16 +33,15 @@ const getOrderOrThrow = async (orderId, callerProfileId, role) => {
       path: "serviceProviderId",
       populate: { path: "user", select: "name avatar email phone" } 
     })
-    .populate("gigId",            "title hourlyRate inspectionRate");
+    .populate("gigId", "title hourlyRate inspectionRate");
 
   if (!order) {
     throw new ApiError(404, "Order not found.");
   }
 
-  const isCustomer  = order.customerId?._id?.toString()        === callerProfileId.toString();
+  const isCustomer  = order.customerId?._id?.toString() === callerProfileId.toString();
   const isProvider  = order.serviceProviderId?._id?.toString() === callerProfileId.toString();
 
-  // Role-aware access: some actions are provider-only; others are open to both
   if (role === "provider" && !isProvider) {
     throw new ApiError(403, "Access denied. You are not the provider on this order.");
   }
@@ -71,11 +55,14 @@ const getOrderOrThrow = async (orderId, callerProfileId, role) => {
   return { order, isCustomer, isProvider };
 };
 
-// ─────────────────────────────────────────────
-// @desc    Create a new order
-// @route   POST /api/v1/orders
-// @access  Private (role: customer)
-// ─────────────────────────────────────────────
+const parseTimeLimit = (timeStr) => {
+  if (!timeStr) return 30;
+  const str = timeStr.toLowerCase();
+  const num = parseInt(str.match(/\d+/)?.[0] || 30, 10);
+  if (str.includes("hour") || str.includes("hr")) return num * 60;
+  return num;
+};
+
 const createOrder = asyncHandler(async (req, res) => {
   const {
     serviceProviderId,
@@ -84,94 +71,139 @@ const createOrder = asyncHandler(async (req, res) => {
     requirements,
     scheduledDate,
     serviceLocation,
-    // UrgentHire fields
+    isBroadcast,
+    requestTitle,
+    category,
     responseTimeLimit,
     isUrgent,
-    // InspectionHire fields
     inspectionTime,
     inspectionNotes,
+    longitude, // NEW: Expecting coordinates from frontend
+    latitude   // NEW: Expecting coordinates from frontend
   } = req.body;
 
-  // ── Required field validation ──────────────────────────────────
-  if (!serviceProviderId) throw new ApiError(400, "serviceProviderId is required.");
-  if (!gigId)             throw new ApiError(400, "gigId is required.");
-  if (!orderType)         throw new ApiError(400, "orderType is required.");
-  if (!serviceLocation)   throw new ApiError(400, "serviceLocation is required.");
+  const isBroadcastFlag = isBroadcast === "true" || isBroadcast === true;
+
+  if (!orderType) throw new ApiError(400, "orderType is required.");
+  if (!serviceLocation) throw new ApiError(400, "serviceLocation is required.");
 
   const validOrderTypes = ["DirectHire", "UrgentHire", "InspectionHire"];
   if (!validOrderTypes.includes(orderType)) {
     throw new ApiError(400, `orderType must be one of: ${validOrderTypes.join(", ")}.`);
   }
 
-  // ── Resolve caller's Customer profile ID ───────────────────────
+  if (isBroadcastFlag) {
+    if (!requestTitle) throw new ApiError(400, "requestTitle is required for urgent broadcasts.");
+    if (!category) throw new ApiError(400, "category is required for urgent broadcasts.");
+    if (!longitude || !latitude) throw new ApiError(400, "GPS coordinates (longitude, latitude) are required for urgent broadcasts.");
+  } else {
+    if (!serviceProviderId) throw new ApiError(400, "serviceProviderId is required for direct hires.");
+    if (!gigId) throw new ApiError(400, "gigId is required for direct hires.");
+  }
+
   const customerProfileId = await getCustomerProfileId(req.user._id);
 
-  // ── Prevent self-ordering ──────────────────────────────────────
-  if (serviceProviderId.toString() === customerProfileId.toString()) {
-    throw new ApiError(400, "You cannot place an order with yourself.");
-  }
+  if (!isBroadcastFlag) {
+    if (serviceProviderId.toString() === customerProfileId.toString()) {
+      throw new ApiError(400, "You cannot place an order with yourself.");
+    }
 
-  // Ensure the target provider profile actually exists
-  const providerExists = await ServiceProvider.findById(serviceProviderId).select("_id");
-  if (!providerExists) {
-    throw new ApiError(404, "Service provider not found.");
-  }
-
-  // ── OrderType-specific field validation ────────────────────────
-  if (orderType === "UrgentHire") {
-    if (!responseTimeLimit) throw new ApiError(400, "responseTimeLimit is required for UrgentHire.");
-  }
-  if (orderType === "InspectionHire") {
-    if (!inspectionTime) throw new ApiError(400, "inspectionTime is required for InspectionHire.");
-  }
-
-  // ── Upload order reference images (if any) ─────────────────────
-  const orderImages = [];
-  if (req.files?.orderImages?.length) {
-    for (const file of req.files.orderImages) {
-      const uploaded = await uploadOnCloudinary(file.path, {
-        folder: "orders/images",
-      });
-      if (uploaded?.secure_url) {
-        orderImages.push(uploaded.secure_url);
-      }
+    const providerExists = await ServiceProvider.findById(serviceProviderId).select("_id");
+    if (!providerExists) {
+      throw new ApiError(404, "Service provider not found.");
     }
   }
 
-  // ── Build and persist the Order document ───────────────────────
-  const order = await Order.create({
+  if (orderType === "UrgentHire") {
+    if (!responseTimeLimit) throw new ApiError(400, "responseTimeLimit is required for UrgentHire.");
+  }
+
+  const orderImages = [];
+  if (req.files?.orderImages?.length) {
+    for (const file of req.files.orderImages) {
+      const uploaded = await uploadOnCloudinary(file.path, { folder: "orders/images" });
+      if (uploaded?.secure_url) orderImages.push(uploaded.secure_url);
+    }
+  }
+
+  // Create Order with GeoJSON Point
+  const orderData = {
     customerId:        customerProfileId,
-    serviceProviderId,
-    gigId,
+    serviceProviderId: serviceProviderId || null,
+    gigId:             gigId || null,
+    isBroadcast:       isBroadcastFlag,
+    requestTitle:      requestTitle || null,
+    category:          category || null,
     orderType,
     requirements,
-    scheduledDate,
+    scheduledDate:     scheduledDate || null,
     serviceLocation,
     orderImages,
-    // UrgentHire fields (model's pre-validate hook nullifies these
-    // automatically if the orderType doesn't call for them)
     responseTimeLimit: responseTimeLimit || null,
-    isUrgent:          isUrgent          ?? null,
-    // InspectionHire fields
-    inspectionTime:    inspectionTime    || null,
-    inspectionNotes:   inspectionNotes   || null,
+    isUrgent:          isUrgent ?? null,
+    inspectionTime:    inspectionTime || null,
+    inspectionNotes:   inspectionNotes || null,
     status:            "pending",
-  });
+  };
 
-  res.status(201).json(
-    new ApiResponse(201, order, "Order placed successfully.")
-  );
+  if (isBroadcastFlag && longitude && latitude) {
+    orderData.location = {
+      type: "Point",
+      coordinates: [Number(longitude), Number(latitude)]
+    };
+  }
+
+  const order = await Order.create(orderData);
+
+  if (isBroadcastFlag && category) {
+    try {
+      const targetMinutes = parseTimeLimit(responseTimeLimit);
+      
+      // Calculate max distance: 30km (30,000 meters) per 60 minutes.
+      const maxDistanceMeters = (targetMinutes / 60) * 30000;
+
+      // GEOSPATIAL QUERY: Find SPs within the calculated radius
+      const nearbyProviders = await ServiceProvider.find({
+        location: {
+          $near: {
+            $geometry: { type: "Point", coordinates: [Number(longitude), Number(latitude)] },
+            $maxDistance: maxDistanceMeters
+          }
+        }
+      }).select("user");
+
+      const io = getIo();
+      
+      nearbyProviders.forEach(provider => {
+        io.to(`provider_${provider.user.toString()}`).emit("new_urgent_request", order);
+      });
+
+      const halfTimeMs = (targetMinutes / 2) * 60 * 1000;
+      setTimeout(async () => {
+        try {
+          const checkOrder = await Order.findById(order._id);
+          if (checkOrder && checkOrder.status === "pending") {
+            checkOrder.status = "cancelled";
+            checkOrder.cancellationReason = `Auto-cancelled: Not accepted within half the target time (${targetMinutes / 2} mins).`;
+            await checkOrder.save();
+            io.emit("order_auto_cancelled", checkOrder._id);
+          }
+        } catch (err) {
+          console.error("Auto-cancel failed:", err);
+        }
+      }, halfTimeMs);
+
+    } catch (socketErr) {
+      console.error("Socket emission or GeoQuery failed:", socketErr);
+    }
+  }
+
+  res.status(201).json(new ApiResponse(201, order, isBroadcastFlag ? "Broadcast sent to nearby providers." : "Order placed successfully."));
 });
 
-// ─────────────────────────────────────────────
-// @desc    Get all orders for the logged-in user
-// @route   GET /api/v1/orders
-// @access  Private (customer or provider)
-// ─────────────────────────────────────────────
 const getOrders = asyncHandler(async (req, res) => {
   const { status, page = 1, limit = 10 } = req.query;
 
-  // Resolve profile ID based on the caller's role
   let query;
   if (req.user.role === "customer") {
     const customerProfileId = await getCustomerProfileId(req.user._id);
@@ -180,15 +212,13 @@ const getOrders = asyncHandler(async (req, res) => {
     const providerProfileId = await getProviderProfileId(req.user._id);
     query = { serviceProviderId: providerProfileId };
   } else {
-    // Admin or other roles — see all (extend as needed)
     query = {};
   }
 
-  // Optional status filter
   if (status) {
     const validStatuses = ["pending", "accepted", "rejected", "in-progress", "completed", "cancelled"];
     if (!validStatuses.includes(status)) {
-      throw new ApiError(400, `Invalid status filter. Must be one of: ${validStatuses.join(", ")}.`);
+      throw new ApiError(400, `Invalid status filter.`);
     }
     query.status = status;
   }
@@ -197,7 +227,13 @@ const getOrders = asyncHandler(async (req, res) => {
   const total = await Order.countDocuments(query);
 
   const orders = await Order.find(query)
-    .populate("customerId",        "user")
+    .populate({
+      path: "customerId",
+      populate: {
+        path: "user",
+        select: "name avatar" 
+      }
+    })
     .populate({
       path: "serviceProviderId",
       select: "skills averageRating",
@@ -205,8 +241,8 @@ const getOrders = asyncHandler(async (req, res) => {
         path: "user",
         select: "name avatar" 
       }
-  })
-    .populate("gigId",             "title hourlyRate inspectionRate")
+    })
+    .populate("gigId", "title hourlyRate inspectionRate")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(Number(limit));
@@ -224,15 +260,9 @@ const getOrders = asyncHandler(async (req, res) => {
   );
 });
 
-// ─────────────────────────────────────────────
-// @desc    Get a single order by ID
-// @route   GET /api/v1/orders/:orderId
-// @access  Private (customer or provider on this order)
-// ─────────────────────────────────────────────
 const getOrderById = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
 
-  // Resolve caller's profile ID based on their role
   let callerProfileId;
   if (req.user.role === "customer") {
     callerProfileId = await getCustomerProfileId(req.user._id);
@@ -247,11 +277,6 @@ const getOrderById = asyncHandler(async (req, res) => {
   );
 });
 
-// ─────────────────────────────────────────────
-// @desc    Accept or reject a pending order
-// @route   PATCH /api/v1/orders/:orderId/respond
-// @access  Private (service provider on this order)
-// ─────────────────────────────────────────────
 const respondToOrder = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
   const { action, cancellationReason } = req.body;
@@ -264,20 +289,19 @@ const respondToOrder = asyncHandler(async (req, res) => {
     throw new ApiError(400, "cancellationReason is required when rejecting an order.");
   }
 
-  const providerProfileId          = await getProviderProfileId(req.user._id);
-  const { order }                  = await getOrderOrThrow(orderId, providerProfileId, "provider");
+  const providerProfileId = await getProviderProfileId(req.user._id);
+  const { order } = await getOrderOrThrow(orderId, providerProfileId, "provider");
 
-  // ── State machine guard ────────────────────────────────────────
   if (order.status !== "pending") {
-    throw new ApiError(409, `Cannot respond to an order with status '${order.status}'. Order must be 'pending'.`);
+    throw new ApiError(409, `Cannot respond to an order with status '${order.status}'.`);
   }
 
   if (action === "accept") {
     order.status = "accepted";
   } else {
-    order.status             = "rejected";
+    order.status = "rejected";
     order.cancellationReason = cancellationReason.trim();
-    order.cancelledBy        = providerProfileId;
+    order.cancelledBy = providerProfileId;
   }
 
   await order.save();
@@ -287,20 +311,25 @@ const respondToOrder = asyncHandler(async (req, res) => {
   );
 });
 
-// ─────────────────────────────────────────────
-// @desc    Mark an accepted order as in-progress
-// @route   PATCH /api/v1/orders/:orderId/start
-// @access  Private (service provider on this order)
-// ─────────────────────────────────────────────
 const startWork = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
 
   const providerProfileId = await getProviderProfileId(req.user._id);
-  const { order }         = await getOrderOrThrow(orderId, providerProfileId, "provider");
+  const { order } = await getOrderOrThrow(orderId, providerProfileId, "provider");
 
-  // ── State machine guard ────────────────────────────────────────
   if (order.status !== "accepted") {
-    throw new ApiError(409, `Cannot start work on an order with status '${order.status}'. Order must be 'accepted'.`);
+    throw new ApiError(409, `Cannot start work on an order with status '${order.status}'.`);
+  }
+
+  if (order.isBroadcast && order.responseTimeLimit) {
+    const targetMinutes = parseTimeLimit(order.responseTimeLimit);
+    const elapsedMinutes = Math.floor((Date.now() - new Date(order.createdAt).getTime()) / 60000);
+
+    if (elapsedMinutes > targetMinutes) {
+      const overTime = elapsedMinutes - targetMinutes;
+      const penaltyIntervals = Math.floor(overTime / 10);
+      order.latePenaltyDiscount = Math.min(penaltyIntervals * 10, 100); 
+    }
   }
 
   order.status = "in-progress";
@@ -311,33 +340,32 @@ const startWork = asyncHandler(async (req, res) => {
   );
 });
 
-// ─────────────────────────────────────────────
-// @desc    Complete an in-progress order and record billing
-// @route   PATCH /api/v1/orders/:orderId/complete
-// @access  Private (service provider on this order)
-// ─────────────────────────────────────────────
 const completeOrder = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
   const { hoursWorked, hourlyRate, finalDescription } = req.body;
 
-  // ── Billing field validation ───────────────────────────────────
-  if (hoursWorked == null) throw new ApiError(400, "hoursWorked is required to complete an order.");
-  if (hourlyRate  == null) throw new ApiError(400, "hourlyRate is required to complete an order.");
+  if (hoursWorked == null) throw new ApiError(400, "hoursWorked is required.");
+  if (hourlyRate  == null) throw new ApiError(400, "hourlyRate is required.");
   if (Number(hoursWorked) < 0) throw new ApiError(400, "hoursWorked cannot be negative.");
   if (Number(hourlyRate)  < 0) throw new ApiError(400, "hourlyRate cannot be negative.");
 
   const providerProfileId = await getProviderProfileId(req.user._id);
-  const { order }         = await getOrderOrThrow(orderId, providerProfileId, "provider");
+  const { order } = await getOrderOrThrow(orderId, providerProfileId, "provider");
 
-  // ── State machine guard ────────────────────────────────────────
   if (order.status !== "in-progress") {
-    throw new ApiError(409, `Cannot complete an order with status '${order.status}'. Order must be 'in-progress'.`);
+    throw new ApiError(409, `Cannot complete an order with status '${order.status}'.`);
   }
 
-  order.status           = "completed";
-  order.hoursWorked      = Number(hoursWorked);
-  order.hourlyRate       = Number(hourlyRate);
-  order.totalAmount      = Number(hoursWorked) * Number(hourlyRate);
+  order.status = "completed";
+  order.hoursWorked = Number(hoursWorked);
+  order.hourlyRate = Number(hourlyRate);
+  
+  let rawTotal = Number(hoursWorked) * Number(hourlyRate);
+  if (order.latePenaltyDiscount > 0) {
+    rawTotal = rawTotal - (rawTotal * (order.latePenaltyDiscount / 100));
+  }
+  
+  order.totalAmount = rawTotal;
   order.finalDescription = finalDescription?.trim() || null;
 
   await order.save();
@@ -347,20 +375,14 @@ const completeOrder = asyncHandler(async (req, res) => {
   );
 });
 
-// ─────────────────────────────────────────────
-// @desc    Cancel an order
-// @route   PATCH /api/v1/orders/:orderId/cancel
-// @access  Private (customer or provider on this order)
-// ─────────────────────────────────────────────
 const cancelOrder = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
   const { cancellationReason } = req.body;
 
   if (!cancellationReason?.trim()) {
-    throw new ApiError(400, "cancellationReason is required to cancel an order.");
+    throw new ApiError(400, "cancellationReason is required.");
   }
 
-  // Resolve the caller's profile ID based on their role
   let callerProfileId;
   if (req.user.role === "customer") {
     callerProfileId = await getCustomerProfileId(req.user._id);
@@ -370,21 +392,125 @@ const cancelOrder = asyncHandler(async (req, res) => {
 
   const { order } = await getOrderOrThrow(orderId, callerProfileId, "either");
 
-  // ── State machine guard ────────────────────────────────────────
   const nonCancellableStatuses = ["completed", "rejected", "cancelled"];
   if (nonCancellableStatuses.includes(order.status)) {
     throw new ApiError(409, `Cannot cancel an order with status '${order.status}'.`);
   }
 
-  order.status             = "cancelled";
+  order.status = "cancelled";
   order.cancellationReason = cancellationReason.trim();
-  order.cancelledBy        = callerProfileId;
+  order.cancelledBy = callerProfileId;
 
   await order.save();
 
   res.status(200).json(
     new ApiResponse(200, order, "Order cancelled successfully.")
   );
+});
+
+const claimBroadcastOrder = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  const { hourlyRate } = req.body; 
+
+  if (!hourlyRate) {
+    throw new ApiError(400, "You must provide an hourly rate to accept this request.");
+  }
+
+  const providerProfileId = await getProviderProfileId(req.user._id);
+
+  const order = await Order.findById(orderId);
+  if (!order) throw new ApiError(404, "Order not found.");
+  
+  if (!order.isBroadcast) {
+    throw new ApiError(400, "This is not a broadcast order.");
+  }
+
+  if (order.serviceProviderId) {
+    throw new ApiError(400, "This request has already been claimed.");
+  }
+
+  order.serviceProviderId = providerProfileId;
+  order.hourlyRate = Number(hourlyRate); // <-- NEW: Save it to the order instantly
+  order.status = "accepted";
+  await order.save();
+
+  try {
+    const io = getIo();
+    io.emit("broadcast_claimed", order._id);
+  } catch (err) {
+    console.error("Socket emission failed:", err);
+  }
+
+  res.status(200).json(
+    new ApiResponse(200, order, "Urgent request claimed successfully.")
+  );
+});
+
+const rebroadcastOrder = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  
+  let callerProfileId;
+  if (req.user.role === "customer") {
+    callerProfileId = await getCustomerProfileId(req.user._id);
+  } else {
+    throw new ApiError(403, "Only customers can rebroadcast orders.");
+  }
+
+  const { order } = await getOrderOrThrow(orderId, callerProfileId, "customer");
+
+  if (!order.isBroadcast) throw new ApiError(400, "This is not a broadcast order.");
+  if (order.status !== "pending" || order.serviceProviderId) throw new ApiError(400, "This order is no longer pending.");
+
+  const currentCount = order.broadcastCount || 1;
+  if (currentCount >= 3) throw new ApiError(400, "Maximum broadcast limit reached (3 tries).");
+
+  const secondsSinceUpdate = (Date.now() - new Date(order.updatedAt).getTime()) / 1000;
+  if (secondsSinceUpdate < 30) throw new ApiError(400, `Please wait ${Math.ceil(30 - secondsSinceUpdate)} seconds before rebroadcasting.`);
+
+  order.broadcastCount = currentCount + 1;
+  await order.save();
+
+  try {
+    const targetMinutes = parseTimeLimit(order.responseTimeLimit);
+    const maxDistanceMeters = (targetMinutes / 60) * 30000;
+
+    // Use the exact coordinates saved on the order from the first attempt
+    const [lng, lat] = order.location.coordinates;
+
+    const nearbyProviders = await ServiceProvider.find({
+      location: {
+        $near: {
+          $geometry: { type: "Point", coordinates: [lng, lat] },
+          $maxDistance: maxDistanceMeters
+        }
+      }
+    }).select("user");
+
+    const io = getIo();
+    nearbyProviders.forEach(provider => {
+      io.to(`provider_${provider.user.toString()}`).emit("new_urgent_request", order);
+    });
+
+    const halfTimeMs = (targetMinutes / 2) * 60 * 1000;
+    setTimeout(async () => {
+      try {
+        const checkOrder = await Order.findById(order._id);
+        if (checkOrder && checkOrder.status === "pending") {
+          checkOrder.status = "cancelled";
+          checkOrder.cancellationReason = `Auto-cancelled: Not accepted within half the target time (${targetMinutes / 2} mins).`;
+          await checkOrder.save();
+          io.emit("order_auto_cancelled", checkOrder._id);
+        }
+      } catch (err) {
+        console.error("Auto-cancel failed:", err);
+      }
+    }, halfTimeMs);
+
+  } catch (err) {
+    console.error("Socket emission failed:", err);
+  }
+
+  res.status(200).json(new ApiResponse(200, order, "Request rebroadcasted to nearby providers successfully."));
 });
 
 export {
@@ -395,4 +521,6 @@ export {
   startWork,
   completeOrder,
   cancelOrder,
+  claimBroadcastOrder,
+  rebroadcastOrder,
 };

@@ -31,6 +31,7 @@ import ProviderProfileView from "./pages/customer/ProviderProfileView";
 import CustomerProfileView from "./pages/orders/serviceprovider/CustomerProfileView";
 import OrderDetailsSP from "./pages/orders/serviceprovider/OrderDetails";
 import CustomerGigDetails from "./pages/customer/CustomerGigDetails";
+import GlobalUrgentOverlay from "./components/orders/serviceprovider/GlobalUrgentOverlay";
 function App() {
   const dispatch = useDispatch();
   const { user, isAuthenticated, isLoading } = useSelector(
@@ -120,7 +121,10 @@ function App() {
                 user={user}
                 loading={isLoading}
               >
-                <ProviderHome />
+                <>
+                  <ProviderHome />
+                  <GlobalUrgentOverlay />
+                </>
               </CheckAuth>
             }
           >

@@ -4,7 +4,6 @@ const { Schema, model } = mongoose;
 
 const orderSchema = new Schema(
   {
-    // ─── Core References ───────────────────────────────────────────────────────
     customerId: {
       type: Schema.Types.ObjectId,
       ref: "Customer",
@@ -14,17 +13,45 @@ const orderSchema = new Schema(
     serviceProviderId: {
       type: Schema.Types.ObjectId,
       ref: "ServiceProvider",
-      required: [true, "ServiceProvider reference is required."],
+      required: [
+        function () { return !this.isBroadcast; },
+        "ServiceProvider reference is required for direct hires.",
+      ],
       index: true,
     },
     gigId: {
       type: Schema.Types.ObjectId,
       ref: "Gig",
-      required: [true, "Gig reference is required."],
+      required: [
+        function () { return !this.isBroadcast; },
+        "Gig reference is required for direct hires.",
+      ],
       index: true,
     },
-
-    // ─── Order Classification ──────────────────────────────────────────────────
+    isBroadcast: {
+      type: Boolean,
+      default: false,
+    },
+    broadcastCount: {
+      type: Number,
+      default: 1,
+    },
+    requestTitle: {
+      type: String,
+      trim: true,
+      required: [
+        function () { return this.isBroadcast; },
+        "Request title is required for urgent broadcasts.",
+      ],
+    },
+    category: {
+      type: String,
+      trim: true,
+      required: [
+        function () { return this.isBroadcast; },
+        "Category is required for urgent broadcasts.",
+      ],
+    },
     orderType: {
       type: String,
       enum: {
@@ -33,8 +60,6 @@ const orderSchema = new Schema(
       },
       required: [true, "Order type is required."],
     },
-
-    // ─── General Order Fields ──────────────────────────────────────────────────
     orderImages: {
       type: [String],
       default: [],
@@ -51,8 +76,18 @@ const orderSchema = new Schema(
       trim: true,
       required: [true, "Service location is required."],
     },
+    
+    // ─── NEW: Geospatial Location for 2dsphere ─────────────────────────────────
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+      }
+    },
 
-    // ─── UrgentHire Fields ─────────────────────────────────────────────────────
     responseTimeLimit: {
       type: String,
       default: null,
@@ -61,8 +96,6 @@ const orderSchema = new Schema(
       type: Boolean,
       default: null,
     },
-
-    // ─── InspectionHire Fields ─────────────────────────────────────────────────
     inspectionTime: {
       type: Date,
       default: null,
@@ -72,8 +105,6 @@ const orderSchema = new Schema(
       trim: true,
       default: null,
     },
-
-    // ─── Billing / Work Completion Fields ─────────────────────────────────────
     hoursWorked: {
       type: Number,
       min: [0, "Hours worked cannot be negative."],
@@ -94,8 +125,12 @@ const orderSchema = new Schema(
       trim: true,
       default: null,
     },
-
-    // ─── Lifecycle / Status ────────────────────────────────────────────────────
+    latePenaltyDiscount: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
     status: {
       type: String,
       enum: {
@@ -120,10 +155,7 @@ const orderSchema = new Schema(
     cancelledBy: {
       type: Schema.Types.ObjectId,
       default: null,
-      // Intentionally no ref — could be Customer or ServiceProvider
     },
-
-    // ─── Review Flags ──────────────────────────────────────────────────────────
     isReviewedByCustomer: {
       type: Boolean,
       default: false,
@@ -134,41 +166,35 @@ const orderSchema = new Schema(
     },
   },
   {
-    timestamps: true, // adds createdAt & updatedAt automatically
+    timestamps: true,
     versionKey: false,
   }
 );
 
-// ─── Pre-validate Hook: Nullify fields that don't belong to the orderType ──────
-//
-// This is the single source of truth for field hygiene. Before Mongoose
-// runs its validators, we clear any stale fields so no "ghost" data
-// from a previous orderType ever gets persisted.
-//
-orderSchema.pre("validate", function (next) {
+orderSchema.pre("validate", function () {
   const type = this.orderType;
 
   if (type === "DirectHire") {
-    // UrgentHire-only fields
     this.responseTimeLimit = null;
     this.isUrgent = null;
-    // InspectionHire-only fields
     this.inspectionTime = null;
     this.inspectionNotes = null;
   } else if (type === "UrgentHire") {
-    // InspectionHire-only fields
     this.inspectionTime = null;
     this.inspectionNotes = null;
   } else if (type === "InspectionHire") {
-    // UrgentHire-only fields
     this.responseTimeLimit = null;
     this.isUrgent = null;
   }
 
+  if (!this.isBroadcast) {
+    this.requestTitle = null;
+    this.category = null;
+  }
 });
 
-// ─── Compound Index ────────────────────────────────────────────────────────────
-// Useful for dashboard queries: "all orders for a customer under a gig"
+// Adding a 2dsphere index on the order location for future geographic queries
+orderSchema.index({ location: "2dsphere" });
 orderSchema.index({ customerId: 1, gigId: 1 });
 orderSchema.index({ serviceProviderId: 1, status: 1 });
 

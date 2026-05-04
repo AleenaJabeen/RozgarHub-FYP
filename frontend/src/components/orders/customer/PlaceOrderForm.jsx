@@ -3,19 +3,20 @@ import { useDispatch, useSelector } from "react-redux";
 import { createOrder } from "../../../store/orders/order-slice";
 import { showToast } from "../../../utils/toastHelper";
 import { MdUploadFile } from "react-icons/md";
+import { IoClose } from "react-icons/io5";
 import { 
   HiOutlineLocationMarker, 
   HiOutlineCalendar, 
   HiOutlineClock, 
-  HiOutlineDocumentText 
+  HiOutlineDocumentText,
+  HiOutlineBriefcase,
+  HiOutlineTag
 } from "react-icons/hi";
 
-// ✅ Added bookingType to the props
-const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", onSuccess }) => {
+const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroadcast = false, broadcastCoords, onSuccess }) => {
   const dispatch = useDispatch();
   const { loading } = useSelector((state) => state.orders);
 
-  // ✅ Automatically translate the UI type to the exact string your backend expects
   const getBackendOrderType = () => {
     if (bookingType === "urgent") return "UrgentHire";
     if (bookingType === "inspection") return "InspectionHire";
@@ -24,8 +25,9 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", onSucc
   
   const backendOrderType = getBackendOrderType();
 
-  // orderType is removed from state since it's strictly handled by the prop now
   const [formData, setFormData] = useState({
+    requestTitle: "", 
+    category: "",     
     serviceLocation: "",
     requirements: "",
     scheduledDate: "",
@@ -53,23 +55,34 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", onSucc
     e.preventDefault();
 
     const submitData = new FormData();
-    submitData.append("gigId", gig._id);
-    submitData.append("serviceProviderId", serviceProviderId);
     
-    // ✅ Inject the calculated backend type
     submitData.append("orderType", backendOrderType);
     submitData.append("serviceLocation", formData.serviceLocation);
-    
     if (formData.requirements) submitData.append("requirements", formData.requirements);
-    if (formData.scheduledDate) submitData.append("scheduledDate", formData.scheduledDate);
 
-    // Conditional appends based on the exact type
-    if (backendOrderType === "UrgentHire") {
+    // ✅ STRICT SEPARATION: Broadcast vs Direct Hire
+    if (isBroadcast || backendOrderType === "UrgentHire") {
+      submitData.append("isBroadcast", "true");
+      submitData.append("requestTitle", formData.requestTitle);
+      submitData.append("category", formData.category);
       submitData.append("responseTimeLimit", formData.responseTimeLimit);
       submitData.append("isUrgent", true);
-    } else if (backendOrderType === "InspectionHire") {
-      submitData.append("inspectionTime", formData.inspectionTime);
-      if (formData.inspectionNotes) submitData.append("inspectionNotes", formData.inspectionNotes);
+
+      // ✅ ADDED: Append the captured GPS coordinates for the $near query
+      if (broadcastCoords) {
+        submitData.append("longitude", broadcastCoords.longitude);
+        submitData.append("latitude", broadcastCoords.latitude);
+      }
+    } else {
+      // It's a Direct Hire (Hourly or Inspection)
+      submitData.append("gigId", gig._id);
+      submitData.append("serviceProviderId", serviceProviderId);
+      if (formData.scheduledDate) submitData.append("scheduledDate", formData.scheduledDate);
+      
+      if (backendOrderType === "InspectionHire") {
+        submitData.append("inspectionTime", formData.inspectionTime);
+        if (formData.inspectionNotes) submitData.append("inspectionNotes", formData.inspectionNotes);
+      }
     }
 
     images.forEach((img) => {
@@ -78,19 +91,66 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", onSucc
 
     try {
       await dispatch(createOrder(submitData)).unwrap();
-      showToast("Order placed successfully!", "success");
+      showToast(isBroadcast ? "Urgent Hiring Broadcast sent!" : "Order placed successfully!", "success");
       if (onSuccess) onSuccess(); 
     } catch (err) {
       showToast(err || "Failed to place order.", "error");
     }
   };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       
+      {/* ── Broadcast Details ── */}
+      {isBroadcast && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">
+              Task / Issue Title <span className="text-red-500">*</span>
+            </label>
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <HiOutlineBriefcase className="text-amber-400 text-lg" />
+              </div>
+              <input
+                type="text"
+                name="requestTitle"
+                required
+                placeholder="E.g., Broken Pipe Flooding"
+                value={formData.requestTitle}
+                onChange={handleChange}
+                className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-sm font-medium text-gray-800 bg-gray-50/50 focus:bg-white"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">
+              Service Category <span className="text-red-500">*</span>
+            </label>
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <HiOutlineTag className="text-amber-400 text-lg" />
+              </div>
+              <select
+                name="category"
+                required
+                value={formData.category}
+                onChange={handleChange}
+                className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-sm font-medium text-gray-800 bg-gray-50/50 focus:bg-white appearance-none"
+              >
+                <option value="" disabled>Select a category...</option>
+                <option value="plumbing">Plumbing</option>
+                <option value="electrical">Electrical</option>
+                <option value="automotive">Automotive / Mechanic</option>
+                <option value="hvac">AC & Heating (HVAC)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Standard Logistics ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Service Location */}
         <div>
           <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">
             Service Location <span className="text-red-500">*</span>
@@ -106,33 +166,32 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", onSucc
               placeholder="E.g., 123 Main St, Lahore"
               value={formData.serviceLocation}
               onChange={handleChange}
-              className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all text-sm font-medium text-gray-800 placeholder-gray-400 bg-gray-50/50 hover:bg-white focus:bg-white"
-            />
-          </div>
-        </div>
-
-        {/* Scheduled Date */}
-        <div>
-          <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">
-            Scheduled Date <span className="text-gray-400 font-normal normal-case">(Optional)</span>
-          </label>
-          <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <HiOutlineCalendar className="text-gray-400 group-focus-within:text-secondary transition-colors text-lg" />
-            </div>
-            <input
-              type="date"
-              name="scheduledDate"
-              value={formData.scheduledDate}
-              onChange={handleChange}
               className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all text-sm font-medium text-gray-800 bg-gray-50/50 hover:bg-white focus:bg-white"
             />
           </div>
         </div>
+
+        {!isBroadcast && (
+          <div>
+            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">
+              Scheduled Date <span className="text-gray-400 font-normal normal-case">(Optional)</span>
+            </label>
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <HiOutlineCalendar className="text-gray-400 group-focus-within:text-secondary transition-colors text-lg" />
+              </div>
+              <input
+                type="date"
+                name="scheduledDate"
+                value={formData.scheduledDate}
+                onChange={handleChange}
+                className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all text-sm font-medium text-gray-800 bg-gray-50/50 hover:bg-white focus:bg-white"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ── Conditional Fields based on Order Type ── */}
-      
       {backendOrderType === "UrgentHire" && (
         <div className="p-6 bg-amber-50/50 border border-amber-200 rounded-2xl shadow-sm">
           <label className="block text-xs font-bold text-amber-800 uppercase tracking-wide mb-2">
@@ -233,7 +292,6 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", onSucc
           </label>
         </div>
 
-        {/* Image Previews */}
         {images.length > 0 && (
           <div className="flex gap-3 mt-4 overflow-x-auto pb-2 custom-scrollbar">
             {images.map((img, idx) => (
@@ -260,25 +318,23 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", onSucc
           className={`w-full py-4 text-white font-extrabold text-base rounded-xl transition-all flex justify-center items-center shadow-lg active:scale-[0.98] ${
             loading 
               ? "bg-gray-400 cursor-not-allowed shadow-none" 
-              : "bg-secondary hover:bg-[#0e5641] shadow-secondary/30 hover:shadow-secondary/40"
+              : isBroadcast
+                ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/30"
+                : "bg-secondary hover:bg-[#0e5641] shadow-secondary/30"
           }`}
         >
           {loading ? (
             <>
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              Placing Order...
+              Processing...
             </>
           ) : (
-            "Confirm & Place Order"
+             isBroadcast ? "Broadcast Urgent Hiring Request" : "Confirm & Place Order"
           )}
         </button>
       </div>
-
     </form>
   );
 };
-
-// Simple import injected at bottom if missing from your original setup
-import { IoClose } from "react-icons/io5";
 
 export default PlaceOrderForm;

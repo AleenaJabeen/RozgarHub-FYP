@@ -1,6 +1,7 @@
 // ViewProfile.jsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom"; 
 import { FaAward } from "react-icons/fa";
 import { IoOpenOutline } from "react-icons/io5";
 import { capitalizeWords } from "../../utils/capitalize";
@@ -12,8 +13,11 @@ import ProfileHeader from "../../components/serviceprovider/viewProfile/ProfileH
 import ExperienceSection from "../../components/serviceprovider/viewProfile/ExperienceSection";
 import SkillsSection from "../../components/serviceprovider/viewProfile/SkillsSection";
 import EducationSection from "../../components/serviceprovider/viewProfile/EducationSection";
+import { showToast } from "../../utils/toastHelper"; // ✅ Imported toast helper
+
 const ViewProfile = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const isInitialLoad = useRef(true);
   const {
     profile = null,
@@ -37,9 +41,17 @@ const ViewProfile = () => {
     [],
   );
 
-  useEffect(() => {
-    dispatch(getProviderProfile()).unwrap().catch(console.error);
-  }, [dispatch]);
+ useEffect(() => {
+    dispatch(getProviderProfile())
+      .unwrap()
+      .catch((err) => {
+        if (err.toLowerCase().includes("not found") || err.includes("404")) {
+           navigate("/serviceprovider/profile"); 
+        } else {
+           console.error(err);
+        }
+      });
+  }, [dispatch, navigate]);
 
  useEffect(() => {
   if (profile && user && isInitialLoad.current) {
@@ -57,11 +69,12 @@ const ViewProfile = () => {
 
     setFormData(initial);
     latestDataRef.current = initial;
-    originalDataRef.current = initial; // ✅ store original
+    originalDataRef.current = initial; 
 
     isInitialLoad.current = false;
   }
 }, [profile, user]);
+
  const scheduleSave = useCallback((nextData) => {
   latestDataRef.current = nextData;
 
@@ -74,12 +87,10 @@ const ViewProfile = () => {
     const payload = new FormData();
     let hasChanges = false;
 
-    // 🔥 Compare fields
     Object.keys(current).forEach((key) => {
       const currentValue = current[key];
       const originalValue = original[key];
 
-      // Handle arrays
       const isEqual =
         Array.isArray(currentValue)
           ? JSON.stringify(currentValue) === JSON.stringify(originalValue)
@@ -92,6 +103,9 @@ const ViewProfile = () => {
           payload.append("skills", currentValue.join(","));
         } else if (key === "education") {
           payload.append("education", JSON.stringify(currentValue));
+        } else if (key === "longitude" || key === "latitude") {
+          // ✅ Append the location coordinates
+          payload.append(key, currentValue);
         } else if (key === "certificates") {
           currentValue.forEach((cert) => {
             if (cert.file) {
@@ -106,7 +120,6 @@ const ViewProfile = () => {
       }
     });
 
-    // 🚫 No changes → NO API CALL
     if (!hasChanges) return;
 
     setSaving(true);
@@ -114,17 +127,16 @@ const ViewProfile = () => {
     dispatch(updateProviderProfile(payload))
       .unwrap()
       .then(() => {
-        originalDataRef.current = { ...current }; // ✅ update baseline
+        originalDataRef.current = { ...current }; 
       })
       .finally(() => setSaving(false));
-  }, 2000); // ⏱ better UX than 6s
+  }, 2000); 
 }, [dispatch]);
 
  const updateField = (updates) => {
   setFormData((prev) => {
     const next = { ...prev, ...updates };
 
-    // 🚫 prevent unnecessary scheduling
     const isSame = JSON.stringify(prev) === JSON.stringify(next);
     if (!isSame) {
       scheduleSave(next);
@@ -133,6 +145,36 @@ const ViewProfile = () => {
     return next;
   });
 };
+
+  // ✅ Location fetching logic when activating Urgent Mode
+  const handleUrgentToggle = () => {
+    if (!formData.urgentHire) {
+      if (!navigator.geolocation) {
+        showToast("Geolocation is not supported by your browser.", "error");
+        return;
+      }
+
+      showToast("Fetching location to activate Urgent Mode...", "info");
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          updateField({
+            urgentHire: true,
+            longitude: pos.coords.longitude,
+            latitude: pos.coords.latitude,
+          });
+          showToast("Urgent Mode Activated! You are now visible to nearby customers.", "success");
+        },
+        (err) => {
+          console.error("Location error:", err);
+          showToast("Please allow location access to enable Urgent Mode.", "error");
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      updateField({ urgentHire: false });
+    }
+  };
 
   if ((!profile && !user)) {
     return (
@@ -184,7 +226,6 @@ const ViewProfile = () => {
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
-                {/* Status Indicator Dot */}
                 <div
                   className={`w-3 h-3 rounded-full transition-all ${
                     formData.urgentHire === true
@@ -212,11 +253,7 @@ const ViewProfile = () => {
               </p>
 
               <button
-                onClick={() =>
-                  updateField({
-                    urgentHire: !formData.urgentHire, // Toggles between true/false
-                  })
-                }
+                onClick={handleUrgentToggle} // ✅ Replaced inline function
                 className={`w-full text-xs py-2 rounded-full font-bold uppercase tracking-wider transition-all transform active:scale-95 ${
                   formData.urgentHire === true
                     ? "bg-emerald-600 text-white hover:bg-emerald-700"

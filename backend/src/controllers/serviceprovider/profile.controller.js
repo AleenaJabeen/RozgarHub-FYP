@@ -2,21 +2,15 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ServiceProvider } from "../../models/serviceProvider.model.js";
-import {User} from '../../models/user.model.js';
-
-
+import { User } from '../../models/user.model.js';
 import { uploadOnCloudinary } from "../../utils/cloudinary.js";
 import twilio from "twilio";
 
 const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH);
 
-
-
 export const sendOtp = asyncHandler(async (req, res) => {
-
   const userId = req.user._id;
   const { phone } = req.body;
-  // console.log("Phone",phone)
 
   const user = await User.findById(userId);
 
@@ -37,17 +31,13 @@ export const sendOtp = asyncHandler(async (req, res) => {
 
   user.phone = formattedPhone;
   await user.save();
-  // console.log(verification);
 
   res.json(new ApiResponse(200, verification, "OTP sent successfully"));
-
 });
 
 export const verifyOtp = asyncHandler(async (req, res) => {
-
   const userId = req.user._id;
   const { phone, otp } = req.body;
-  // console.log(phone,otp)
 
   const user = await User.findById(userId);
 
@@ -66,7 +56,6 @@ export const verifyOtp = asyncHandler(async (req, res) => {
       code: otp
     });
 
-    // console.log(verificationCheck.status);
   if (verificationCheck.status !== "approved") {
     throw new ApiError(400, "Invalid or expired OTP");
   }
@@ -77,11 +66,7 @@ export const verifyOtp = asyncHandler(async (req, res) => {
   res.status(200).json(
     new ApiResponse(200, null, "Phone verified successfully")
   );
-
 });
-
-
-
 
 const createServiceProviderProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;
@@ -101,19 +86,13 @@ const createServiceProviderProfile = asyncHandler(async (req, res) => {
     longitude,
     latitude,
   } = req.body;
-  console.log(req.body)
-   console.log("FILES:", req.files);
-    console.log("BODY:", req.body);
-    console.log("USER:", req.user);
   
-
   const existingProfile = await ServiceProvider.findOne({ user: userId });
 
   if (existingProfile) {
     throw new ApiError(400, "Service provider profile already exists");
   }
 
-  // CNIC IMAGE
   if (!req.files?.cnicImg?.[0]) {
     throw new ApiError(400, "CNIC image is required");
   }
@@ -121,48 +100,36 @@ const createServiceProviderProfile = asyncHandler(async (req, res) => {
   const uploadedCnic = await uploadOnCloudinary(req.files.cnicImg[0].path, {
     folder: "providers/cnic",
   });
-  console.log("STEP 4 - cnic upload result:", uploadedCnic);
 
-  // AVATAR (optional)
   let avatarUrl;
   if (req.files?.avatar?.[0]) {
     const uploadedAvatar = await uploadOnCloudinary(req.files.avatar[0].path, {
       folder: "providers/avatar",
     });
-
     avatarUrl = uploadedAvatar?.secure_url;
   }
 
-  // SKILLS parsing
   let parsedSkills = skills;
   if (typeof skills === "string") {
     parsedSkills = skills.split(",");
   }
 
-  // CERTIFICATES
   let certificates = [];
-
   if (req.files?.certificates) {
     for (const file of req.files.certificates) {
       const uploaded = await uploadOnCloudinary(file.path, {
         folder: "providers/certificates",
       });
-
-      if (uploaded?.secure_url) {
-        certificates.push(uploaded.secure_url);
-      }
+      if (uploaded?.secure_url) certificates.push(uploaded.secure_url);
     }
   }
 
-  // EXPERIENCE DOCUMENTS
   let experienceDocuments = [];
-
   if (req.files?.experienceDocuments) {
     for (const file of req.files.experienceDocuments) {
       const uploaded = await uploadOnCloudinary(file.path, {
         folder: "providers/experience",
       });
-
       if (uploaded?.secure_url) {
         experienceDocuments.push({
           title: file.originalname,
@@ -172,8 +139,7 @@ const createServiceProviderProfile = asyncHandler(async (req, res) => {
     }
   }
 
-  // CREATE SERVICE PROVIDER PROFILE
-  const provider = await ServiceProvider.create({
+  const providerData = {
     user: userId,
     cnicNo,
     cnicImg: uploadedCnic.secure_url,
@@ -183,9 +149,18 @@ const createServiceProviderProfile = asyncHandler(async (req, res) => {
     urgentHire,
     certificates,
     experienceDocuments,
-  });
+  };
 
-  // UPDATE USER PROFILE DATA
+  // ✅ Add location on creation if activating Urgent Hire
+  if ((urgentHire === "true" || urgentHire === true) && longitude && latitude) {
+    providerData.location = {
+      type: "Point",
+      coordinates: [Number(longitude), Number(latitude)]
+    };
+  }
+
+  const provider = await ServiceProvider.create(providerData);
+
   const userUpdate = {
     phone,
     "location.address.street": street,
@@ -212,6 +187,7 @@ const createServiceProviderProfile = asyncHandler(async (req, res) => {
     new ApiResponse(200, provider, "Service provider profile created successfully")
   );
 });
+
 const updateServiceProviderProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const {
@@ -229,67 +205,53 @@ const updateServiceProviderProfile = asyncHandler(async (req, res) => {
     zipCode,
     longitude,
     latitude,
-    
   } = req.body;
-  // 1. Check if profile exists
+
   const providerProfile = await ServiceProvider.findOne({ user: userId });
   if (!providerProfile) {
     throw new ApiError(404, "Service provider profile not found");
   }
 
-  // 2. Handle CNIC Image Update (if provided)
   let cnicImgUrl = providerProfile.cnicImg;
   if (req.files?.cnicImg?.[0]) {
     const uploadedCnic = await uploadOnCloudinary(req.files.cnicImg[0].path, {
       folder: "providers/cnic",
     });
     cnicImgUrl = uploadedCnic.secure_url;
-    // Optional: Add logic here to delete the old image from Cloudinary
   }
 
-  // 3. Handle Avatar Update (if provided)
   let avatarUrl;
   if (req.files?.avatar?.[0]) {
-  try {
-    // console.log("Uploading avatar:", req.files.avatar[0]);
-
-    const uploadedAvatar = await uploadOnCloudinary(
-      req.files.avatar[0].path,
-      { folder: "providers/avatar" }
-    );
-
-    if (!uploadedAvatar || !uploadedAvatar.secure_url) {
-      throw new Error("Avatar upload failed");
+    try {
+      const uploadedAvatar = await uploadOnCloudinary(
+        req.files.avatar[0].path,
+        { folder: "providers/avatar" }
+      );
+      if (!uploadedAvatar || !uploadedAvatar.secure_url) {
+        throw new Error("Avatar upload failed");
+      }
+      avatarUrl = uploadedAvatar.secure_url;
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      throw new ApiError(500, "Error uploading avatar");
     }
-
-    avatarUrl = uploadedAvatar.secure_url;
-  } catch (error) {
-    console.error("Avatar upload error:", error);
-    throw new ApiError(500, "Error uploading avatar");
   }
-}
- 
 
-  // 4. Parsing Skills (if provided)
   let parsedSkills = providerProfile.skills;
   if (skills) {
     parsedSkills = typeof skills === "string" ? skills.split(",") : skills;
   }
 
-  // 5. Handle New Certificates (Appending to existing)
   let updatedCertificates = [...providerProfile.certificates];
   if (req.files?.certificates) {
     for (const file of req.files.certificates) {
       const uploaded = await uploadOnCloudinary(file.path, {
         folder: "providers/certificates",
       });
-      if (uploaded?.secure_url) {
-        updatedCertificates.push(uploaded.secure_url);
-      }
+      if (uploaded?.secure_url) updatedCertificates.push(uploaded.secure_url);
     }
   }
 
-  // 6. Handle New Experience Documents (Appending to existing)
   let updatedExpDocs = [...providerProfile.experienceDocuments];
   if (req.files?.experienceDocuments) {
     for (const file of req.files.experienceDocuments) {
@@ -305,33 +267,37 @@ const updateServiceProviderProfile = asyncHandler(async (req, res) => {
     }
   }
 
-  // 7. Update ServiceProvider Model
+  // ✅ Build update object for Provider Profile
+  const providerUpdateObj = {
+    cnicNo: cnicNo || providerProfile.cnicNo,
+    cnicImg: cnicImgUrl,
+    bio: bio || providerProfile.bio,
+    experienceDetails: experienceDetails || providerProfile.experienceDetails,
+    skills: parsedSkills,
+    urgentHire: urgentHire !== undefined ? urgentHire : providerProfile.urgentHire,
+    certificates: updatedCertificates,
+    experienceDocuments: updatedExpDocs,
+  };
+
+  // ✅ Inject coordinates into the Provider model if Urgent Hire is activated
+  if ((urgentHire === "true" || urgentHire === true) && longitude && latitude) {
+    providerUpdateObj.location = {
+      type: "Point",
+      coordinates: [Number(longitude), Number(latitude)]
+    };
+  }
+
   const updatedProvider = await ServiceProvider.findOneAndUpdate(
     { user: userId },
-    {
-      $set: {
-        cnicNo: cnicNo || providerProfile.cnicNo,
-        cnicImg: cnicImgUrl,
-        bio: bio || providerProfile.bio,
-        experienceDetails: experienceDetails || providerProfile.experienceDetails,
-        skills: parsedSkills,
-        urgentHire: urgentHire !== undefined ? urgentHire : providerProfile.urgentHire,
-        certificates: updatedCertificates,
-        experienceDocuments: updatedExpDocs,
-      },
-    },
-    { returnDocument: 'after',
-       runValidators: true
-     }
+    { $set: providerUpdateObj },
+    { returnDocument: 'after', runValidators: true }
   );
 
-  // 8. Update User Model (Basic info & Location)
   const userUpdate = {};
-  if(name) userUpdate.name=name;
+  if (name) userUpdate.name = name;
   if (phone) userUpdate.phone = phone;
   if (avatarUrl) userUpdate.avatar = avatarUrl;
   
-  // Update Address fields if any are provided
   if (street || city || state || country || zipCode) {
     if (street) userUpdate["location.address.street"] = street;
     if (city) userUpdate["location.address.city"] = city;
@@ -340,7 +306,6 @@ const updateServiceProviderProfile = asyncHandler(async (req, res) => {
     if (zipCode) userUpdate["location.address.zipCode"] = zipCode;
   }
 
-  // Update Geo-coordinates
   if (longitude && latitude) {
     userUpdate["location.currentLocation"] = {
       type: "Point",
@@ -348,18 +313,16 @@ const updateServiceProviderProfile = asyncHandler(async (req, res) => {
     };
   }
 
-  await User.findByIdAndUpdate(userId, { $set: userUpdate }, { returnDocument: 'after', runValidators: true});
+  await User.findByIdAndUpdate(userId, { $set: userUpdate }, { returnDocument: 'after', runValidators: true });
 
   res.status(200).json(
     new ApiResponse(200, updatedProvider, "Profile updated successfully")
   );
 });
 
-
 const getServiceProviderProfile = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
-  // Find provider and populate all necessary user fields for the UI
   const provider = await ServiceProvider.findOne({ user: userId }).populate(
     "user",
     "name email avatar location"
@@ -374,4 +337,4 @@ const getServiceProviderProfile = asyncHandler(async (req, res) => {
   );
 });
 
-export { createServiceProviderProfile, updateServiceProviderProfile ,getServiceProviderProfile};
+export { createServiceProviderProfile, updateServiceProviderProfile, getServiceProviderProfile };

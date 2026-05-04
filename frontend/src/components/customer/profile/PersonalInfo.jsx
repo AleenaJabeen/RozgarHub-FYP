@@ -18,6 +18,7 @@ const blankAddress = { street: "", city: "", state: "", country: "", zipCode: ""
 const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
   const [errors, setErrors]           = useState({});
   const [locationStatus, setLocationStatus] = useState("");
+  const [locationPermissionDenied, setLocationPermissionDenied] = useState(false); // ✅ Added state for denied permission
 
   // ─── Geolocation ────────────────────────────────────────────────
   const handleGetLocation = () => {
@@ -25,19 +26,28 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
       setLocationStatus("Geolocation is not supported by your browser.");
       return;
     }
+    
     setLocationStatus("Requesting location...");
+    setLocationPermissionDenied(false); // Reset state on new attempt
+
     navigator.geolocation.getCurrentPosition(
       ({ coords: { latitude, longitude } }) => {
         setFormData((prev) => ({ ...prev, location: { latitude, longitude } }));
-        setLocationStatus(`Location captured: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        setLocationStatus(`Coordinates : "${latitude}, ${longitude}"`);
+        if (errors.location) setErrors((prev) => ({ ...prev, location: "" }));
       },
       (error) => {
-        const messages = {
-          1: "Permission denied. Please allow location access in your browser settings.",
-          2: "Location unavailable. Try again.",
-          3: "Request timed out. Try again.",
-        };
-        setLocationStatus(messages[error.code] || "Unable to retrieve location.");
+        // ✅ Explicitly check for Permission Denied (Error Code 1)
+        if (error.code === 1) {
+          setLocationStatus("Permission Denied.");
+          setLocationPermissionDenied(true);
+        } else {
+          const messages = {
+            2: "Location unavailable. Try again.",
+            3: "Request timed out. Try again.",
+          };
+          setLocationStatus(messages[error.code] || "Unable to retrieve location.");
+        }
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -88,10 +98,22 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
     const newErrors = {};
     if (!formData.avatar)
       newErrors.avatar = "Please upload a profile picture.";
+      
+    if (!formData.name?.trim())
+      newErrors.name = "Name is required.";
+      
     if (!formData.addresses[0]?.street?.trim())
       newErrors["street_0"] = "Street address is required.";
+      
     if (!formData.addresses[0]?.city?.trim())
       newErrors["city_0"] = "City is required.";
+      
+    if (!formData.addresses[0]?.country?.trim())
+      newErrors["country_0"] = "Country is required.";
+      
+    if (formData.location.latitude === null || formData.location.longitude === null)
+      newErrors.location = "Pinpointing your exact location is mandatory.";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -142,14 +164,20 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
           {/* ── Name & Email ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5 ms-3">Name</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5 ms-3">Name <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 name="name"
                 value={formData.name || ""}
-                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                className="w-full ms-2 capitalize px-4 py-2.5 border border-gray-300 rounded-full focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-colors font-medium text-gray-900"
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, name: e.target.value }));
+                  if (errors.name) setErrors((prev) => ({ ...prev, name: "" }));
+                }}
+                className={`w-full ms-2 capitalize px-4 py-2.5 border rounded-full focus:outline-none focus:ring-2 focus:ring-secondary/20 transition-colors font-medium text-gray-900 ${
+                  errors.name ? "border-red-500 focus:border-red-500" : "border-gray-300 focus:border-secondary"
+                }`}
               />
+              {errors.name && <p className="text-red-500 text-xs mt-1 ms-4">{errors.name}</p>}
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5 ms-3">Email</label>
@@ -195,7 +223,7 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
                 <input
                   name="street"
                   type="text"
-                  placeholder="Street Address"
+                  placeholder={`Street Address ${index === 0 ? '*' : ''}`}
                   className={`w-full pl-10 pr-4 py-2.5 border rounded-full focus:outline-none focus:ring-2 focus:ring-secondary/20 transition-colors ${
                     errors[`street_${index}`] ? "border-red-500 focus:border-red-500" : "border-gray-300 focus:border-secondary"
                   }`}
@@ -216,7 +244,7 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
                   <input
                     name="city"
                     type="text"
-                    placeholder="City"
+                    placeholder={`City ${index === 0 ? '*' : ''}`}
                     className={`w-full pl-10 pr-4 py-2.5 border rounded-full focus:outline-none focus:ring-2 focus:ring-secondary/20 transition-colors ${
                       errors[`city_${index}`] ? "border-red-500 focus:border-red-500" : "border-gray-300 focus:border-secondary"
                     }`}
@@ -252,11 +280,16 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
                   <input
                     name="country"
                     type="text"
-                    placeholder="Country"
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-full focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-colors"
+                    placeholder={`Country ${index === 0 ? '*' : ''}`}
+                    className={`w-full pl-10 pr-4 py-2.5 border rounded-full focus:outline-none focus:ring-2 focus:ring-secondary/20 transition-colors ${
+                      errors[`country_${index}`] ? "border-red-500 focus:border-red-500" : "border-gray-300 focus:border-secondary"
+                    }`}
                     value={addr.country}
                     onChange={(e) => handleAddressChange(e, index)}
                   />
+                  {errors[`country_${index}`] && (
+                    <p className="text-red-500 text-xs mt-1 ml-4">{errors[`country_${index}`]}</p>
+                  )}
                 </div>
 
                 <div className="relative">
@@ -292,14 +325,16 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
 
           {/* ── Geolocation ── */}
           <div className="ms-3 pt-2">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Pinpoint Exact Location</label>
-            <div className="lg:w-1/2 w-full flex items-center justify-between pl-4 pr-2 py-1.5 border border-gray-300 bg-white rounded-full focus-within:border-secondary focus-within:ring-2 focus-within:ring-secondary/20 transition-all">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Pinpoint Exact Location <span className="text-red-500">*</span></label>
+            <div className={`lg:w-1/2 w-full flex items-center justify-between pl-4 pr-2 py-1.5 border bg-white rounded-full focus-within:ring-2 focus-within:ring-secondary/20 transition-all ${
+              errors.location || locationPermissionDenied ? "border-red-500 focus-within:border-red-500" : "border-gray-300 focus-within:border-secondary"
+            }`}>
               <input
                 type="text"
                 placeholder="Click the target to locate..."
-                value={locationStatus}
+                value={locationStatus || (formData.location.latitude ? `Coordinates : "${formData.location.latitude}, ${formData.location.longitude}"` : "")}
                 disabled
-                className="w-full focus:outline-none bg-transparent text-sm text-gray-600 truncate mr-2"
+                className={`w-full focus:outline-none bg-transparent text-sm truncate mr-2 ${locationPermissionDenied ? 'text-red-500' : 'text-gray-600'}`}
               />
               <button 
                 type="button" 
@@ -309,6 +344,19 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
                 <FaLocationCrosshairs className="text-secondary text-lg group-hover:scale-110 transition-transform" />
               </button>
             </div>
+            
+            {errors.location && !locationPermissionDenied && (
+              <p className="text-red-500 text-xs mt-1 ms-2">{errors.location}</p>
+            )}
+
+            {locationPermissionDenied && (
+              <div className="lg:w-1/2 w-full mt-3 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 shadow-sm animate-[fadeIn_0.3s_ease-out]">
+                <p className="text-xs text-red-700 font-medium leading-relaxed">
+                  <span className="font-bold block mb-0.5">Location Access Blocked!</span> 
+                  Please click the <span className="font-bold">Lock icon (🔒)</span> or <span className="font-bold">Site settings</span> in your browser's address bar to allow location access, then click the target icon again.
+                </p>
+              </div>
+            )}
           </div>
 
         </div>

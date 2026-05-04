@@ -110,6 +110,34 @@ export const completeOrder = createAsyncThunk(
   }
 );
 
+export const claimBroadcastOrderThunk = createAsyncThunk(
+  "orders/claimBroadcast",
+  async ({ orderId, hourlyRate }, { rejectWithValue }) => {
+    try {
+      // Pass hourlyRate in the request body
+      const response = await axios.patch(`${BASE_URL}/${orderId}/claim`, { hourlyRate }, {
+        withCredentials: true,
+      });
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Failed to claim request.");
+    }
+  }
+);
+
+export const rebroadcastOrderThunk = createAsyncThunk(
+  "orders/rebroadcast",
+  async (orderId, { rejectWithValue }) => {
+    try {
+      const response = await axios.patch(`${BASE_URL}/${orderId}/rebroadcast`, {}, {
+        withCredentials: true,
+      });
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Failed to rebroadcast order.");
+    }
+  }
+);
 export const cancelOrder = createAsyncThunk(
   "orders/cancelOrder",
   async ({ orderId, cancellationReason }, { rejectWithValue }) => {
@@ -282,6 +310,37 @@ const orderSlice = createSlice({
       .addCase(cancelOrder.rejected, (state, action) => {
         state.loading = false;
         state.error   = action.payload;
+      })
+      .addCase(claimBroadcastOrderThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(claimBroadcastOrderThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        // If the claimed order needs to be added to the state immediately before getOrders completes:
+        const exists = state.orders.find((o) => o._id === action.payload._id);
+        if (!exists) {
+          state.orders.unshift(action.payload);
+        }
+      })
+      .addCase(claimBroadcastOrderThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(rebroadcastOrderThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(rebroadcastOrderThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.orders = replaceOrder(state.orders, action.payload);
+        if (state.activeOrder?._id === action.payload._id) {
+          state.activeOrder = action.payload;
+        }
+      })
+      .addCase(rebroadcastOrderThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
