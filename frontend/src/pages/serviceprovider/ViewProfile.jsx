@@ -1,6 +1,7 @@
 // ViewProfile.jsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom"; 
 import { FaAward } from "react-icons/fa";
 import { IoOpenOutline } from "react-icons/io5";
 import { capitalizeWords } from "../../utils/capitalize";
@@ -12,9 +13,11 @@ import ProfileHeader from "../../components/serviceprovider/viewProfile/ProfileH
 import ExperienceSection from "../../components/serviceprovider/viewProfile/ExperienceSection";
 import SkillsSection from "../../components/serviceprovider/viewProfile/SkillsSection";
 import EducationSection from "../../components/serviceprovider/viewProfile/EducationSection";
-import { useNavigate } from "react-router-dom";
+import { showToast } from "../../utils/toastHelper"; // ✅ Imported toast helper
+
 const ViewProfile = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const isInitialLoad = useRef(true);
   const {
     profile = null,
@@ -26,7 +29,6 @@ const ViewProfile = () => {
   const [editSection, setEditSection] = useState(null);
   const [newSkill, setNewSkill] = useState("");
   const [saving, setSaving] = useState(false);
-  const navigate=useNavigate();
 
   const timerRef = useRef(null);
   const latestDataRef = useRef({});
@@ -40,125 +42,164 @@ const ViewProfile = () => {
   );
 
   useEffect(() => {
-    dispatch(getProviderProfile()).unwrap().catch(console.error);
+    dispatch(getProviderProfile())
+      .unwrap()
+      .catch((err) => {
+        if (err.toLowerCase().includes("not found") || err.includes("404")) {
+           navigate("/serviceprovider/profile"); 
+        } else {
+           console.error(err);
+        }
+      });
+  }, [dispatch, navigate]);
+
+  useEffect(() => {
+    if (profile && user && isInitialLoad.current) {
+      const initial = {
+        bio: profile.bio || "",
+        experienceDetails: profile.experienceDetails || "",
+        skills: profile.skills || [],
+        name: capitalizeWords(user.name) || "",
+        city: capitalizeWords(user.location?.address?.city) || "",
+        urgentHire: profile.urgentHire ?? false,
+        experienceDocuments: profile.experienceDocuments || [],
+        certificates: profile.certificates || [],
+        education: profile.education || "",
+      };
+
+      setFormData(initial);
+      latestDataRef.current = initial;
+      originalDataRef.current = initial; 
+
+      isInitialLoad.current = false;
+    }
+  }, [profile, user]);
+
+  const scheduleSave = useCallback((nextData) => {
+    latestDataRef.current = nextData;
+
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    timerRef.current = setTimeout(() => {
+      const current = latestDataRef.current;
+      const original = originalDataRef.current;
+
+      const payload = new FormData();
+      let hasChanges = false;
+
+      Object.keys(current).forEach((key) => {
+        const currentValue = current[key];
+        const originalValue = original[key];
+
+        const isEqual =
+          Array.isArray(currentValue)
+            ? JSON.stringify(currentValue) === JSON.stringify(originalValue)
+            : currentValue === originalValue;
+
+        if (!isEqual) {
+          hasChanges = true;
+
+          if (key === "skills") {
+            payload.append("skills", currentValue.join(","));
+          } else if (key === "education") {
+            payload.append("education", JSON.stringify(currentValue));
+          } else if (key === "longitude" || key === "latitude") {
+            // ✅ Append the location coordinates
+            payload.append(key, currentValue);
+            payload.append("education", currentValue);
+          } else if (key === "certificates") {
+            currentValue.forEach((cert) => {
+              if (cert.file) {
+                payload.append("certificates", cert.file);
+              }
+            });
+          } else if (key === "avatar" && currentValue instanceof File) {
+            payload.append("avatar", currentValue);
+          } else {
+            payload.append(key, currentValue);
+          }
+        }
+      });
+
+      if (!hasChanges) return;
+
+      setSaving(true);
+
+      dispatch(updateProviderProfile(payload))
+        .unwrap()
+        .then(() => {
+          originalDataRef.current = { ...current }; 
+        })
+        .finally(() => setSaving(false));
+    }, 2000); 
   }, [dispatch]);
 
- useEffect(() => {
-  if (profile && user && isInitialLoad.current) {
-    const initial = {
-      bio: profile.bio || "",
-      experienceDetails: profile.experienceDetails || "",
-      skills: profile.skills || [],
-      name: capitalizeWords(user.name) || "",
-      city: capitalizeWords(user.location?.address?.city) || "",
-      urgentHire: profile.urgentHire ?? false,
-      experienceDocuments: profile.experienceDocuments || [],
-      certificates: profile.certificates || [],
-      education: profile.education || "",
-    };
+  const updateField = (updates) => {
+    setFormData((prev) => {
+      const next = { ...prev, ...updates };
 
-    setFormData(initial);
-    latestDataRef.current = initial;
-    originalDataRef.current = initial; // ✅ store original
-
-    isInitialLoad.current = false;
-  }
-}, [profile, user]);
- const scheduleSave = useCallback((nextData) => {
-  latestDataRef.current = nextData;
-
-  if (timerRef.current) clearTimeout(timerRef.current);
-
-  timerRef.current = setTimeout(() => {
-    const current = latestDataRef.current;
-    const original = originalDataRef.current;
-
-    const payload = new FormData();
-    let hasChanges = false;
-
-    // 🔥 Compare fields
-    Object.keys(current).forEach((key) => {
-      const currentValue = current[key];
-      const originalValue = original[key];
-
-      // Handle arrays
-      const isEqual =
-        Array.isArray(currentValue)
-          ? JSON.stringify(currentValue) === JSON.stringify(originalValue)
-          : currentValue === originalValue;
-
-      if (!isEqual) {
-        hasChanges = true;
-
-        if (key === "skills") {
-          payload.append("skills", currentValue.join(","));
-        } else if (key === "education") {
-          payload.append("education",currentValue);
-        } else if (key === "certificates") {
-          currentValue.forEach((cert) => {
-            if (cert.file) {
-              payload.append("certificates", cert.file);
-            }
-          });
-        } else if (key === "avatar" && currentValue instanceof File) {
-          payload.append("avatar", currentValue);
-        } else {
-          payload.append(key, currentValue);
-        }
+      const isSame = JSON.stringify(prev) === JSON.stringify(next);
+      if (!isSame) {
+        scheduleSave(next);
       }
+
+      return next;
     });
+  };
 
-    // 🚫 No changes → NO API CALL
-    if (!hasChanges) return;
+  // ✅ Location fetching logic when activating Urgent Mode
+  const handleUrgentToggle = () => {
+    if (!formData.urgentHire) {
+      if (!navigator.geolocation) {
+        showToast("Geolocation is not supported by your browser.", "error");
+        return;
+      }
 
-    setSaving(true);
+      showToast("Fetching location to activate Urgent Mode...", "info");
 
-    dispatch(updateProviderProfile(payload))
-      .unwrap()
-      .then(() => {
-        originalDataRef.current = { ...current }; // ✅ update baseline
-      })
-      .finally(() => setSaving(false));
-  }, 2000); // ⏱ better UX than 6s
-}, [dispatch]);
-
- const updateField = (updates) => {
-  setFormData((prev) => {
-    const next = { ...prev, ...updates };
-
-    // 🚫 prevent unnecessary scheduling
-    const isSame = JSON.stringify(prev) === JSON.stringify(next);
-    if (!isSame) {
-      scheduleSave(next);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          updateField({
+            urgentHire: true,
+            longitude: pos.coords.longitude,
+            latitude: pos.coords.latitude,
+          });
+          showToast("Urgent Mode Activated! You are now visible to nearby customers.", "success");
+        },
+        (err) => {
+          console.error("Location error:", err);
+          showToast("Please allow location access to enable Urgent Mode.", "error");
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      updateField({ urgentHire: false });
     }
+  };
 
-    return next;
-  });
-};
-
-if (loading && isInitialLoad.current) {
+  // 1. Show loading state if it's the very first load
+  if (loading && isInitialLoad.current) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="flex flex-col items-center gap-4">
-          {/* Simple Tailwind Spinner */}
           <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
           <p className="text-gray-500 font-medium">Loading profile...</p>
         </div>
       </div>
     );
   }
- if (!profile) {
+
+  // 2. Show empty state if there is no profile
+  if (!profile) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-300 text-center max-w-md w-full">
           <h2 className="text-xl font-bold text-gray-800 mb-2">
             No Profile Found
           </h2>
-
           <p className="text-sm text-gray-500 mb-6">
             You need to create a profile before you can start offering services and making gigs.
           </p>
-
           <button
             onClick={() => navigate("/serviceprovider/createProfile")}
             className="cursor-pointer bg-emerald-600 text-white px-6 py-2 rounded-full text-sm font-semibold hover:bg-emerald-700 transition-all"
@@ -170,6 +211,7 @@ if (loading && isInitialLoad.current) {
     );
   }
 
+  // 3. Render the main page if the profile exists
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -212,7 +254,6 @@ if (loading && isInitialLoad.current) {
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
-                {/* Status Indicator Dot */}
                 <div
                   className={`w-3 h-3 rounded-full transition-all ${
                     formData.urgentHire === true
@@ -240,11 +281,7 @@ if (loading && isInitialLoad.current) {
               </p>
 
               <button
-                onClick={() =>
-                  updateField({
-                    urgentHire: !formData.urgentHire, // Toggles between true/false
-                  })
-                }
+                onClick={handleUrgentToggle} 
                 className={`w-full text-xs py-2 rounded-full font-bold uppercase tracking-wider transition-all transform active:scale-95 ${
                   formData.urgentHire === true
                     ? "bg-emerald-600 text-white hover:bg-emerald-700"

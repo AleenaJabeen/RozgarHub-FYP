@@ -12,7 +12,7 @@ import {
   MdOutlineWifiTethering,
   MdOutlineAccountBalanceWallet,
 } from "react-icons/md";
-import { FaStar, FaRegStar, FaStarHalfAlt, FaBolt } from "react-icons/fa";
+import { FaStar, FaRegStar, FaStarHalfAlt } from "react-icons/fa";
 import {
   IoPersonCircle,
   IoCheckmarkCircle,
@@ -58,7 +58,7 @@ const CustomerGigDetails = () => {
 
   const [activeImage, setActiveImage] = useState(0);
   const [bookingType, setBookingType] = useState("hourly"); // Default booking type
-  const [isNavigating, setIsNavigating] = useState(false); // ✅ Added for smooth animation
+  const [isNavigating, setIsNavigating] = useState(false); 
 
   useEffect(() => {
     if (gigId) dispatch(getPublicGigById(gigId));
@@ -95,23 +95,19 @@ const CustomerGigDetails = () => {
   const isOnline = gig.availabilityStatus === "online";
   const images = gig.images || [];
 
-  // Calculate Urgent Rate (Example: 1.5x standard hourly rate)
-  const urgentRate = gig.hourlyRate ? Math.round(gig.hourlyRate * 1.5) : "—";
-
   const sortedHours = [...(gig.availabilityHours || [])].sort(
     (a, b) => DAY_ORDER.indexOf(a.days?.[0]) - DAY_ORDER.indexOf(b.days?.[0]),
   );
 
   // ── Action Handlers ──
   const handleBookNow = () => {
-    setIsNavigating(true); // Trigger animation
+    setIsNavigating(true);
 
     const spId =
       typeof gig.serviceProviderId === "object"
         ? gig.serviceProviderId._id
         : gig.serviceProviderId;
 
-    // Simulate a brief loading state for smooth UI transition
     setTimeout(() => {
       navigate("/customer/place-order", {
         state: {
@@ -132,7 +128,6 @@ const CustomerGigDetails = () => {
   const handleContactProvider = async (participantId, gigId) => {
     try {
       // 1. Trigger the API to get or create a chat
-      // Ensure you use your configured axios instance with headers
       const response = await axios.post(
       "http://localhost:3000/api/v1/chat", 
       {
@@ -141,22 +136,17 @@ const CustomerGigDetails = () => {
       },
       {
         withCredentials: true, // This allows cookies/sessions to be sent
-       
       }
     );
       if (response.data?.success) {
         const chat = response.data.data;
-       
-    const chatId = chat._id; // This is the ID from your MongoDB Chat collection
+        const chatId = chat._id; // This is the ID from your MongoDB Chat collection
 
-    // Redirect to the dynamic message route
-    navigate(`/messages/${chatId}`);
-        // // Adjust the route based on your App.js routing
-        // navigate(`/messages/${chat._id}`);
+        // Redirect to the dynamic message route
+        navigate(`/messages/${chatId}`);
       }
     } catch (error) {
       console.error("Failed to initiate chat:", error);
-      // You can add a toast notification here
       alert(
         error.response?.data?.message ||
           "Something went wrong while starting chat",
@@ -260,7 +250,7 @@ const CustomerGigDetails = () => {
                 </p>
               </div>
 
-              {/* ── Clickable Service Provider Card ── */}
+              {/* Clickable Service Provider Card */}
               <div className="mt-8 border-t border-gray-100 pt-6">
                 <h2 className="text-base font-bold text-gray-800 mb-4">
                   Service Provider
@@ -348,9 +338,7 @@ const CustomerGigDetails = () => {
             )}
           </div>
 
-          {/* ════════════════════════════════════
-              RIGHT COLUMN — Sticky Booking CTA
-          ════════════════════════════════════ */}
+          {/* RIGHT COLUMN — Sticky Booking CTA */}
           <div className="lg:col-span-1">
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm sticky top-32 space-y-6">
               <div className="pb-4 border-b border-gray-100">
@@ -399,51 +387,6 @@ const CustomerGigDetails = () => {
                       Rs
                     </span>
                     {gig.hourlyRate ?? "—"}
-                  </span>
-                </label>
-
-                {/* ✅ NEW: Urgent Option */}
-                <label
-                  className={`flex items-center justify-between p-4 border-2 rounded-2xl cursor-pointer transition-all ${
-                    bookingType === "urgent"
-                      ? "bg-amber-50/50 border-amber-400 shadow-sm"
-                      : "bg-white border-gray-100 hover:border-amber-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="bookingType"
-                      value="urgent"
-                      checked={bookingType === "urgent"}
-                      onChange={(e) => setBookingType(e.target.value)}
-                      className="w-4 h-4 text-amber-600 focus:ring-amber-500 border-gray-300"
-                    />
-                    <div>
-                      <span
-                        className={`flex items-center gap-1.5 text-sm font-bold ${bookingType === "urgent" ? "text-amber-900" : "text-gray-700"}`}
-                      >
-                        Urgent Hire{" "}
-                        <FaBolt
-                          className={
-                            bookingType === "urgent"
-                              ? "text-amber-500"
-                              : "text-gray-400"
-                          }
-                        />
-                      </span>
-                      <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mt-0.5 block">
-                        Priority Response
-                      </span>
-                    </div>
-                  </div>
-                  <span
-                    className={`text-lg font-extrabold ${bookingType === "urgent" ? "text-amber-700" : "text-gray-500"}`}
-                  >
-                    <span className="text-xs font-medium mr-1 text-gray-400">
-                      Rs
-                    </span>
-                    {urgentRate}
                   </span>
                 </label>
 

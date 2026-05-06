@@ -4,9 +4,7 @@ import connectDB from './src/db/index.js';
 import { app } from './src/app.js';
 import { initSocket } from './src/socket/socket.js';
 
-
-
-const port=process.env.PORT || "8000"
+const port = process.env.PORT || "8000";
 
 const httpServer = http.createServer(app);    
 
@@ -25,5 +23,10 @@ connectDB().then(() => {
 }).catch((err)=>{
     console.log("Something went wrong while connecting to database",err);
     
-})
+    httpServer.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+    });
 
+}).catch((err) => {
+    console.log("Something went wrong while connecting to database", err);
+});

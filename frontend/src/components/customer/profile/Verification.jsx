@@ -6,6 +6,7 @@ import {
   sendCustomerPhoneOTP,
   verifyCustomerPhoneOTP,
 } from "../../../store/customer/profile-slice";
+import { showToast } from "../../../utils/toastHelper"; // ✅ Imported toastHelper
 
 const CustomerVerification = ({ formData, setFormData, onSubmit, onBack, user }) => {
   const dispatch = useDispatch();
@@ -58,9 +59,15 @@ const CustomerVerification = ({ formData, setFormData, onSubmit, onBack, user })
 
   // ─── Verify OTP then Submit ──────────────────────────────────────
   const handleSubmit = async () => {
-    // If already verified, skip OTP gate and go straight to submit
+    
+    // ✅ GATE 1: Block user from submitting if they haven't verified phone
     if (!isAlreadyVerified) {
+      if (!otpSent) {
+        showToast("Please verify your phone number first before submitting.", "error");
+        return;
+      }
       if (formData.otp.some((d) => d === "")) {
+        showToast("Please enter the complete OTP before submitting.", "error");
         setErrors((prev) => ({ ...prev, otp: "Please enter the complete OTP." }));
         return;
       }
@@ -70,7 +77,7 @@ const CustomerVerification = ({ formData, setFormData, onSubmit, onBack, user })
 
     try {
       if (!isAlreadyVerified) {
-        // Gate: verify OTP first — throws if invalid/expired
+        // Gate 2: Verify OTP via backend — throws error if invalid/expired
         await dispatch(
           verifyCustomerPhoneOTP({
             phone: formData.phoneNumber,
@@ -79,13 +86,16 @@ const CustomerVerification = ({ formData, setFormData, onSubmit, onBack, user })
         ).unwrap();
       }
 
-      // Only reaches here if verified (or already was)
+      // Only reaches here if verified successfully (or was already verified)
       await onSubmit();
     } catch (err) {
+      const errMsg = err || "Invalid or expired OTP. Please try again.";
       setErrors((prev) => ({
         ...prev,
-        otp: err || "Invalid or expired OTP. Please try again.",
+        otp: errMsg,
       }));
+      // ✅ Display toast if verification API fails
+      showToast(errMsg, "error");
     } finally {
       setIsSubmitting(false);
     }

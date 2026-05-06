@@ -31,6 +31,7 @@ import ProviderProfileView from "./pages/customer/ProviderProfileView";
 import CustomerProfileView from "./pages/orders/serviceprovider/CustomerProfileView";
 import OrderDetailsSP from "./pages/orders/serviceprovider/OrderDetails";
 import CustomerGigDetails from "./pages/customer/CustomerGigDetails";
+import GlobalUrgentOverlay from "./components/orders/serviceprovider/GlobalUrgentOverlay";
 import Chat from "./pages/customer/Chat";
 import ChatWindow from "./components/chat/ChatWindow";
 
@@ -129,7 +130,10 @@ function App() {
                 user={user}
                 loading={isLoading}
               >
-                <ProviderHome />
+                <>
+                  <ProviderHome />
+                  <GlobalUrgentOverlay />
+                </>
               </CheckAuth>
             }
           >
