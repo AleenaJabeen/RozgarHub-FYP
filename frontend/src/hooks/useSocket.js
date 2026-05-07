@@ -1,53 +1,60 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { getSocket } from "../socket/socket";
-import { appendMessage, editMessage, deleteMessage } from "../store/chat/messageSlice";
+import {
+  appendMessage,
+  editMessage,
+  deleteMessage,
+} from "../store/chat/messageSlice";
 import { updateLastMessage } from "../store/chat/chatSlice";
 
 export const useSocket = (chatId) => {
   const dispatch = useDispatch();
-  const socket = getSocket();
 
   useEffect(() => {
+    const socket = getSocket();
     if (!socket || !chatId) return;
 
-    socket.emit("join_chat", { chatId }); // ✅ FIXED
+    socket.emit("join_chat", { chatId });
 
-  socket.on("new_message", (message) => {
-  console.log("RAW MESSAGE RECEIVED:", message); // Debug log
+    // ✅ HANDLERS (stable references)
+    const handleNewMessage = (message) => {
+      const incomingChatId = String(message.chatId?._id || message.chatId);
 
-  // Use String() to ensure we aren't comparing objects to strings
-  const incomingChatId = String(message.chatId?._id || message.chatId);
-  const currentChatId = String(chatId);
-
-  if (incomingChatId === currentChatId) {
-    console.log("Match found! Dispatching to Redux...");
-    dispatch(appendMessage(message));
-  } else {
-    console.log("No match:", incomingChatId, "vs", currentChatId);
-  }
-});
-    socket.on("message_edited", (msg) => dispatch(editMessage(msg)));
-
-    socket.on("message_deleted", ({ chatId, messageId }) =>
-      dispatch(deleteMessage({ chatId, messageId }))
-    );
-   socket.on("chat_updated", (data) => {
-  console.log("Global chat update received:", data);
-  
-  // 1. Always update the sidebar
-  dispatch(updateLastMessage(data.lastMessage));
-
-  // 2. If the user is currently looking at THIS chat, add the message to the window
-  if (data.chatId === chatId) {
-    dispatch(appendMessage(data.lastMessage));
-  }
-});
-    return () => {
-     socket.emit("leave_chat", { chatId }); // ✅ FIXED
-      socket.off("new_message");
-      socket.off("message_edited");
-      socket.off("message_deleted");
+      if (incomingChatId === String(chatId)) {
+        dispatch(appendMessage(message));
+      }
     };
-  }, [chatId, socket, dispatch]);
+
+    const handleMessageEdited = (msg) => {
+      dispatch(editMessage(msg));
+    };
+
+    const handleMessageDeleted = ({ chatId, messageId }) => {
+      dispatch(deleteMessage({ chatId, messageId }));
+    };
+
+    const handleChatUpdated = (data) => {
+      // ✅ ONLY update sidebar here
+      dispatch(updateLastMessage(data.lastMessage));
+
+      // ❌ DO NOT append message again here
+    };
+
+    // ✅ Attach listeners
+    socket.on("new_message", handleNewMessage);
+    socket.on("message_edited", handleMessageEdited);
+    socket.on("message_deleted", handleMessageDeleted);
+    socket.on("chat_updated", handleChatUpdated);
+
+    // ✅ Cleanup properly
+    return () => {
+      socket.emit("leave_chat", { chatId });
+
+      socket.off("new_message", handleNewMessage);
+      socket.off("message_edited", handleMessageEdited);
+      socket.off("message_deleted", handleMessageDeleted);
+      socket.off("chat_updated", handleChatUpdated);
+    };
+  }, [chatId, dispatch]);
 };

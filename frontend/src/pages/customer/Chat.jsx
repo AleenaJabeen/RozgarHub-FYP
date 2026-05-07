@@ -1,23 +1,43 @@
-import React from 'react'
-import ChatSidebar from '../../components/chat/ChatSidebar'
-import ChatWindow from '../../components/chat/ChatWindow'
-import { useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useEffect } from 'react';
+import ChatSidebar from '../../components/chat/ChatSidebar';
+import ChatWindow from '../../components/chat/ChatWindow';
+import { useParams } from 'react-router-dom';
 import { connectSocket } from '../../socket/socket';
 
 function Chat() {
-  
-  
-    useEffect(() => {
-  // Just call it; the browser will handle sending the cookie automatically
-  connectSocket(); 
-}, []);
+  const { chatId } = useParams();
+
+  useEffect(() => {
+    connectSocket();
+  }, []);
+
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden">
-      <ChatSidebar />
-      <ChatWindow />
+    /* h-screen and overflow-hidden are correct here to prevent the WHOLE page from scrolling */
+    <div className="flex h-screen w-full overflow-hidden bg-white">
+      
+      {/* Sidebar */}
+      <div className={`
+        ${chatId ? 'hidden' : 'block'} 
+        md:block 
+        w-full md:w-80 
+        md:flex-shrink-0 
+        h-full border-r border-gray-200
+      `}>
+        <ChatSidebar />
+      </div>
+
+      {/* Chat Window */}
+      <div className={`
+        ${!chatId ? 'hidden' : 'block'} 
+        flex-1 
+        min-w-0 
+        h-full
+      `}>
+        <ChatWindow />
+      </div>
+      
     </div>
-  )
+  );
 }
 
 export default Chat;

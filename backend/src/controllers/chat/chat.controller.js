@@ -45,11 +45,11 @@ export const getOrCreateChat = asyncHandler(async (req, res) => {
 export const getMyChats = asyncHandler(async (req, res) => {
   const chats = await Chat.find({ participants: req.user._id })
     .sort({ lastMessageAt: -1 })
-    .populate("participants", "name")
+    .populate("participants", "name avatar" )
     .populate("gigId", "title images")
     .populate({
       path: "lastMessage",
-      populate: { path: "senderId", select: "name" },
+      populate: { path: "senderId", select: "name avatar" },
     });
 
   return res

@@ -2,18 +2,15 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 export const fetchMessages = createAsyncThunk(
-  "messages/fetch",
-  async ({ chatId, page = 1 }, { getState }) => {
-    // Get the token directly from your auth state
-    const token = getState().auth.token; 
-
-    const response = await axios.get(
-      `http://localhost:3000/api/v1/messages/${chatId}/messages?page=${page}`,
-      
-        { withCredentials: true }
-      
+  "messages/fetchMessages",
+  async ({ chatId }) => {
+    const res = await axios.get(`http://localhost:3000/api/v1/messages/${chatId}/messages`,
+      {withCredentials:true}
     );
-    return { chatId, messages: response.data.data };
+    return {
+      chatId,
+      messages: res.data.data.messages // ✅ IMPORTANT FIX
+    };
   }
 );
 
@@ -38,16 +35,11 @@ const messageSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(fetchMessages.fulfilled, (state, action) => {
-      const { chatId, messages } = action.payload; // Destructure carefully
+   builder.addCase(fetchMessages.fulfilled, (state, action) => {
+  const { chatId, messages } = action.payload;
 
-      if (Array.isArray(messages)) {
-        state.byChat[chatId] = messages;
-      } else {
-        state.byChat[chatId] = []; // Fallback to empty array
-      }
-      state.loading = false;
-    });
+  state.byChat[chatId] = messages;
+});
   },
 });
 

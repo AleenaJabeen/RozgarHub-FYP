@@ -96,7 +96,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const isPasswordValid = await user.isPasswordCorrect(password);
   if (!isPasswordValid) {
-    throw new ApiError(404, "Invalid user credentials");
+    throw new ApiError(404, "Password is incorrect");
   }
 
   const { accessToken, refreshToken } =

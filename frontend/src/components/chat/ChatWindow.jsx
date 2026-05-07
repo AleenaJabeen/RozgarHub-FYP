@@ -1,55 +1,92 @@
-// src/components/chat/ChatWindow.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useParams } from 'react-router-dom';
-import { fetchMessages, appendMessage } from '../../store/chat/messageSlice';
-import { useSocket } from '../../hooks/useSocket';
-import { getSocket } from '../../socket/socket';
-import { IoSend, IoImageOutline, IoEllipsisVertical } from 'react-icons/io5';
-import axios from 'axios';
+import React, { useState, useEffect, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
+import { fetchMessages, appendMessage } from "../../store/chat/messageSlice";
+import { useSocket } from "../../hooks/useSocket";
+import { getSocket } from "../../socket/socket";
+import {
+  IoSend,
+  IoImageOutline,
+  IoEllipsisVertical,
+  IoHappyOutline,
+  IoAdd,
+  IoCameraOutline,
+  IoMicOutline,
+  IoArrowBack
+} from "react-icons/io5";
+import axios from "axios";
+import { capitalizeWords } from "../../utils/capitalize";
+import { BiMessageRoundedDots } from "react-icons/bi";
 
 const ChatWindow = () => {
   const { chatId } = useParams();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const socket = getSocket();
   const scrollRef = useRef();
 
   const [text, setText] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+
   const myId = useSelector((state) => state.auth.user._id);
- const messages = useSelector((state) => state.messages?.byChat?.[chatId] || []);
-const chats = useSelector(state => state.chats?.items || []);
-const chatData = chats.find(c => c._id === chatId); // Do this outside useSelector
+  const messages = useSelector(
+    (state) => state.messages?.byChat?.[chatId] || [],
+  );
+  console.log("RAW API:", messages);
+  const chats = useSelector((state) => state.chats?.items || []);
+  const chatData = chats.find((c) => c._id === chatId);
+  const otherUser = chatData?.participants?.find((p) => p._id !== myId);
   // Use your custom hook to handle socket listeners
   useSocket(chatId);
 
   useEffect(() => {
     if (chatId) {
-      dispatch(fetchMessages({ chatId, page: 1 }));
+      dispatch(fetchMessages({ chatId }));
     }
   }, [chatId, dispatch]);
 
-  // Scroll to bottom when new messages arrive
+  const containerRef = useRef();
+  const prevLengthRef = useRef(0);
+
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = containerRef.current;
+    if (!container) return;
+
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      100;
+
+    if (messages.length > prevLengthRef.current && isNearBottom) {
+      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+
+    prevLengthRef.current = messages.length;
   }, [messages]);
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    const currentSocket = getSocket();
 
-const handleSendMessage = (e) => {
-  e.preventDefault();
-  const currentSocket = getSocket();
+    if (!text.trim() || !currentSocket) return;
 
-  if (!text.trim() || !currentSocket) return;
+    // REMOVE the dispatch(appendMessage) here.
+    // Let the socket.on("new_message") handle it so both users are in sync.
 
-  // REMOVE the dispatch(appendMessage) here. 
-  // Let the socket.on("new_message") handle it so both users are in sync.
+    currentSocket.emit("send_message", {
+      chatId,
+      content: text,
+      type: "text",
+    });
 
-  currentSocket.emit("send_message", {
-    chatId,
-    content: text,
-    type: "text",
-  });
+    setText("");
+  };
+  // Mock function for voice assistant/recording
+  const handleVoiceAssistant = () => {
+    setIsRecording(!isRecording);
+    if (!isRecording) {
+      console.log("Listening...");
+    }
+  };
 
-  setText("");
-};
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -61,113 +98,161 @@ const handleSendMessage = (e) => {
 
     try {
       // Media must go through HTTP POST (Multer -> Cloudinary)
-      await axios.post("/api/v1/message", formData);
+      await axios.post("http://localhost:3000/api/v1/messages", formData);
       // Backend sendMessage controller will emit "new_message" via socket
     } catch (err) {
       console.error("Upload failed", err);
     }
   };
-
-  if (!chatId) return (
-    <div className="flex-1 flex items-center justify-center bg-gray-50 text-gray-400">
-      Select a chat to start messaging
-    </div>
-  );
+  const orderedMessages = React.useMemo(() => {
+    return [...messages].reverse();
+  }, [messages]);
+  if (!chatId)
+    return (
+<div className="flex-1 flex flex-col h-full overflow-hidden bg-white">
+          <BiMessageRoundedDots size={70} className="text-secondary" />
+        <h3 className="text-2xl font-semibold">A fresh new inbox</h3>
+        <p className="text-base">
+          You haven't started any conversations yet, but when you do, you'll
+          find them here.
+        </p>
+      </div>
+    );
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="p-4 border-b flex justify-between items-center bg-white shadow-sm">
+      <div className="px-4 py-2 border-b border-gray-200 flex justify-between items-center bg-white shadow-sm">
         <div className="flex items-center gap-3">
-          <img 
-            src={chatData?.gigId?.images?.[0] || 'https://via.placeholder.com/40'} 
-            className="w-10 h-10 rounded-full object-cover" 
-          />
+          <button 
+            onClick={() => navigate('/messages')} 
+            className="p-2 -ml-2 hover:bg-gray-100 rounded-full"
+          >
+            <IoArrowBack size={24} className="text-gray-600" />
+          </button>
+          {otherUser?.avatar ? (
+            <img
+              src={otherUser?.avatar}
+              alt="avatar"
+              className="w-12 h-12 rounded-full object-cover bg-gray-200"
+            />
+          ) : (
+            <div className="flex justify-center items-center w-12 h-12 rounded-full text-secondary bg-secondary/20">
+              <p>{otherUser?.name[0].toUpperCase()}</p>
+            </div>
+          )}
           <div>
             <h3 className="font-bold text-gray-800">
-              {chatData?.participants.find(p => p._id !== myId)?.name}
+              {capitalizeWords(otherUser?.name)}
             </h3>
             <p className="text-xs text-secondary font-medium truncate w-48 sm:w-auto">
-              Re: {chatData?.gigId?.title}
+              online
             </p>
           </div>
         </div>
-        <button className="p-2 hover:bg-gray-100 rounded-full"><IoEllipsisVertical /></button>
+        <button className="p-2 hover:bg-gray-100 rounded-full">
+          <IoEllipsisVertical />
+        </button>
       </div>
 
-     <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#f0f2f5]">
-  {Array.isArray(messages) && messages.length > 0 ? (
-    [...messages].reverse().map((msg, index) => {
-      const isMe = msg.senderId?._id === myId || msg.senderId === myId;
+      <div
+        ref={containerRef}
+        className="overflow-y-auto p-4 space-y-4 bg-[#f0f2f5]"
+      >
+        {Array.isArray(messages) && messages.length > 0 ? (
+          orderedMessages.map((msg, index) => {
+            const isMe = msg.senderId?._id === myId || msg.senderId === myId;
 
-      return (
-        <div
-          key={msg._id || index}
-          className={`flex ${isMe ? "justify-end" : "justify-start"}`}
-        >
-          <div
-            className={`max-w-[70%] rounded-2xl p-3 shadow-sm ${
-              isMe
-                ? "bg-secondary text-white rounded-tr-none"
-                : "bg-white text-gray-800 rounded-tl-none"
-            }`}
-          >
-            {msg.type === "text" ? (
-              <p className="text-sm">{msg.content}</p>
-            ) : (
-              <img
-                src={msg.mediaUrl}
-                className="rounded-lg max-h-60 w-full object-cover"
-              />
-            )}
+            return (
+              <div
+                key={msg._id || index}
+                className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`relative max-w-[70%] rounded-2xl px-3 py-3 pr-10 shadow-sm ${
+                    isMe
+                      ? "bg-secondary text-white rounded-tr-none"
+                      : "bg-white text-gray-800 rounded-tl-none"
+                  }`}
+                >
+                  {msg.type === "text" ? (
+                    <p className="text-sm break-words leading-snug">
+                      {msg.content}
+                    </p>
+                  ) : (
+                    <img
+                      src={msg.mediaUrl}
+                      className="rounded-lg max-h-60 w-full object-cover"
+                    />
+                  )}
 
-            <div
-              className={`text-[10px] mt-1 flex justify-end ${
-                isMe ? "text-blue-100" : "text-gray-400"
-              }`}
-            >
-              {new Date(msg.createdAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </div>
+                  {/* ✅ Time pinned bottom-right */}
+                  <span
+                    className={`absolute bottom-0  right-1 pr-1 text-[10px] ${
+                      isMe ? "text-blue-100" : "text-gray-400"
+                    }`}
+                  >
+                    {new Date(msg.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="text-center text-gray-400 mt-10">
+            No messages yet. Say Hi!
           </div>
+        )}
+
+        {/* ✅ correct placement */}
+        <div ref={scrollRef} />
+      </div>
+
+      <div className="bg-[#f0f2f5] p-2 flex items-end gap-2 items-center">
+        {/* Media & Emoji Group */}
+        <div className="flex items-center bg-white rounded-full px-3 py-1 flex-1 shadow-sm">
+          <button className="p-2 text-gray-500 hover:text-gray-700">
+            <IoHappyOutline size={26} />
+          </button>
+
+          <label className="p-2 text-gray-500 hover:text-gray-700 cursor-pointer">
+            <IoAdd size={28} />
+            <input type="file" hidden accept="image/*,video/*" />
+          </label>
+
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Type a message"
+            className="flex-1 bg-transparent border-none px-2 py-2 focus:ring-0 outline-none text-[15px]"
+          />
+
+          <button className="p-2 text-gray-500 hover:text-gray-700">
+            <IoCameraOutline size={26} />
+          </button>
         </div>
-      );
-    })
-  ) : (
-    <div className="text-center text-gray-400 mt-10">
-      No messages yet. Say Hi!
-    </div>
-  )}
 
-  {/* ✅ correct placement */}
-  <div ref={scrollRef} />
-</div>
-
-      {/* Input Area */}
-      <form onSubmit={handleSendMessage} className="p-4 bg-white border-t flex items-center gap-2">
-        <label className="p-2 text-gray-500 hover:text-secondary cursor-pointer">
-          <IoImageOutline size={24} />
-          <input type="file" hidden onChange={handleImageUpload} accept="image/*" />
-        </label>
-        
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1 bg-gray-100 border-none rounded-full px-4 py-2 focus:ring-2 focus:ring-secondary outline-none"
-        />
-        
-        <button 
-          type="submit" 
-          disabled={!text.trim()}
-          className="p-3 bg-secondary text-white rounded-full hover:bg-opacity-90 disabled:bg-gray-300 transition-all"
+        {/* Dynamic Action Button: Send or Mic */}
+        <button
+          onClick={text.trim() ? handleSendMessage : handleVoiceAssistant}
+          className={`p-3 rounded-full flex items-center justify-center transition-all shadow-md ${
+            text.trim() ? "bg-[#00a884] text-white" : "bg-[#00a884] text-white"
+          }`}
         >
-          <IoSend size={20} />
+          {text.trim() ? (
+            <IoSend size={22} className="ml-1" />
+          ) : (
+            <IoMicOutline
+              size={24}
+              className={isRecording ? "animate-pulse text-red-200" : ""}
+            />
+          )}
         </button>
-      </form>
+      </div>
     </div>
   );
 };

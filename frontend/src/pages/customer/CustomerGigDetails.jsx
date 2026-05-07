@@ -141,7 +141,6 @@ const CustomerGigDetails = () => {
       if (response.data?.success) {
         const chat = response.data.data;
         const chatId = chat._id; // This is the ID from your MongoDB Chat collection
-
         // Redirect to the dynamic message route
         navigate(`/messages/${chatId}`);
       }
@@ -461,7 +460,7 @@ const CustomerGigDetails = () => {
       </div>
       {/* --- FLOATING CONTACT BUTTON --- */}
       <div
-        onClick={() => handleContactProvider(provider?._id , gig._id || gigId)}
+        onClick={() => handleContactProvider(providerUser?._id , gig._id || gigId)}
         className="cursor-pointer fixed bottom-10 left-10 z-[60] flex flex-col items-end gap-3"
       >
         {/* Status Indicator Tooltip */}

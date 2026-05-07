@@ -31,11 +31,11 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-secondary text-primary pt-16 pb-8">
+    <footer className="w-full bg-secondary text-primary pt-16 pb-8">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         
         {/* Top Section: Four Columns (Upwork Style) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           {footerSections.map((section) => (
             <div key={section.title}>
               <h3 className="text-base font-semibold mb-5  cursor-pointer">
