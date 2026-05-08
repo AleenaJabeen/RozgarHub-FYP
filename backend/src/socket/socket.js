@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { Chat } from "../models/chat.model.js";
 import { Message } from "../models/message.model.js";
 import cookie from "cookie";
+import { User } from "../models/user.model.js";
 
 let io;
 const onlineUsers = new Map();
@@ -24,38 +25,41 @@ export const initSocket = (httpServer) => {
   // Reads the JWT from the handshake auth token (sent by the client as:
   //   socket = io(URL, { auth: { token: "Bearer <jwt>" } })
   // Attaches req.user to the socket so handlers can identify the caller.
- 
 
-io.use((socket, next) => {
-  try {
-    const rawCookies = socket.handshake.headers.cookie;
 
-    if (!rawCookies) {
-      return next(new Error("No cookies"));
+  io.use((socket, next) => {
+    try {
+      const rawCookies = socket.handshake.headers.cookie;
+
+      if (!rawCookies) {
+        return next(new Error("No cookies"));
+      }
+
+      const parsed = cookie.parse(rawCookies);
+
+      const token = parsed.accessToken; // 👈 use your actual cookie name
+
+      if (!token) {
+        return next(new Error("No access token"));
+      }
+
+      const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+      socket.user = decoded;
+
+      next();
+    } catch (err) {
+      next(new Error("Invalid or expired token"));
     }
-
-    const parsed = cookie.parse(rawCookies);
-
-    const token = parsed.accessToken; // 👈 use your actual cookie name
-
-    if (!token) {
-      return next(new Error("No access token"));
-    }
-
-    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-
-    socket.user = decoded;
-
-    next();
-  } catch (err) {
-    next(new Error("Invalid or expired token"));
-  }
-});
+  });
   // ─── Connection ────────────────────────────────────────────────────────────
-  io.on("connection", (socket) => {
+  io.on("connection",async (socket) => {
     const userId = socket.user._id.toString();
     console.log(`Socket connected: ${socket.id} | user: ${userId}`);
     onlineUsers.set(userId, socket.id);
+    await User.findByIdAndUpdate(userId, {
+      isOnline: true,
+    });
     io.emit("user_online", userId);
     // Each user joins their own personal room so we can reach them by userId
     socket.join(userId);
@@ -66,7 +70,7 @@ io.use((socket, next) => {
     // Server joins the socket to the chat room so it receives real-time messages.
     socket.on("join_chat", async ({ chatId }) => {
       try {
-                 console.log("JOIN REQUEST:", chatId, "USER:", userId);
+        console.log("JOIN REQUEST:", chatId, "USER:", userId);
 
         // Verify the user is actually a participant
         const chat = await Chat.findOne({
@@ -75,10 +79,10 @@ io.use((socket, next) => {
         });
         if (!chat) return socket.emit("error", { message: "Chat not found" });
 
-         console.log("✅ JOINED ROOM:", chatId);
+        console.log("✅ JOINED ROOM:", chatId);
         socket.join(chatId);
         console.log(`User ${userId} joined chat room ${chatId}`);
-console.log("JOIN EVENT DATA:", chatId);
+        console.log("JOIN EVENT DATA:", chatId);
         await Message.updateMany(
           {
             chatId,
@@ -124,9 +128,9 @@ console.log("JOIN EVENT DATA:", chatId);
           });
         }
         const validTypes = ["text", "image", "file"];
-if (!validTypes.includes(type)) {
-   return socket.emit("error", { message: "Invalid message type" });
-}
+        if (!validTypes.includes(type)) {
+          return socket.emit("error", { message: "Invalid message type" });
+        }
 
         // Verify participant
         const chat = await Chat.findOne({ _id: chatId, participants: userId });
@@ -157,8 +161,8 @@ if (!validTypes.includes(type)) {
 
         // Populate sender for the emitted payload
         await message.populate("senderId", "name avatar");
-const roomMembers = io.sockets.adapter.rooms.get(chatId);
-console.log("ROOM MEMBERS:", roomMembers);
+        const roomMembers = io.sockets.adapter.rooms.get(chatId);
+        console.log("ROOM MEMBERS:", roomMembers);
         // Broadcast to everyone in the room (including sender — client can use
         // this as the "delivered" confirmation and replace the optimistic copy)
         io.to(chatId).emit("new_message", message);
@@ -284,8 +288,12 @@ console.log("ROOM MEMBERS:", roomMembers);
     });
 
     // ── disconnect ───────────────────────────────────────────────────────────
-    socket.on("disconnect", (reason) => {
+    socket.on("disconnect", async (reason) => {
       onlineUsers.delete(userId);
+      await User.findByIdAndUpdate(userId, {
+        isOnline: false,
+        lastActiveAt: new Date(),
+      });
       io.emit("user_offline", userId);
       console.log(`Socket disconnected: ${socket.id} | reason: ${reason}`);
     });
