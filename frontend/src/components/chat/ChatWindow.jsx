@@ -48,20 +48,34 @@ const ChatWindow = () => {
   const containerRef = useRef();
   const prevLengthRef = useRef(0);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+ useEffect(() => {
+  const container = containerRef.current;
+  if (!container) return;
 
-    const isNearBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight <
-      100;
+  // 1. Check if user is near bottom
+  const threshold = 150;
+  const isNearBottom = 
+    container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
 
-    if (messages.length > prevLengthRef.current && isNearBottom) {
-      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  // 2. If it's a new message
+  if (messages.length > prevLengthRef.current) {
+    // Only scroll if I am the sender OR if I'm already looking at the bottom
+    const lastMessage = messages[messages.length - 1];
+    const isMe = lastMessage.senderId?._id === myId || lastMessage.senderId === myId;
+
+    if (isMe || isNearBottom) {
+      // Use requestAnimationFrame or a 0ms timeout to wait for the DOM to paint
+      requestAnimationFrame(() => {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: "smooth",
+        });
+      });
     }
+  }
 
-    prevLengthRef.current = messages.length;
-  }, [messages]);
+  prevLengthRef.current = messages.length;
+}, [messages, myId]);
   const handleSendMessage = (e) => {
     e.preventDefault();
     const currentSocket = getSocket();
@@ -172,6 +186,7 @@ const ChatWindow = () => {
             key={msg._id || index}
             className={`flex ${isMe ? "justify-end" : "justify-start"}`}
           >
+            
             <div
               className={`relative max-w-[70%] rounded-2xl px-3 py-3 pr-10 shadow-sm ${
                 isMe
@@ -190,6 +205,8 @@ const ChatWindow = () => {
                   className="rounded-lg max-h-60 w-full object-cover"
                 />
               )}
+                    
+
 
               <span
                 className={`absolute bottom-0 right-1 pr-1 text-[10px] ${
@@ -200,6 +217,7 @@ const ChatWindow = () => {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
+
               </span>
             </div>
           </div>
@@ -211,7 +229,9 @@ const ChatWindow = () => {
         No messages yet. Say Hi!
       </div>
     )}
+
   </div>
+  <div ref={scrollRef} className="h-1 pb-2" />
 </div>
       {/* input area */}
       <div className="flex-shrink-0 bg-[#f0f2f5] sm:p-3 p-2 flex items-center gap-1 border-t border-gray-200">
