@@ -16,10 +16,19 @@ const chatSchema = new mongoose.Schema(
       },
     },
 
+    chatKey: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
+
+
     gigId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Gig",
       required: true,
+      index: true,
     },
 
     lastMessage: {
@@ -38,6 +47,5 @@ const chatSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
-chatSchema.index({ participants: 1, gigId: 1 }, { unique: true });
 
 export const Chat = mongoose.model("Chat", chatSchema);

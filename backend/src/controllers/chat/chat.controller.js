@@ -6,40 +6,60 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../../utils/cloudinary.js";
 
+
 export const getOrCreateChat = asyncHandler(async (req, res) => {
   const { participantId, gigId } = req.body;
-  const myId = req.user._id;
+
+  const myId = req.user._id.toString();
 
   if (!participantId || !gigId) {
     throw new ApiError(400, "participantId and gigId are required");
   }
-  if (participantId === myId.toString()) {
+
+  if (participantId === myId) {
     throw new ApiError(400, "You cannot chat with yourself");
   }
 
-  const participants = [myId.toString(), participantId].sort(); // sort for consistent uniqueness
+  // stable order
+  const participants = [myId, participantId].sort();
 
-  let chat = await Chat.findOne({
-    participants: { $all: participants, $size: 2 },
-    gigId,
-  })
+  // deterministic unique key
+  const chatKey = `${participants[0]}:${participants[1]}:${gigId}`;
+
+  const chat = await Chat.findOneAndUpdate(
+    { chatKey },
+
+    {
+      $setOnInsert: {
+        participants: participants.map(
+          (id) => new mongoose.Types.ObjectId(id)
+        ),
+        gigId,
+        chatKey,
+      },
+    },
+
+    {
+      new: true,
+      upsert: true,
+    }
+  )
     .populate("participants", "name")
     .populate({
       path: "lastMessage",
-      populate: { path: "senderId", select: "name" },
+      populate: {
+        path: "senderId",
+        select: "name",
+      },
     });
 
-  if (!chat) {
-    chat = await Chat.create({
-      participants: participants.map((id) => new mongoose.Types.ObjectId(id)),
-      gigId,
-    });
-    await chat.populate("participants", "name");
-  }
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, chat, "Chat fetched successfully"));
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      chat,
+      "Chat fetched successfully"
+    )
+  );
 });
 
 export const getMyChats = asyncHandler(async (req, res) => {
