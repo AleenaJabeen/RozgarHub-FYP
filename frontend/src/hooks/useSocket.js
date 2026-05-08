@@ -19,12 +19,20 @@ export const useSocket = (chatId) => {
 
     // ✅ HANDLERS (stable references)
     const handleNewMessage = (message) => {
-      const incomingChatId = String(message.chatId?._id || message.chatId);
+  // Log this to your console! If it doesn't show up when you send a message, 
+  // the server isn't emitting to this client.
+  console.log("Socket received message:", message); 
 
-      if (incomingChatId === String(chatId)) {
-        dispatch(appendMessage(message));
-      }
-    };
+  // Normalize both IDs to strings
+  const incomingChatId = String(message.chatId?._id || message.chatId);
+  const currentChatId = String(chatId);
+
+  if (incomingChatId === currentChatId) {
+    dispatch(appendMessage(message));
+  } else {
+    console.warn("Message received for a different chat:", incomingChatId);
+  }
+};
 
     const handleMessageEdited = (msg) => {
       dispatch(editMessage(msg));

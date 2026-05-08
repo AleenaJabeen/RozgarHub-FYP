@@ -109,8 +109,8 @@ const ChatWindow = () => {
   }, [messages]);
   if (!chatId)
     return (
-<div className="flex-1 flex flex-col h-full overflow-hidden bg-white">
-          <BiMessageRoundedDots size={70} className="text-secondary" />
+<div className="flex flex-col h-full bg-white overflow-hidden">
+            <BiMessageRoundedDots size={70} className="text-secondary" />
         <h3 className="text-2xl font-semibold">A fresh new inbox</h3>
         <p className="text-base">
           You haven't started any conversations yet, but when you do, you'll

@@ -22,16 +22,19 @@ function Chat() {
         w-full md:w-80 
         md:flex-shrink-0 
         h-full border-r border-gray-200
+        overflow-y-auto
+        overflow-x-hidden   // 3. Ensure the sidebar can scroll independently
       `}>
         <ChatSidebar />
       </div>
 
       {/* Chat Window */}
-      <div className={`
+     <div className={`
         ${!chatId ? 'hidden' : 'block'} 
         flex-1 
         min-w-0 
-        h-full
+        h-full           // 4. Forces the window wrapper to take full height
+        flex flex-col    // 5. Allows inner message list to expand
       `}>
         <ChatWindow />
       </div>

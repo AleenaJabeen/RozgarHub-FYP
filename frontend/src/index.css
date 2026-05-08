@@ -18,3 +18,7 @@
 .animate-bounce-subtle {
   animation: bounce-subtle 3s ease-in-out infinite;
 }
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
