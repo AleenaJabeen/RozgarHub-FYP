@@ -156,8 +156,7 @@ const ChatWindow = () => {
 {/* messages area */}
       <div
         ref={containerRef}
-className="flex-1 overflow-y-auto min-h-0 p-4 flex flex-col-reverse space-y-4 space-y-reverse bg-secondary/10"
-      >
+className="flex-1 overflow-y-auto min-h-0 p-4 flex space-y-4 flex-col justify-end bg-secondary/10"      >
         {Array.isArray(messages) && messages.length > 0 ? (
           orderedMessages.map((msg, index) => {
             const isMe = msg.senderId?._id === myId || msg.senderId === myId;
