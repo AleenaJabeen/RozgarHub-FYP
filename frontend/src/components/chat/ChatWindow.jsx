@@ -154,59 +154,65 @@ const ChatWindow = () => {
         </button>
       </div>
 {/* messages area */}
-      <div
-        ref={containerRef}
-className="flex-1 overflow-y-auto min-h-0 p-4 flex space-y-4 flex-col justify-end bg-secondary/10"      >
-        {Array.isArray(messages) && messages.length > 0 ? (
-          orderedMessages.map((msg, index) => {
-            const isMe = msg.senderId?._id === myId || msg.senderId === myId;
+     <div
+  ref={containerRef}
+  /* 1. Remove justify-end */
+  className="flex-1 overflow-y-auto min-h-0 p-4 flex flex-col bg-secondary/10"
+>
+  {/* 2. ADD THIS SPACER: It takes up all empty space, pushing messages to the bottom */}
+  <div className="flex-grow" />
 
-            return (
-              <div
-                key={msg._id || index}
-                className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+  <div className="space-y-4">
+    {Array.isArray(messages) && messages.length > 0 ? (
+      orderedMessages.map((msg, index) => {
+        const isMe = msg.senderId?._id === myId || msg.senderId === myId;
+
+        return (
+          <div
+            key={msg._id || index}
+            className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+          >
+            <div
+              className={`relative max-w-[70%] rounded-2xl px-3 py-3 pr-10 shadow-sm ${
+                isMe
+                  ? "bg-secondary text-white rounded-tr-none"
+                  : "bg-white text-gray-800 rounded-tl-none"
+              }`}
+            >
+              {msg.type === "text" ? (
+                <p className="text-sm break-words leading-snug">
+                  {msg.content}
+                </p>
+              ) : (
+                <img
+                  src={msg.mediaUrl}
+                  alt="attachment"
+                  className="rounded-lg max-h-60 w-full object-cover"
+                />
+              )}
+
+              <span
+                className={`absolute bottom-0 right-1 pr-1 text-[10px] ${
+                  isMe ? "text-blue-100" : "text-gray-400"
+                }`}
               >
-                <div
-                  className={`relative max-w-[70%] rounded-2xl px-3 py-3 pr-10 shadow-sm ${
-                    isMe
-                      ? "bg-secondary text-white rounded-tr-none"
-                      : "bg-white text-gray-800 rounded-tl-none"
-                  }`}
-                >
-                  {msg.type === "text" ? (
-                    <p className="text-sm break-words leading-snug">
-                      {msg.content}
-                    </p>
-                  ) : (
-                    <img
-                      src={msg.mediaUrl}
-                      className="rounded-lg max-h-60 w-full object-cover"
-                    />
-                  )}
-
-                  {/* ✅ Time pinned bottom-right */}
-                  <span
-                    className={`absolute bottom-0  right-1 pr-1 text-[10px] ${
-                      isMe ? "text-blue-100" : "text-gray-400"
-                    }`}
-                  >
-                    {new Date(msg.createdAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="text-center text-gray-400 mt-10">
-            No messages yet. Say Hi!
+                {new Date(msg.createdAt).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </div>
           </div>
-        )}
-
-        {/* <div ref={scrollRef} /> */}
+        );
+      })
+    ) : (
+      /* 3. Wrap this to ensure it stays centered if you want */
+      <div className="text-center text-gray-400 mb-10">
+        No messages yet. Say Hi!
       </div>
+    )}
+  </div>
+</div>
       {/* input area */}
       <div className="flex-shrink-0 bg-[#f0f2f5] sm:p-3 p-2 flex items-center gap-1 border-t border-gray-200">
         {/* Media & Emoji Group */}

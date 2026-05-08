@@ -12,57 +12,83 @@ export const useSocket = (chatId) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    const socket = getSocket();
-    if (!socket || !chatId) return;
+  const socket = getSocket();
+
+  if (!chatId || !socket) return;
+
+  const joinRoom = () => {
+    console.log("✅ Joining room:", chatId);
 
     socket.emit("join_chat", { chatId });
+  };
 
-    // ✅ HANDLERS (stable references)
-    const handleNewMessage = (message) => {
-  // Log this to your console! If it doesn't show up when you send a message, 
-  // the server isn't emitting to this client.
-  console.log("Socket received message:", message); 
-
-  // Normalize both IDs to strings
-  const incomingChatId = String(message.chatId?._id || message.chatId);
-  const currentChatId = String(chatId);
-
-  if (incomingChatId === currentChatId) {
-    dispatch(appendMessage(message));
+  // WAIT until socket is connected
+  if (socket.connected) {
+    joinRoom();
   } else {
-    console.warn("Message received for a different chat:", incomingChatId);
+    socket.on("connect", joinRoom);
   }
-};
 
-    const handleMessageEdited = (msg) => {
-      dispatch(editMessage(msg));
-    };
+  // =========================
+  // SOCKET EVENTS
+  // =========================
 
-    const handleMessageDeleted = ({ chatId, messageId }) => {
-      dispatch(deleteMessage({ chatId, messageId }));
-    };
+ const handleNewMessage = (message) => {
+    console.log("📩 SOCKET MESSAGE RECEIVED:", message);
 
-    const handleChatUpdated = (data) => {
-      // ✅ ONLY update sidebar here
-      dispatch(updateLastMessage(data.lastMessage));
+    dispatch(appendMessage(message));
+  };
 
-      // ❌ DO NOT append message again here
-    };
+  socket.on("new_message", handleNewMessage);
 
-    // ✅ Attach listeners
-    socket.on("new_message", handleNewMessage);
-    socket.on("message_edited", handleMessageEdited);
-    socket.on("message_deleted", handleMessageDeleted);
-    socket.on("chat_updated", handleChatUpdated);
+  // =========================
+  // CLEANUP
+  // =========================
 
-    // ✅ Cleanup properly
-    return () => {
-      socket.emit("leave_chat", { chatId });
+  return () => {
+    socket.emit("leave_chat", { chatId });
 
-      socket.off("new_message", handleNewMessage);
-      socket.off("message_edited", handleMessageEdited);
-      socket.off("message_deleted", handleMessageDeleted);
-      socket.off("chat_updated", handleChatUpdated);
-    };
-  }, [chatId, dispatch]);
+    socket.off("connect", joinRoom);
+
+    socket.off("new_message", handleNewMessage);
+  };
+
+  const handleMessageEdited = (msg) => {
+    dispatch(editMessage(msg));
+  };
+
+  const handleMessageDeleted = ({ chatId, messageId }) => {
+    dispatch(deleteMessage({ chatId, messageId }));
+  };
+
+  const handleChatUpdated = (data) => {
+    dispatch(updateLastMessage(data.lastMessage));
+  };
+
+  // =========================
+  // LISTENERS
+  // =========================
+
+  socket.on("new_message", handleNewMessage);
+  socket.on("message_edited", handleMessageEdited);
+  socket.on("message_deleted", handleMessageDeleted);
+  socket.on("chat_updated", handleChatUpdated);
+
+  // =========================
+  // CLEANUP
+  // =========================
+
+  return () => {
+    console.log("❌ Leaving room:", chatId);
+
+    socket.emit("leave_chat", { chatId });
+
+    socket.off("connect", joinRoom);
+
+    socket.off("new_message", handleNewMessage);
+    socket.off("message_edited", handleMessageEdited);
+    socket.off("message_deleted", handleMessageDeleted);
+    socket.off("chat_updated", handleChatUpdated);
+  };
+}, [chatId, dispatch]);
 };
