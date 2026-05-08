@@ -13,7 +13,7 @@ function Chat() {
 
   return (
     /* h-screen and overflow-hidden are correct here to prevent the WHOLE page from scrolling */
-    <div className="flex h-screen w-full overflow-hidden bg-white">
+    <div className="flex w-full overflow-hidden bg-white" style={{ height: 'calc(100vh - 79px)' }}>
       
       {/* Sidebar */}
       <div className={`
@@ -23,7 +23,7 @@ function Chat() {
         md:flex-shrink-0 
         h-full border-r border-gray-200
         overflow-y-auto
-        overflow-x-hidden   // 3. Ensure the sidebar can scroll independently
+        overflow-x-hidden  
       `}>
         <ChatSidebar />
       </div>

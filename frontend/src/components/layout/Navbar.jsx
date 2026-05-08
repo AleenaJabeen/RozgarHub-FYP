@@ -132,7 +132,7 @@ const Navbar = () => {
   );
 
   return (
-    <nav className="bg-primary shadow-md border-b border-gray-100 sticky top-0 z-50">
+    <nav className="bg-primary shadow-md border-b border-gray-100 sticky max-h-[77px] top-0 z-50">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <Link to="/" className="flex-shrink-0">

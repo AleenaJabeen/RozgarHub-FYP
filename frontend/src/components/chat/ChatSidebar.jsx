@@ -54,7 +54,7 @@ const ChatSidebar = () => {
   }
 
   return (
-<div className="w-full md:w-80 h-full border-r border-gray-200 bg-white flex flex-col overflow-hidden">      {/* Header Container - Fixed Height to prevent scroll jumps */}
+<div className="w-full  h-full  bg-white flex flex-col overflow-hidden">      {/* Header Container - Fixed Height to prevent scroll jumps */}
       <div className="border-b border-gray-200 p-4">
         <div className="flex justify-between items-center h-10">
           <div className="relative inline-block">
@@ -99,7 +99,7 @@ const ChatSidebar = () => {
       {/* Chat List - The scrollable area */}
       <div className="w-full overflow-y-auto scrollbar-hide">
         {filteredChats.length === 0 ? (
-          <div className="w-74 mx-auto flex flex-col items-center justify-center h-full p-6 text-center border border-gray-200 rounded-xl shadow">
+          <div className="w-74 mx-auto flex flex-col items-center justify-center h-full p-6 text-center  rounded-xl">
             <div className="bg-gray-50 p-6 rounded-full mb-4">
                <TbMessageCircleSearch size={70} className="text-secondary" />
             </div>
@@ -110,7 +110,7 @@ const ChatSidebar = () => {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="flex flex-col">
             {filteredChats.map((chat) => {
               const otherUser = chat.participants.find((p) => p._id !== myId);
               const unreadCount = chat.unreadCounts?.[myId] || 0;

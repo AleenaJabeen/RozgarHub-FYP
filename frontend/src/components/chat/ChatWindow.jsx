@@ -12,7 +12,7 @@ import {
   IoAdd,
   IoCameraOutline,
   IoMicOutline,
-  IoArrowBack
+  IoArrowBack,
 } from "react-icons/io5";
 import axios from "axios";
 import { capitalizeWords } from "../../utils/capitalize";
@@ -109,8 +109,8 @@ const ChatWindow = () => {
   }, [messages]);
   if (!chatId)
     return (
-<div className="flex flex-col h-full bg-white overflow-hidden">
-            <BiMessageRoundedDots size={70} className="text-secondary" />
+      <div className="flex flex-col h-full bg-white overflow-hidden">
+        <BiMessageRoundedDots size={70} className="text-secondary" />
         <h3 className="text-2xl font-semibold">A fresh new inbox</h3>
         <p className="text-base">
           You haven't started any conversations yet, but when you do, you'll
@@ -120,12 +120,11 @@ const ChatWindow = () => {
     );
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-white relative ">
       {/* Header */}
-      <div className="px-4 py-2 border-b border-gray-200 flex justify-between items-center bg-white shadow-sm">
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate('/messages')} 
+<div className="sticky h-18 top-0 z-10 bg-white px-4 py-2 border-b border-gray-200 flex justify-between items-center shadow-sm">        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/messages")}
             className="p-2 -ml-2 hover:bg-gray-100 rounded-full"
           >
             <IoArrowBack size={24} className="text-gray-600" />
@@ -154,10 +153,10 @@ const ChatWindow = () => {
           <IoEllipsisVertical />
         </button>
       </div>
-
+{/* messages area */}
       <div
         ref={containerRef}
-        className="overflow-y-auto p-4 space-y-4 bg-[#f0f2f5]"
+className="flex-1 overflow-y-auto min-h-0 p-4 flex flex-col-reverse space-y-4 space-y-reverse bg-secondary/10"
       >
         {Array.isArray(messages) && messages.length > 0 ? (
           orderedMessages.map((msg, index) => {
@@ -207,11 +206,10 @@ const ChatWindow = () => {
           </div>
         )}
 
-        {/* ✅ correct placement */}
-        <div ref={scrollRef} />
+        {/* <div ref={scrollRef} /> */}
       </div>
-
-      <div className="bg-[#f0f2f5] p-2 flex items-end gap-2 items-center">
+      {/* input area */}
+      <div className="flex-shrink-0 bg-[#f0f2f5] sm:p-3 p-2 flex items-center gap-1 border-t border-gray-200">
         {/* Media & Emoji Group */}
         <div className="flex items-center bg-white rounded-full px-3 py-1 flex-1 shadow-sm">
           <button className="p-2 text-gray-500 hover:text-gray-700">
@@ -239,16 +237,16 @@ const ChatWindow = () => {
         {/* Dynamic Action Button: Send or Mic */}
         <button
           onClick={text.trim() ? handleSendMessage : handleVoiceAssistant}
-          className={`p-3 rounded-full flex items-center justify-center transition-all shadow-md ${
+          className={`sm:p-3 p-2 rounded-full flex items-center justify-center transition-all shadow-md ${
             text.trim() ? "bg-[#00a884] text-white" : "bg-[#00a884] text-white"
           }`}
         >
           {text.trim() ? (
-            <IoSend size={22} className="ml-1" />
+            <IoSend  className="sm:ml-1 ml-0 sm:text-xl text-xl" />
           ) : (
             <IoMicOutline
-              size={24}
-              className={isRecording ? "animate-pulse text-red-200" : ""}
+             
+              className={`sm:text-xl text-xl {isRecording ? "animate-pulse text-red-200" : ""}`}
             />
           )}
         </button>
