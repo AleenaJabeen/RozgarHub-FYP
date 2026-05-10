@@ -7,6 +7,7 @@ import { User } from "../models/user.model.js";
 
 let io;
 const onlineUsers = new Map();
+const disconnectTimers = new Map(); 
 
 /**
  * Call this once in server.js, passing the raw http.Server instance.
@@ -288,14 +289,26 @@ export const initSocket = (httpServer) => {
     });
 
     // ── disconnect ───────────────────────────────────────────────────────────
-    socket.on("disconnect", async () => {
+ socket.on("disconnect", async () => {
   const sockets = onlineUsers.get(userId);
   sockets?.delete(socket.id);
 
   if (!sockets || sockets.size === 0) {
     onlineUsers.delete(userId);
-    await User.findByIdAndUpdate(userId, { isOnline: false, lastActiveAt: new Date() });
-    io.emit("user_offline", userId);
+
+    const timer = setTimeout(async () => {
+      // Only mark offline if they haven't reconnected
+      if (!onlineUsers.has(userId)) {
+        await User.findByIdAndUpdate(userId, {
+          isOnline: false,
+          lastActiveAt: new Date(),
+        });
+        // ✅ emit to everyone EXCEPT the disconnected user
+        socket.broadcast.emit("user_offline", userId);
+      }
+    }, 8000); // 8s grace period for slow connections
+
+    disconnectTimers.set( timer);
   }
 });
   });

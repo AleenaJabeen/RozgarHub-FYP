@@ -29,7 +29,7 @@ const ChatWindow = () => {
   const [text, setText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
 
-  const myId = useSelector((state) => state.auth.user._id);
+  const myId = useSelector((state) => state.auth.user?._id);
   const messages = useSelector(
     (state) => state.messages?.byChat?.[chatId] || [],
   );
@@ -124,6 +124,7 @@ const ChatWindow = () => {
   const orderedMessages = React.useMemo(() => {
     return [...messages].reverse();
   }, [messages]);
+  if (!myId) return null;
   if (!chatId)
     return (
       <div className="flex flex-col h-full bg-white overflow-hidden">
