@@ -89,13 +89,13 @@ export const deleteGigThunk = createAsyncThunk(
   },
 );
 
-// SET ONLINE
-export const setGigOnlineThunk = createAsyncThunk(
-  "gigs/setOnline",
+// SET Available
+export const setGigAvailableThunk = createAsyncThunk(
+  "gigs/setAvailable",
   async (id, { rejectWithValue }) => {
     try {
       const res = await axios.patch(
-        `${BASE_URL}/${id}/online`,
+        `${BASE_URL}/${id}/available`,
         {},
         { withCredentials: true },
       );
@@ -107,12 +107,12 @@ export const setGigOnlineThunk = createAsyncThunk(
 );
 
 // SET OFFLINE
-export const setGigOfflineThunk = createAsyncThunk(
-  "gigs/setOffline",
+export const setGigUnavailableThunk = createAsyncThunk(
+  "gigs/setUnavailable",
   async (id, { rejectWithValue }) => {
     try {
       const res = await axios.patch(
-        `${BASE_URL}/${id}/offline`,
+        `${BASE_URL}/${id}/unavailable`,
         {},
         { withCredentials: true },
       );
@@ -212,12 +212,12 @@ const gigSlice = createSlice({
         state.gigs = state.gigs.filter((gig) => gig._id !== action.payload);
       })
 
-      .addCase(setGigOnlineThunk.fulfilled, (state, action) => {
+      .addCase(setGigAvailableThunk.fulfilled, (state, action) => {
         const index = state.gigs.findIndex((g) => g._id === action.payload._id);
         if (index !== -1) state.gigs[index] = action.payload;
       })
 
-      .addCase(setGigOfflineThunk.fulfilled, (state, action) => {
+      .addCase(setGigUnavailableThunk.fulfilled, (state, action) => {
         const index = state.gigs.findIndex((g) => g._id === action.payload._id);
         if (index !== -1) state.gigs[index] = action.payload;
       })

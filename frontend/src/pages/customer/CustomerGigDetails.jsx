@@ -93,7 +93,7 @@ const CustomerGigDetails = () => {
   const provider = gig.serviceProviderId;
   const providerUser = provider?.user;
   const providerName = providerUser?.name || provider?.name || "Provider";
-  const isOnline = gig.availabilityStatus === "online";
+  const isAvailable = gig.availabilityStatus === "available";
   const images = gig.images || [];
 
   const sortedHours = [...(gig.availabilityHours || [])].sort(
@@ -197,12 +197,12 @@ const CustomerGigDetails = () => {
                   </div>
                 )}
                 <div
-                  className={`absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${isOnline ? "bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm" : "bg-white/90 text-gray-500 border-gray-200 shadow-sm backdrop-blur-sm"}`}
+                  className={`absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${isAvailable ? "bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm" : "bg-white/90 text-gray-500 border-gray-200 shadow-sm backdrop-blur-sm"}`}
                 >
                   <MdOutlineWifiTethering
-                    className={`text-sm ${isOnline ? "animate-pulse" : ""}`}
+                    className={`text-sm ${isAvailable ? "animate-pulse" : ""}`}
                   />
-                  {isOnline ? "Online Now" : "Offline"}
+                  {isAvailable ? "Available" : "Unavailable"}
                 </div>
               </div>
 

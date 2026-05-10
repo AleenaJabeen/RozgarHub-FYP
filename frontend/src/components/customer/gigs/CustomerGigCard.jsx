@@ -27,7 +27,7 @@ const CustomerGigCard = ({ gig }) => {
   const providerName = providerUser?.name || provider?.name || "Provider";
   const providerAvatar = providerUser?.avatar || null;
 
-  const isOnline   = gig.availabilityStatus === "online";
+  const isAvailable   = gig.availabilityStatus === "available";
   const coverImage = gig.images?.[0]?.url || null;
   const rating     = provider?.averageRating || gig.averageRating || 0;
   const reviews    = provider?.totalReviews  || gig.totalReviews  || 0;
@@ -88,14 +88,14 @@ const CustomerGigCard = ({ gig }) => {
           }
         </button>
 
-        {/* Online badge — top right */}
+        {/* Available badge — top right */}
         <div className={`absolute top-2.5 right-2.5 flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
-          isOnline
+          isAvailable
             ? "bg-emerald-50/90 text-emerald-700 border-emerald-200"
             : "bg-white/80 text-gray-400 border-gray-200"
         }`}>
-          <MdOutlineWifiTethering className={`text-xs ${isOnline ? "animate-pulse" : ""}`} />
-          {isOnline ? "Online" : "Offline"}
+          <MdOutlineWifiTethering className={`text-xs ${isAvailable ? "animate-pulse" : ""}`} />
+          {isAvailable ? "Available" : "Unavailable"}
         </div>
 
         {/* Category pill — bottom left */}

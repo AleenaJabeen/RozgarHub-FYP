@@ -26,7 +26,7 @@ const Services = () => {
 
   const [search,     setSearch]     = useState("");
   const [category,   setCategory]   = useState("");
-  const [onlineOnly, setOnlineOnly] = useState(false);
+  const [availableOnly, setAvailableOnly] = useState(false);
   const [sortBy,     setSortBy]     = useState("rating_desc");
   const [day,        setDay]        = useState("");
   const [time,       setTime]       = useState("");
@@ -41,12 +41,12 @@ const Services = () => {
     const filters = {};
     if (search.trim()) filters.search   = search.trim();
     if (category)      filters.category = category;
-    if (onlineOnly)    filters.status   = "online";
+    if (availableOnly) filters.status   = "available";
     if (sortBy)        filters.sortBy   = sortBy;
     if (day)           filters.day      = day;
     if (time)          filters.time     = time;
     dispatch(searchPublicGigs(filters));
-  }, [dispatch, search, category, onlineOnly, sortBy, day, time]);
+  }, [dispatch, search, category, availableOnly, sortBy, day, time]);
 
   // Debounce search; fire immediately for all other filter changes
   useEffect(() => {
@@ -64,14 +64,14 @@ const Services = () => {
   const clearFilters = () => {
     setSearch("");
     setCategory("");
-    setOnlineOnly(false);
+    setAvailableOnly(false);
     setSortBy("rating_desc");
     setDay("");
     setTime("");
   };
 
   const hasActiveFilters =
-    search || category || onlineOnly || sortBy !== "rating_desc" || day || time;
+    search || category || availableOnly || sortBy !== "rating_desc" || day || time;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -119,17 +119,17 @@ const Services = () => {
               ))}
             </select>
 
-            {/* Online Now Toggle */}
+            {/* Available Now Toggle */}
             <button
-              onClick={() => setOnlineOnly((v) => !v)}
+              onClick={() => setAvailableOnly((v) => !v)}
               className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-full border transition-all ${
-                onlineOnly
+                availableOnly
                   ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
                   : "bg-white text-gray-600 border-gray-200 hover:border-emerald-400 hover:text-emerald-600"
               }`}
             >
-              <MdOutlineWifiTethering className={`text-base ${onlineOnly ? "animate-pulse" : ""}`} />
-              Online Now
+              <MdOutlineWifiTethering className={`text-base ${availableOnly ? "animate-pulse" : ""}`} />
+              Available Now
             </button>
 
             {/* Day filter */}

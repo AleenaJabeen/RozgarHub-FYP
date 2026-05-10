@@ -81,8 +81,8 @@ const gigSchema = new Schema(
 
     availabilityStatus: {
       type: String,
-      enum: ["online", "occupied", "offline"],
-      default: "offline",
+      enum: ["available", "occupied", "unavailable"],
+      default: "unavailable",
     },
     statusMode: {
       type: String,

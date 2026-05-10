@@ -134,7 +134,7 @@ const PlaceOrder = () => {
               </div>
               <p className="opacity-90 text-sm font-medium">
                 {isBroadcast 
-                  ? "This urgent request will be sent to all online providers matching your needs."
+                  ? "This urgent request will be sent to all available providers matching your needs."
                   : <>You are requesting the service: <span className="font-bold underline decoration-white/30 underline-offset-2">{gig?.title}</span></>
                 }
               </p>

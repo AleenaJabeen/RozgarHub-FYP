@@ -6,8 +6,8 @@ import { getCategories } from "../../../store/serviceProvider/category-slice";
 import {
   deleteGigThunk,
   getGigById,
-  setGigOnlineThunk,
-  setGigOfflineThunk,
+  setGigAvailableThunk,
+  setGigUnavailableThunk,
   enableAutoModeThunk,
   updateGigThunk,
 } from "../../../store/serviceProvider/gig-slice";
@@ -27,10 +27,10 @@ const GigDetails = () => {
   };
 
   const handleToggleStatus = (gig) => {
-    if (gig.availabilityStatus === "online") {
-      dispatch(setGigOfflineThunk(gig._id));
+    if (gig.availabilityStatus === "available") {
+      dispatch(setGigUnavailableThunk(gig._id));
     } else {
-      dispatch(setGigOnlineThunk(gig._id));
+      dispatch(setGigAvailableThunk(gig._id));
     }
   };
 
@@ -444,7 +444,7 @@ const GigDetails = () => {
                 <span>Status</span>
                 <input
                   type="checkbox"
-                  checked={gig.availabilityStatus === "online"}
+                  checked={gig.availabilityStatus === "available"}
                   onChange={() => handleToggleStatus(gig)}
                 />
                 <span>Available</span>

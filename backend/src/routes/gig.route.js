@@ -6,8 +6,8 @@ import {
   getGigById,
   updateGig,
   deleteGig,
-  setGigOffline,
-  setGigOnline,
+  setGigUnavailable,
+  setGigAvailable,
   enableAutoMode,
   searchPublicGigs
 } from "../controllers/serviceprovider/gig.controller.js";
@@ -65,11 +65,11 @@ router.delete("/:id", deleteGig);
    Manual Status Controls
 -------------------------- */
 
-// Set Offline (Manual Mode)
-router.patch("/:id/offline", setGigOffline);
+// Set Unavailable (Manual Mode)
+router.patch("/:id/unavailable", setGigUnavailable);
 
-// Set Online (Switch back to Auto)
-router.patch("/:id/online", setGigOnline);
+// Set Available (Switch back to Auto)
+router.patch("/:id/available", setGigAvailable);
 
 // Explicit Enable Auto Mode
 router.patch("/:id/mode/auto", enableAutoMode);

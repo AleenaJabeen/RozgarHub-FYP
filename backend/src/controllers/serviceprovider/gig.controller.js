@@ -59,7 +59,7 @@ export const createGig = asyncHandler(async (req, res) => {
     }
   }
 
-  const isOnline = checkIfWithinAvailability(availabilityHours);
+  const isAvailable = checkIfWithinAvailability(availabilityHours);
 
   const gig = await Gig.create({
     serviceProviderId: provider._id,
@@ -71,7 +71,7 @@ export const createGig = asyncHandler(async (req, res) => {
     hourlyRate,
     inspectionRate,
     availabilityHours,
-    availabilityStatus: isOnline ? "online" : "offline",
+    availabilityStatus: isAvailable ? "available" : "unavailable",
     statusMode: "auto",
     totalOrders: 0,
     totalReviews: 0,
@@ -115,7 +115,7 @@ export const getGigById = asyncHandler(async (req, res) => {
   .populate("categoryId", "name")
   .populate({
       path: "serviceProviderId",
-      populate: { path: "user", select: "name avatar" } 
+      populate: { path: "user", select: "name avatar isOnline" } 
     });
 
   if (!gig) {
@@ -157,9 +157,9 @@ export const searchPublicGigs = asyncHandler(async (req, res) => {
     query.categoryId = category;
   }
 
-  // ── Online / Availability status filter ───────────────────────
-  if (status === "online") {
-    query.availabilityStatus = "online";
+  // ── Available / Unavailable status filter ───────────────────────
+  if (status === "available") {
+    query.availabilityStatus = "available";
   }
 
   // ── Availability Hours filter — day + time ────────────────────
@@ -250,9 +250,9 @@ export const deleteGig = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Gig deleted successfully"));
 });
 
-// manually set status to online/offline
+// manually set status to available/unavailable
 
-export const setGigOffline = asyncHandler(async (req, res) => {
+export const setGigUnavailable = asyncHandler(async (req, res) => {
   const gig = await Gig.findById(req.params.id);
 
   if (!gig) throw new ApiError(404, "Gig not found");
@@ -262,7 +262,7 @@ export const setGigOffline = asyncHandler(async (req, res) => {
       throw new ApiError(403, "Unauthorized");
     }
 
-  gig.availabilityStatus = "offline";
+  gig.availabilityStatus = "unavailable";
   gig.statusMode = "manual";
 
   await gig.save();
@@ -272,10 +272,10 @@ export const setGigOffline = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, populatedGig, "Gig set to offline manually"));
+    .json(new ApiResponse(200, populatedGig, "Gig set to unavailable manually"));
 });
 
-export const setGigOnline = asyncHandler(async (req, res) => {
+export const setGigAvailable = asyncHandler(async (req, res) => {
   const gig = await Gig.findById(req.params.id);
 
   if (!gig) throw new ApiError(404, "Gig not found");
@@ -285,7 +285,7 @@ export const setGigOnline = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Unauthorized");
   }
 
-  gig.availabilityStatus = "online";
+  gig.availabilityStatus = "available";
   gig.statusMode = "manual";
 
   await gig.save();
@@ -295,7 +295,7 @@ export const setGigOnline = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, populatedGig, "Gig set to online and auto mode enabled"));
+    .json(new ApiResponse(200, populatedGig, "Gig set to available and auto mode enabled"));
 });
 
 //enabledauto mode when gig is updated
@@ -306,8 +306,8 @@ export const enableAutoMode = asyncHandler(async (req, res) => {
 
   gig.statusMode = "auto";
 
-  const isOnline = checkIfWithinAvailability(gig.availabilityHours);
-  gig.availabilityStatus = isOnline ? "online" : "offline";
+  const isAvailable = checkIfWithinAvailability(gig.availabilityHours);
+  gig.availabilityStatus = isAvailable ? "available" : "unavailable";
 
   await gig.save();
   const populatedGig = await Gig.findById(gig._id)
@@ -398,8 +398,8 @@ export const updateGig = asyncHandler(async (req, res) => {
 
   // ✅ AUTO MODE
   if (gig.statusMode === "auto") {
-    const isOnline = checkIfWithinAvailability(gig.availabilityHours);
-    gig.availabilityStatus = isOnline ? "online" : "offline";
+    const isAvailable = checkIfWithinAvailability(gig.availabilityHours);
+    gig.availabilityStatus = isAvailable ? "available" : "unavailable";
   }
 
   await gig.save();
