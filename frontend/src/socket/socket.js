@@ -2,13 +2,14 @@ import { io } from "socket.io-client";
 
 let socket = null;
 
-export const connectSocket = (token) => {
-  // If socket already exists and is connected, don't create a new one
-  if (socket?.connected) return socket;
+export const connectSocket = () => {
+ 
+  if (socket) return socket;
 
   socket = io("http://localhost:3000", {
     withCredentials: true,
-    transports: ["websocket"], // Forces websocket for better performance
+    transports: ["websocket"],
+    autoConnect: true,
   });
 
   socket.on("connect", () => console.log("✅ Socket connected:", socket.id));

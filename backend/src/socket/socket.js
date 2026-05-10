@@ -15,22 +15,16 @@ const onlineUsers = new Map();
 export const initSocket = (httpServer) => {
   io = new Server(httpServer, {
     cors: {
-      origin: "http://localhost:5173",
+      origin: process.env.CORS_ORIGIN,
       methods: ["GET", "POST"],
       credentials: true,
     },
   });
 
-  // ─── Auth middleware ───────────────────────────────────────────────────────
-  // Reads the JWT from the handshake auth token (sent by the client as:
-  //   socket = io(URL, { auth: { token: "Bearer <jwt>" } })
-  // Attaches req.user to the socket so handlers can identify the caller.
-
 
   io.use((socket, next) => {
     try {
       const rawCookies = socket.handshake.headers.cookie;
-
       if (!rawCookies) {
         return next(new Error("No cookies"));
       }
@@ -53,14 +47,20 @@ export const initSocket = (httpServer) => {
     }
   });
   // ─── Connection ────────────────────────────────────────────────────────────
-  io.on("connection",async (socket) => {
-    const userId = socket.user._id.toString();
-    console.log(`Socket connected: ${socket.id} | user: ${userId}`);
-    onlineUsers.set(userId, socket.id);
-    await User.findByIdAndUpdate(userId, {
-      isOnline: true,
-    });
-    io.emit("user_online", userId);
+  io.on("connection", async (socket) => {
+  const userId = socket.user._id.toString();
+// temp seting up online
+  if (!onlineUsers.has(userId)) {
+    onlineUsers.set(userId, new Set());
+  }
+
+  onlineUsers.get(userId).add(socket.id);
+
+  await User.findByIdAndUpdate(userId, {
+    isOnline: true,
+  });
+
+  io.emit("user_online", userId);
     // Each user joins their own personal room so we can reach them by userId
     socket.join(userId);
 
@@ -288,15 +288,16 @@ export const initSocket = (httpServer) => {
     });
 
     // ── disconnect ───────────────────────────────────────────────────────────
-    socket.on("disconnect", async (reason) => {
-      onlineUsers.delete(userId);
-      await User.findByIdAndUpdate(userId, {
-        isOnline: false,
-        lastActiveAt: new Date(),
-      });
-      io.emit("user_offline", userId);
-      console.log(`Socket disconnected: ${socket.id} | reason: ${reason}`);
-    });
+    socket.on("disconnect", async () => {
+  const sockets = onlineUsers.get(userId);
+  sockets?.delete(socket.id);
+
+  if (!sockets || sockets.size === 0) {
+    onlineUsers.delete(userId);
+    await User.findByIdAndUpdate(userId, { isOnline: false, lastActiveAt: new Date() });
+    io.emit("user_offline", userId);
+  }
+});
   });
 
   return io;

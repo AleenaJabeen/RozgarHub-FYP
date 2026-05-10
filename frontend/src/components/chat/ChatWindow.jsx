@@ -17,6 +17,7 @@ import {
 import axios from "axios";
 import { capitalizeWords } from "../../utils/capitalize";
 import { BiMessageRoundedDots } from "react-icons/bi";
+import { formatLastSeen } from "../../utils/formatLastSeen";
 
 const ChatWindow = () => {
   const { chatId } = useParams();
@@ -36,7 +37,9 @@ const ChatWindow = () => {
   const chats = useSelector((state) => state.chats?.items || []);
   const chatData = chats.find((c) => c._id === chatId);
   const otherUser = chatData?.participants?.find((p) => p._id !== myId);
-  // Use your custom hook to handle socket listeners
+  const isOnline=otherUser?.isOnline || false;
+  const lastActiveAt=otherUser?.lastActiveAt || "";
+  
   useSocket(chatId);
 
   useEffect(() => {
@@ -158,8 +161,8 @@ const ChatWindow = () => {
             <h3 className="font-bold text-gray-800">
               {capitalizeWords(otherUser?.name)}
             </h3>
-            <p className="text-xs text-secondary font-medium truncate w-48 sm:w-auto">
-              online
+            <p className={`text-xs ${isOnline?"text-secondary":"text-gray-500"} font-medium truncate w-48 sm:w-auto`}>
+              {isOnline?"online":formatLastSeen(lastActiveAt)}
             </p>
           </div>
         </div>

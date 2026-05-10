@@ -25,6 +25,9 @@ const Navbar = () => {
   const name = user?.name || "User";
   const email = user?.email || "";
   const avatar = user?.avatar || "";
+  const isOnline=user?.isOnline || false;
+  console.log("online",isOnline)
+
 
   // Close mobile menu when resizing to desktop
   useEffect(() => {
@@ -191,9 +194,11 @@ const Navbar = () => {
               <div className="cursor-pointer relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen((prev) => !prev)}
-                  className="cursor-pointer flex items-center focus:outline-none"
+                  className="relative cursor-pointer flex items-center focus:outline-none"
                 >
                   <Avatar size="sm" />
+                  <div className={`w-2 h-2 absolute bottom-1 right-0 ${isOnline?"bg-green-500":"bg-red-500 "} rounded-full`}></div>
+
                 </button>
 
                 {dropdownOpen && (

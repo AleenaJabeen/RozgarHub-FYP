@@ -3,13 +3,12 @@ import ChatSidebar from '../../components/chat/ChatSidebar';
 import ChatWindow from '../../components/chat/ChatWindow';
 import { useParams } from 'react-router-dom';
 import { connectSocket } from '../../socket/socket';
+import { useSelector } from 'react-redux';
 
 function Chat() {
   const { chatId } = useParams();
 
-  useEffect(() => {
-    connectSocket();
-  }, []);
+  
 
   return (
     /* h-screen and overflow-hidden are correct here to prevent the WHOLE page from scrolling */

@@ -106,7 +106,7 @@ export const getMessages = asyncHandler(async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate("senderId", "name avatar"),
+      .populate("senderId", "name avatar isOnline lastActiveAt"),
     Message.countDocuments({ chatId }),
   ]);
 
@@ -183,7 +183,7 @@ export const editMessage = asyncHandler(async (req, res) => {
 
   const populated = await Message.findById(message._id).populate(
     "senderId",
-    "name avatar",
+    "name avatar isOnline lastActiveAt",
   );
 
   const io = req.app.get("io");

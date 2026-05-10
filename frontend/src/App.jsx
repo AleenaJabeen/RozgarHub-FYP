@@ -34,6 +34,7 @@ import CustomerGigDetails from "./pages/customer/CustomerGigDetails";
 import GlobalUrgentOverlay from "./components/orders/serviceprovider/GlobalUrgentOverlay";
 import Chat from "./pages/customer/Chat";
 import ChatWindow from "./components/chat/ChatWindow";
+import { connectSocket, disconnectSocket } from "./socket/socket";
 
 function App() {
   const dispatch = useDispatch();
@@ -44,6 +45,14 @@ function App() {
   useEffect(() => {
     dispatch(checkAuth());
   }, [dispatch]);
+  // ✅ ADD THIS RIGHT HERE
+useEffect(() => {
+  if (isAuthenticated && user) {
+    connectSocket();
+  } else {
+    disconnectSocket();
+  }
+}, [isAuthenticated, user]);
 
   if (isLoading) {
     return (

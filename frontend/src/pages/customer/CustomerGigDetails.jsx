@@ -20,6 +20,7 @@ import {
 } from "react-icons/io5";
 import { TbCalendarTime } from "react-icons/tb";
 import axios from "axios";
+import {capitalizeWords} from '../../utils/capitalize'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const StarRating = ({ rating = 0 }) => (
@@ -472,21 +473,18 @@ const CustomerGigDetails = () => {
               className="w-12 h-12 rounded-full object-cover border-2 border-secondary"
             />
             <span
-              className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${gig.availabilityStatus === "online" ? "bg-green-500" : "bg-gray-400"}`}
+              className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${providerUser?.isOnline ? "bg-green-500" : "bg-gray-400"}`}
             ></span>
           </div>
           <div>
-            <p className="text-xs text-gray-500 font-medium">
-              Service Provider
-            </p>
             <p className="text-sm font-bold text-secondary">
-              {providerUser?.name || "Provider Name"}
+              {capitalizeWords(providerUser?.name || "No Name")}
             </p>
             <div className="flex items-center gap-1">
               <span
-                className={`text-[10px] uppercase font-bold ${gig.availabilityStatus === "online" ? "text-green-600" : "text-gray-500"}`}
+                className={`text-[10px] uppercase font-bold ${providerUser?.isOnline? "text-green-600" : "text-gray-500"}`}
               >
-                {gig.availabilityStatus === "online" ? "● Online" : "● Offline"}
+                {providerUser?.isOnline ? "Online" : "Offline"}
               </span>
             </div>
           </div>
