@@ -308,7 +308,7 @@ export const initSocket = (httpServer) => {
       }
     }, 8000); // 8s grace period for slow connections
 
-    disconnectTimers.set( timer);
+    disconnectTimers.set(userId, timer);
   }
 });
   });

@@ -83,7 +83,8 @@ const Navbar = () => {
     serviceprovider: [
       { name: "Dashboard", href: "/serviceprovider" },
       { name: "Gigs", href: "/serviceprovider/gigs" },
-      { name: "Orders", href: "/serviceprovider/orders" },
+      { name: "Orders", href: "/serviceprovider/orders"},
+       { name: "Inbox", href: "/messages"}
     ],
   };
 
