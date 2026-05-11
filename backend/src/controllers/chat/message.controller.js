@@ -92,22 +92,23 @@ export const getMessages = asyncHandler(async (req, res) => {
 
   const skip = (page - 1) * limit;
 
-  const [messages, total] = await Promise.all([
-    Message.find({
-      chatId,
-      deletedFor: {
-        $not: {
-          $elemMatch: {
-            userId: req.user._id,
-          },
+  const messageFilter = {
+    chatId,
+    deletedFor: {
+      $not: {
+        $elemMatch: {
+          userId: req.user._id,
         },
       },
-    })
+    },
+  };
+ const [messages, total] = await Promise.all([
+    Message.find(messageFilter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .populate("senderId", "name avatar isOnline lastActiveAt"),
-    Message.countDocuments({ chatId }),
+    Message.countDocuments(messageFilter), // Updated to use messageFilter
   ]);
 
   return res.status(200).json(

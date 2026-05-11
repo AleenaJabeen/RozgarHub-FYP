@@ -4,14 +4,15 @@ import axios from "axios";
 export const fetchMessages = createAsyncThunk(
   "messages/fetchMessages",
   async ({ chatId }) => {
-    const res = await axios.get(`http://localhost:3000/api/v1/messages/${chatId}/messages`,
-      {withCredentials:true}
+    const res = await axios.get(
+      `http://localhost:3000/api/v1/messages/${chatId}/messages`,
+      { withCredentials: true },
     );
     return {
       chatId,
-      messages: res.data.data.messages // ✅ IMPORTANT FIX
+      messages: res.data.data.messages, // ✅ IMPORTANT FIX
     };
-  }
+  },
 );
 
 const messageSlice = createSlice({
@@ -39,13 +40,14 @@ const messageSlice = createSlice({
       }
     },
 
-    deleteMessage(state, { payload: { chatId, messageId } }) {
-      const list = state.byChat[chatId] || [];
+    deleteMessage: (state, {payload}) => {
+      const { chatId, messageId } = payload;
 
-      const idx = list.findIndex((m) => m._id === messageId);
-
-      if (idx !== -1) {
-        list[idx].deletedForEveryone = true;
+      if (state.byChat[chatId]) {
+        // We filter the array to keep everything EXCEPT the deleted message
+        state.byChat[chatId] = state.byChat[chatId].filter(
+          (msg) => msg._id !== messageId,
+        );
       }
     },
 
@@ -71,6 +73,10 @@ const messageSlice = createSlice({
   },
 });
 
-export const { appendMessage, editMessage, deleteMessage , updateMessageStatus,} =
-  messageSlice.actions;
+export const {
+  appendMessage,
+  editMessage,
+  deleteMessage,
+  updateMessageStatus,
+} = messageSlice.actions;
 export default messageSlice.reducer;
