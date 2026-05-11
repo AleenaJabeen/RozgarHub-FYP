@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import { fetchMessages } from "../../store/chat/messageSlice";
+import { fetchMessages , updateMessageStatus} from "../../store/chat/messageSlice";
 import { useSocket } from "../../hooks/useSocket";
 import { getSocket } from "../../socket/socket";
 import { BiMessageRoundedDots } from "react-icons/bi";
@@ -41,6 +41,57 @@ const ChatWindow = () => {
     socket.on("user_typing", handleTyping);
     return () => socket.off("user_typing", handleTyping);
   }, [socket, otherUser]);
+
+  useEffect(() => {
+  if (!socket) return;
+
+  const handleMessageStatusUpdate = ({
+    messageId,
+    status,
+    chatId: updatedChatId,
+  }) => {
+    if (updatedChatId !== chatId) return;
+
+    dispatch(
+      updateMessageStatus({
+        messageId,
+        status,
+        chatId,
+      })
+    );
+  };
+
+  socket.on("message_status_updated", handleMessageStatusUpdate);
+
+  return () => {
+    socket.off(
+      "message_status_updated",
+      handleMessageStatusUpdate
+    );
+  };
+}, [socket, chatId, dispatch]);
+
+useEffect(() => {
+  if (!socket || !messages.length || !myId) return;
+
+  messages.forEach((msg) => {
+    const senderId =
+      typeof msg.senderId === "object"
+        ? msg.senderId._id
+        : msg.senderId;
+
+    // only mark OTHER user's messages as read
+    if (
+      senderId !== myId &&
+      msg.status !== "read"
+    ) {
+      socket.emit("message_read", {
+        messageId: msg._id,
+        chatId,
+      });
+    }
+  });
+}, [messages, socket, myId, chatId]);
 
   useEffect(() => {
     if (chatId) dispatch(fetchMessages({ chatId }));

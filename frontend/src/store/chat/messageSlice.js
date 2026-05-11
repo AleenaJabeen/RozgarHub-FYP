@@ -17,32 +17,60 @@ export const fetchMessages = createAsyncThunk(
 const messageSlice = createSlice({
   name: "messages",
   initialState: { byChat: {}, pagination: {} },
+
   reducers: {
     appendMessage(state, { payload }) {
       const { chatId } = payload;
-      if (!state.byChat[chatId]) state.byChat[chatId] = [];
-      state.byChat[chatId].unshift(payload); // newest first
+
+      if (!state.byChat[chatId]) {
+        state.byChat[chatId] = [];
+      }
+
+      state.byChat[chatId].unshift(payload);
     },
+
     editMessage(state, { payload }) {
       const list = state.byChat[payload.chatId] || [];
+
       const idx = list.findIndex((m) => m._id === payload._id);
-      if (idx !== -1) list[idx] = payload;
+
+      if (idx !== -1) {
+        list[idx] = payload;
+      }
     },
+
     deleteMessage(state, { payload: { chatId, messageId } }) {
       const list = state.byChat[chatId] || [];
+
       const idx = list.findIndex((m) => m._id === messageId);
-      if (idx !== -1) list[idx].deletedForEveryone = true;
+
+      if (idx !== -1) {
+        list[idx].deletedForEveryone = true;
+      }
+    },
+
+    updateMessageStatus(state, { payload }) {
+      const { chatId, messageId, status } = payload;
+
+      const list = state.byChat[chatId] || [];
+
+      const message = list.find((m) => m._id === messageId);
+
+      if (message) {
+        message.status = status;
+      }
     },
   },
-  extraReducers: (builder) => {
-   builder.addCase(fetchMessages.fulfilled, (state, action) => {
-  const { chatId, messages } = action.payload;
 
-  state.byChat[chatId] = messages;
-});
+  extraReducers: (builder) => {
+    builder.addCase(fetchMessages.fulfilled, (state, action) => {
+      const { chatId, messages } = action.payload;
+
+      state.byChat[chatId] = messages;
+    });
   },
 });
 
-export const { appendMessage, editMessage, deleteMessage } =
+export const { appendMessage, editMessage, deleteMessage , updateMessageStatus,} =
   messageSlice.actions;
 export default messageSlice.reducer;

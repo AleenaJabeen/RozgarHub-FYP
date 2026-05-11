@@ -13,6 +13,7 @@ import ChatListItem from "./chatSidebar/ChatListItem";
 const ChatSidebar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const socket=getSocket();
   const { chatId: activeChatId } = useParams();
 
   const [typingUsers, setTypingUsers] = useState({});
@@ -28,7 +29,7 @@ const ChatSidebar = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    const socket = getSocket();
+   if (!socket) return;
     const handleTyping = ({ chatId, isTyping, userId }) => {
       setTypingUsers((prev) => ({
         ...prev,
