@@ -1,6 +1,13 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchMyChats } from "../../store/chat/chatSlice";
+import {
+  deleteChat,
+  fetchMyChats,
+  markAsRead,
+  resetUnreadCount,
+  toggleArchived,
+  toggleStarred,
+} from "../../store/chat/chatSlice";
 import { useNavigate, useParams } from "react-router-dom";
 import { TbMessageCircleSearch } from "react-icons/tb";
 import { getSocket } from "../../socket/socket";
@@ -13,7 +20,7 @@ import ChatListItem from "./chatSidebar/ChatListItem";
 const ChatSidebar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const socket=getSocket();
+  const socket = getSocket();
   const { chatId: activeChatId } = useParams();
 
   const [typingUsers, setTypingUsers] = useState({});
@@ -21,7 +28,9 @@ const ChatSidebar = () => {
   const [filterType, setFilterType] = useState("all");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  const { items: chats = [], loading = false } = useSelector((state) => state.chats || {});
+  const { items: chats = [], loading = false } = useSelector(
+    (state) => state.chats || {},
+  );
   const myId = useSelector((state) => state.auth.user?._id);
 
   useEffect(() => {
@@ -29,7 +38,7 @@ const ChatSidebar = () => {
   }, [dispatch]);
 
   useEffect(() => {
-   if (!socket) return;
+    if (!socket) return;
     const handleTyping = ({ chatId, isTyping, userId }) => {
       setTypingUsers((prev) => ({
         ...prev,
@@ -49,10 +58,14 @@ const ChatSidebar = () => {
       const unreadCount = chat.unreadCounts?.[myId] || 0;
 
       switch (filterType) {
-        case "unread": return matchesSearch && unreadCount > 0;
-        case "starred": return matchesSearch && chat.isStarred;
-        case "archived": return matchesSearch && chat.isArchived;
-        default: return matchesSearch && !chat.isArchived;
+        case "unread":
+          return matchesSearch && unreadCount > 0;
+        case "starred":
+          return matchesSearch && chat.isStarred;
+        case "archived":
+          return matchesSearch && chat.isArchived;
+        default:
+          return matchesSearch && !chat.isArchived;
       }
     });
   }, [chats, searchQuery, filterType, myId]);
@@ -66,14 +79,14 @@ const ChatSidebar = () => {
   }
 
   return (
-    <div className="w-full h-full bg-white flex flex-col overflow-hidden">
+    <div className="w-full h-full flex flex-col overflow-auto">
       <div className="border-b border-gray-200 p-4">
-        <ChatHeader 
-          filterType={filterType} 
-          setFilterType={setFilterType} 
-          isSearchOpen={isSearchOpen} 
-          setIsSearchOpen={setIsSearchOpen} 
-          setSearchQuery={setSearchQuery} 
+        <ChatHeader
+          filterType={filterType}
+          setFilterType={setFilterType}
+          isSearchOpen={isSearchOpen}
+          setIsSearchOpen={setIsSearchOpen}
+          setSearchQuery={setSearchQuery}
         />
 
         {isSearchOpen && (
@@ -90,16 +103,21 @@ const ChatSidebar = () => {
         )}
       </div>
 
-      <div className="w-full overflow-y-auto scrollbar-hide">
+      <div className="w-full h-full overflow-y-auto scrollbar-hide">
         {filteredChats.length === 0 ? (
           <div className="w-74 mx-auto flex flex-col items-center justify-center h-full p-6 text-center rounded-xl">
             <div className="bg-gray-50 p-6 rounded-full mb-4">
               <TbMessageCircleSearch size={70} className="text-secondary" />
             </div>
-            <h3 className="text-lg font-bold text-tertiary">No Conversations</h3>
+            <h3 className="text-lg font-bold text-tertiary">
+              No Conversations
+            </h3>
             <p className="text-base text-tertiary mt-2 px-4">
-              There are no conversations under "{capitalizeWords(filterType === 'all' ? 'All messages' : filterType)}" 
-              {searchQuery && ` matching "${searchQuery}"`}
+              There are no conversations under "
+              {capitalizeWords(
+                filterType === "all" ? "All messages" : filterType,
+              )}
+              "{searchQuery && ` matching "${searchQuery}"`}
             </p>
           </div>
         ) : (
@@ -111,7 +129,21 @@ const ChatSidebar = () => {
                 myId={myId}
                 activeChatId={activeChatId}
                 typingUserId={typingUsers[chat._id]}
-                onClick={() => navigate(`/messages/${chat._id}`)}
+                onClick={() => {
+                  dispatch(
+                    resetUnreadCount({
+                      chatId: chat._id,
+                      userId: myId,
+                    }),
+                  );
+
+                  dispatch(markAsRead(chat._id));
+
+                  navigate(`/messages/${chat._id}`);
+                }}
+                onStar={(chatId) => dispatch(toggleStarred(chatId))}
+                onArchive={(chatId) => dispatch(toggleArchived(chatId))}
+                onDelete={(chatId) => dispatch(deleteChat(chatId))}
               />
             ))}
           </div>

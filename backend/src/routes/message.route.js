@@ -13,7 +13,7 @@ import { upload } from "../middlewares/multer.middleware.js";
 const router = express.Router();
 
 router.post(
-  "/",
+  "/send",
   verifyJWT,
   upload.single("file"), // image/video/audio
   sendMessage
