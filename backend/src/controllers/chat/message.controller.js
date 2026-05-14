@@ -89,11 +89,15 @@ export const getMessages = asyncHandler(async (req, res) => {
     participants: req.user._id,
   });
   if (!chat) throw new ApiError(404, "Chat not found");
+  const deletedChatEntry = chat.deletedFor.find(
+    (item) => item.userId.toString() === req.user._id.toString(),
+  );
 
   const skip = (page - 1) * limit;
 
   const messageFilter = {
     chatId,
+
     deletedFor: {
       $not: {
         $elemMatch: {
@@ -101,8 +105,15 @@ export const getMessages = asyncHandler(async (req, res) => {
         },
       },
     },
+
+    // ✅ show only new messages after chat deletion
+    ...(deletedChatEntry?.deletedAt && {
+      createdAt: {
+        $gt: deletedChatEntry.deletedAt,
+      },
+    }),
   };
- const [messages, total] = await Promise.all([
+  const [messages, total] = await Promise.all([
     Message.find(messageFilter)
       .sort({ createdAt: -1 })
       .skip(skip)

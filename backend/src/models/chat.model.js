@@ -1,5 +1,20 @@
 import mongoose from "mongoose";
 
+const deletedForSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    deletedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false }
+);
+
 const chatSchema = new mongoose.Schema(
   {
     participants: {
@@ -44,6 +59,7 @@ const chatSchema = new mongoose.Schema(
       of: Number,
       default: {},
     },
+    deletedFor: [deletedForSchema],
   },
   { timestamps: true },
 );

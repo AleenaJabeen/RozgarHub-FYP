@@ -3,11 +3,12 @@ import jwt from "jsonwebtoken";
 import { Chat } from "../models/chat.model.js";
 import { Message } from "../models/message.model.js";
 import cookie from "cookie";
+import { sendPushNotification } from "../services/notification.service.js";
 import { User } from "../models/user.model.js";
 
 let io;
 const onlineUsers = new Map();
-const disconnectTimers = new Map(); 
+const disconnectTimers = new Map();
 
 /**
  * Call this once in server.js, passing the raw http.Server instance.
@@ -21,7 +22,6 @@ export const initSocket = (httpServer) => {
       credentials: true,
     },
   });
-
 
   io.use((socket, next) => {
     try {
@@ -49,19 +49,19 @@ export const initSocket = (httpServer) => {
   });
   // ─── Connection ────────────────────────────────────────────────────────────
   io.on("connection", async (socket) => {
-  const userId = socket.user._id.toString();
-// temp seting up online
-  if (!onlineUsers.has(userId)) {
-    onlineUsers.set(userId, new Set());
-  }
+    const userId = socket.user._id.toString();
+    // temp seting up online
+    if (!onlineUsers.has(userId)) {
+      onlineUsers.set(userId, new Set());
+    }
 
-  onlineUsers.get(userId).add(socket.id);
+    onlineUsers.get(userId).add(socket.id);
 
-  await User.findByIdAndUpdate(userId, {
-    isOnline: true,
-  });
+    await User.findByIdAndUpdate(userId, {
+      isOnline: true,
+    });
 
-  io.emit("user_online", userId);
+    io.emit("user_online", userId);
     // Each user joins their own personal room so we can reach them by userId
     socket.join(userId);
 
@@ -128,14 +128,11 @@ export const initSocket = (httpServer) => {
             message: "Only text messages allowed via Socket.IO",
           });
         }
-        const validTypes = ["text", "image", "file"];
-        if (!validTypes.includes(type)) {
-          return socket.emit("error", { message: "Invalid message type" });
-        }
 
         // Verify participant
         const chat = await Chat.findOne({ _id: chatId, participants: userId });
         if (!chat) return socket.emit("error", { message: "Chat not found" });
+        
 
         // Persist
         const message = await Message.create({
@@ -151,6 +148,7 @@ export const initSocket = (httpServer) => {
         const receiverId = chat.participants
           .map((id) => id.toString())
           .find((id) => id !== userId);
+
 
         await Chat.findByIdAndUpdate(chatId, {
           lastMessage: message._id,
@@ -180,6 +178,22 @@ export const initSocket = (httpServer) => {
             lastMessage: message,
             lastMessageAt: message.createdAt,
           });
+          const receiverSockets = onlineUsers.get(otherId);
+          console.log("Receiver Sockets:", receiverSockets);
+
+          const isReceiverOnline = receiverSockets?.size > 0;
+
+          if (!isReceiverOnline) {
+            await sendPushNotification({
+              userId: otherId,
+              title: message.senderId.name,
+              body: message.content || "Sent you a message",
+              data: {
+                type: "message",
+                chatId: chatId.toString(),
+              },
+            });
+          }
         }
 
         // Acknowledge the sender
@@ -289,28 +303,28 @@ export const initSocket = (httpServer) => {
     });
 
     // ── disconnect ───────────────────────────────────────────────────────────
- socket.on("disconnect", async () => {
-  const sockets = onlineUsers.get(userId);
-  sockets?.delete(socket.id);
+    socket.on("disconnect", async () => {
+      const sockets = onlineUsers.get(userId);
+      sockets?.delete(socket.id);
 
-  if (!sockets || sockets.size === 0) {
-    onlineUsers.delete(userId);
+      if (!sockets || sockets.size === 0) {
+        onlineUsers.delete(userId);
 
-    const timer = setTimeout(async () => {
-      // Only mark offline if they haven't reconnected
-      if (!onlineUsers.has(userId)) {
-        await User.findByIdAndUpdate(userId, {
-          isOnline: false,
-          lastActiveAt: new Date(),
-        });
-        // ✅ emit to everyone EXCEPT the disconnected user
-        socket.broadcast.emit("user_offline", userId);
+        const timer = setTimeout(async () => {
+          // Only mark offline if they haven't reconnected
+          if (!onlineUsers.has(userId)) {
+            await User.findByIdAndUpdate(userId, {
+              isOnline: false,
+              lastActiveAt: new Date(),
+            });
+            // ✅ emit to everyone EXCEPT the disconnected user
+            socket.broadcast.emit("user_offline", userId);
+          }
+        }, 8000); // 8s grace period for slow connections
+
+        disconnectTimers.set(userId, timer);
       }
-    }, 8000); // 8s grace period for slow connections
-
-    disconnectTimers.set(userId, timer);
-  }
-});
+    });
   });
 
   return io;

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { IoTrashOutline, IoCloudUploadOutline } from "react-icons/io5";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { getCategories } from "../../../store/serviceProvider/category-slice";
 import {
@@ -15,6 +15,7 @@ import {
 const GigDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleEdit = (id, data) => {
     dispatch(updateGigThunk({ id, data }));
@@ -42,7 +43,7 @@ const GigDetails = () => {
 
   const { gigs } = useSelector((state) => state.gigs);
   const { categories } = useSelector((state) => state.categories);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(location.state?.editMode || false);
   const [errors, setErrors] = useState({});
 
   const gig = gigs.find((g) => g._id === id);
@@ -69,10 +70,10 @@ const GigDetails = () => {
     "Sunday",
   ];
   useEffect(() => {
-  if (!gig) {
-    dispatch(getGigById(id));
-  }
-}, [dispatch, id, gig]);
+    if (!gig) {
+      dispatch(getGigById(id));
+    }
+  }, [dispatch, id, gig]);
   useEffect(() => {
     dispatch(getCategories());
   }, [dispatch]);
@@ -249,7 +250,32 @@ const GigDetails = () => {
     setIsEditing(false);
   };
 
+  const handleCancel = () => {
+      // restore original gig data
+      setFormData({
+        title: gig.title,
+        description: gig.description,
+        categoryId: gig.categoryId?._id,
+        subcategoryIds: gig.subcategories || [],
+        hourlyRate: gig.hourlyRate,
+        inspectionRate: gig.inspectionRate,
+        availabilityHours:
+          gig.availabilityHours?.length > 0
+            ? gig.availabilityHours
+            : [
+                {
+                  days: [],
+                  startTime: "",
+                  endTime: "",
+                },
+              ],
+        images: gig.images || [],
+        newImages: [],
+      });
 
+      setErrors({});
+      setIsEditing(false);
+  };
 
   return (
     <div className="flex justify-center items-center z-50 overflow-y-auto">
@@ -363,7 +389,6 @@ const GigDetails = () => {
               </div>
             </div>
 
-            
             <div className="space-y-4">
               <label className="block text-sm font-semibold text-gray-700">
                 Available Days & Hours
@@ -435,7 +460,6 @@ const GigDetails = () => {
 
           {/* RIGHT */}
           <div className="space-y-6">
-
             {/* TOGGLES */}
 
             <div className="flex gap-6">
@@ -508,32 +532,43 @@ const GigDetails = () => {
             </div>
 
             {/* ACTIONS */}
+            {/* ACTIONS */}
             {!isEditing ? (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="w-full bg-secondary text-white py-3 rounded-xl"
-              >
-                Edit Gig
-              </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                className="w-full bg-secondary text-white py-3 rounded-xl"
-              >
-                Save Changes
-              </button>
-            )}
+              <>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="w-full bg-secondary text-white py-3 rounded-xl"
+                >
+                  Edit Gig
+                </button>
 
-            <button
-              onClick={() => handleDelete(gig._id)}
-              className="w-full bg-red-500 text-white py-3 rounded-xl"
-            >
-              Delete
-            </button>
+                <button
+                  onClick={() => handleDelete(gig._id)}
+                  className="w-full bg-red-500 text-white py-3 rounded-xl"
+                >
+                  Delete
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={handleSubmit}
+                  className="w-full bg-secondary text-white py-3 rounded-xl"
+                >
+                  Save Changes
+                </button>
+
+                <button
+                  onClick={handleCancel}
+                  className="w-full bg-gray-400 text-white py-3 rounded-xl"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
- 
     </div>
   );
 };

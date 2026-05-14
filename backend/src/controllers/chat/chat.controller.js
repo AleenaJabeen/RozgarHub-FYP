@@ -63,7 +63,9 @@ export const getOrCreateChat = asyncHandler(async (req, res) => {
 });
 
 export const getMyChats = asyncHandler(async (req, res) => {
-  const chats = await Chat.find({ participants: req.user._id })
+  const chats = await Chat.find({
+  participants: req.user._id,
+})
     .sort({ lastMessageAt: -1 })
     .populate("participants", "name avatar isOnline lastActiveAt" )
     .populate("gigId", "title images")
@@ -71,10 +73,22 @@ export const getMyChats = asyncHandler(async (req, res) => {
       path: "lastMessage",
       populate: { path: "senderId", select: "name avatar isOnline lastActiveAt" },
     });
+    const filteredChats = chats.filter((chat) => {
+      const deletedEntry = chat.deletedFor.find(
+    (d) => d.userId.toString() === req.user._id.toString()
+  );
+
+  // never deleted
+  if (!deletedEntry) return true;
+    if (!chat.lastMessage) return false;
+
+    // show chat only if new message arrived
+  return new Date(chat.lastMessageAt) > new Date(deletedEntry.deletedAt);
+  });
 
   return res
     .status(200)
-    .json(new ApiResponse(200, chats, "Chats fetched successfully"));
+    .json(new ApiResponse(200, filteredChats, "Chats fetched successfully"));
 });
 
 export const deleteChat = asyncHandler(async (req, res) => {
@@ -89,8 +103,34 @@ export const deleteChat = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Chat not found");
   }
 
-  await Message.deleteMany({ chatId });
-  await Chat.findByIdAndDelete(chatId);
+  const existingEntry = chat.deletedFor.find(
+  (d) => d.userId.toString() === req.user._id.toString()
+);
+
+if (existingEntry) {
+  // 🔥 IMPORTANT: refresh deletion timestamp
+  existingEntry.deletedAt = new Date();
+} else {
+  chat.deletedFor.push({
+    userId: req.user._id,
+    deletedAt: new Date(),
+  });
+}
+
+await chat.save();
+  const shouldPermanentlyDeleteChat = (chat) => {
+  if (chat.deletedFor.length !== 2) return false;
+
+  const lastMsgTime = chat.lastMessageAt || new Date(0);
+
+  return chat.deletedFor.every(
+    (d) => new Date(d.deletedAt) >= new Date(lastMsgTime)
+  );
+};
+if (shouldPermanentlyDeleteChat(chat)) {
+  await Message.deleteMany({ chatId: chat._id });
+  await Chat.findByIdAndDelete(chat._id);
+}
 
   res.status(200).json(
     new ApiResponse(200, {}, "Chat deleted successfully")
