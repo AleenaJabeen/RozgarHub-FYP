@@ -4,6 +4,7 @@ import { BsCheck2All } from "react-icons/bs";
 import { Pencil, Trash2 } from "lucide-react";
 import { IoChevronDown } from "react-icons/io5";
 import { MdDoNotDisturb } from "react-icons/md";
+import AudioMessage from "./AudioMessage";
 
 const MessageList = React.forwardRef(
   (
@@ -32,25 +33,23 @@ const MessageList = React.forwardRef(
       if (editingId && editInputRef.current) editInputRef.current.focus();
     }, [editingId]);
 
-   const handleBubbleClick = (e, msg) => {
-  
-  
-  e.stopPropagation();
-  if (contextMenu?.msgId === msg._id) {
-    setContextMenu(null);
-    return;
-  }
-  
-  const isMe = msg.senderId?._id === myId || msg.senderId === myId;
-  
-  // Pass the deleted status into the context menu state
-  setContextMenu({ 
-    msgId: msg._id, 
-    msgType: msg.type, 
-    isMe, 
-    isDeleted: msg.deletedForEveryone // Add this
-  });
-};
+    const handleBubbleClick = (e, msg) => {
+      e.stopPropagation();
+      if (contextMenu?.msgId === msg._id) {
+        setContextMenu(null);
+        return;
+      }
+
+      const isMe = msg.senderId?._id === myId || msg.senderId === myId;
+
+      // Pass the deleted status into the context menu state
+      setContextMenu({
+        msgId: msg._id,
+        msgType: msg.type,
+        isMe,
+        isDeleted: msg.deletedForEveryone, // Add this
+      });
+    };
 
     const handleStartEdit = (msg) => {
       setContextMenu(null);
@@ -125,29 +124,31 @@ const MessageList = React.forwardRef(
           : "left-full" // Appears to the right of their message
       }`}
                         >
-                          
                           {!msg.deletedForEveryone && (
                             <>
-                          {contextMenu.isMe &&
-                            contextMenu.msgType === "text" && (
-                              <button
-                                onClick={() => handleStartEdit(msg)}
-                                className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-200"
-                              >
-                                <Pencil size={14} /> Edit
-                              </button>
-                            )}
+                              {contextMenu.isMe &&
+                                contextMenu.msgType === "text" && (
+                                  <button
+                                    onClick={() => handleStartEdit(msg)}
+                                    className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-200"
+                                  >
+                                    <Pencil size={14} /> Edit
+                                  </button>
+                                )}
 
-                          {/* Delete for everyone — only my messages */}
-                          {contextMenu.isMe && (
-                            <button
-                              onClick={() => handleDelete(msg._id, "everyone")}
-                              className="flex items-center gap-2 w-full text-nowrap px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-200"
-                            >
-                              <Trash2 size={14} /> Delete for everyone
-                            </button>
+                              {/* Delete for everyone — only my messages */}
+                              {contextMenu.isMe && (
+                                <button
+                                  onClick={() =>
+                                    handleDelete(msg._id, "everyone")
+                                  }
+                                  className="flex items-center gap-2 w-full text-nowrap px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-200"
+                                >
+                                  <Trash2 size={14} /> Delete for everyone
+                                </button>
+                              )}
+                            </>
                           )}
-</>)}
                           {/* Delete for me — available on ALL messages (mine + theirs) */}
                           <button
                             onClick={() => handleDelete(msg._id, "me")}
@@ -159,12 +160,16 @@ const MessageList = React.forwardRef(
                       )}
 
                       {/* Bubble — no max-w here, parent controls it */}
+                      {/* Bubble — logic updated for media */}
                       <div
-                        onClick={(e) => handleBubbleClick(e, msg, isMe)}
-                        className={`w-full rounded-2xl group px-3 py-2 shadow-sm transition-opacity ${
-                          isMe
-                            ? "bg-secondary text-white rounded-tr-none"
-                            : "bg-white text-gray-800 rounded-tl-none"
+                       
+                        className={`w-full rounded-2xl group px-3 py-2 transition-opacity ${
+                          // If it's a media message (and NOT deleted), we remove the background and padding
+                          msg.type !== "text" && !msg.deletedForEveryone
+                            ? "bg-transparent shadow-none !p-0"
+                            : isMe
+                              ? "bg-secondary text-white rounded-tr-none shadow-sm"
+                              : "bg-white text-gray-800 rounded-tl-none shadow-sm"
                         } ${
                           isMe && !msg.deletedForEveryone
                             ? "cursor-pointer select-none"
@@ -175,26 +180,24 @@ const MessageList = React.forwardRef(
                             : "opacity-100"
                         }`}
                       >
-                     
-                          <div
-                            className={`absolute top-1 ${isMe ? "right-1 text-gray-300" : "right-1 text-gray-400"} 
-      hidden group-hover:flex items-center justify-center 
-      transition-all cursor-pointer z-60 text-gray-200`}
-                            onClick={(e) => {
-                              e.stopPropagation(); // Prevent bubble click
-                              handleBubbleClick(e, msg, isMe); // Trigger your existing context menu
-                            }}
-                          >
-                            <IoChevronDown size={16} />
-                          </div>
-                       
+                        <div
+                          className={`absolute top-1 ${isMe ? "right-1 text-gray-300" : "right-1 text-gray-400"} 
+                        hidden group-hover:flex items-center justify-center 
+                            transition-all cursor-pointer z-60 text-gray-200`}
+                          onClick={(e) => {
+                            e.stopPropagation(); 
+                            handleBubbleClick(e, msg, isMe); 
+                          }}
+                        >
+                          <IoChevronDown size={16} />
+                        </div>
 
                         {msg.deletedForEveryone ? (
-                          <p className="flex items-center gap-1 text-sm italic opacity-60">
-                           <MdDoNotDisturb /> Message deleted
+                          <p className="flex items-center gap-1 text-sm italic opacity-60 px-3 py-2">
+                            <MdDoNotDisturb /> Message deleted
                           </p>
                         ) : msg.type === "text" ? (
-                          <p className="text-sm break-words leading-relaxed">
+                          <p className="text-sm break-words leading-relaxed px-1 py-2">
                             {msg.content}
                             {msg.isEdited && (
                               <span className="text-[10px] opacity-60 ml-1">
@@ -203,16 +206,35 @@ const MessageList = React.forwardRef(
                             )}
                           </p>
                         ) : (
-                          <img
-                            src={msg.mediaUrl}
-                            alt="attachment"
-                            className="rounded-lg max-h-60 w-full object-cover"
-                          />
+                          <div className="overflow-hidden rounded-xl border border-gray-100/10">
+                            {msg.type === "image" && (
+                              <img
+                                src={msg.mediaUrl}
+                                alt="attachment"
+                                className="rounded-xl max-h-60 w-full object-cover block"
+                              />
+                            )}
+                            {msg.type === "video" && (
+                              <video
+                                src={msg.mediaUrl}
+                                controls
+                                className="rounded-xl max-h-60 w-full"
+                              />
+                            )}
+                            {msg.type === "audio" && (
+                              <div
+                                className={`flex ${isMe ? "justify-end" : "justify-start"} mb-2`}
+                              >
+                                <AudioMessage msg={msg} isMe={isMe} />
+                              </div>
+                            )}
+                          </div>
                         )}
+                          {msg.type !== "audio" && (
 
-                        <div className="flex items-center justify-end gap-1 mt-1">
+                        <div className={`${msg.type!=="text"?"inline-flex p-1 bg-secondary rounded-2xl":""}  flex items-center justify-end gap-1 mt-1`}>
                           <span
-                            className={`text-[10px] ${isMe ? "text-blue-100" : "text-gray-400"}`}
+                            className={`text-[10px] ${isMe ? "text-gray-200" : "text-gray-400"}`}
                           >
                             {new Date(msg.createdAt).toLocaleTimeString([], {
                               hour: "2-digit",
@@ -227,6 +249,7 @@ const MessageList = React.forwardRef(
                             </span>
                           )}
                         </div>
+                          )}
                       </div>
                     </div>
                   </div>

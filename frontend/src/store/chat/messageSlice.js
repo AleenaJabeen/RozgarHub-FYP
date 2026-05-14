@@ -15,6 +15,25 @@ export const fetchMessages = createAsyncThunk(
   },
 );
 
+export const sendMessage = createAsyncThunk(
+  "messages/sendMessage",
+  async (formData, { rejectWithValue }) => {
+    try {
+      const res = await axios.post(
+        "http://localhost:3000/api/v1/messages/send",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true,
+        }
+      );
+      return res.data.data; // This is the 'fullMessage' from your controller
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Failed to send message");
+    }
+  }
+);
+
 const messageSlice = createSlice({
   name: "messages",
   initialState: { byChat: {}, pagination: {} },
@@ -69,7 +88,30 @@ const messageSlice = createSlice({
       const { chatId, messages } = action.payload;
 
       state.byChat[chatId] = messages;
-    });
+    })
+    // Sending Media Message
+      .addCase(sendMessage.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(sendMessage.fulfilled, (state, action) => {
+        state.loading = false;
+        const message = action.payload;
+        const chatId = message.chatId;
+
+        if (!state.byChat[chatId]) {
+          state.byChat[chatId] = [];
+        }
+        
+        // Add to state immediately for faster UI feedback
+        const exists = state.byChat[chatId].find((m) => m._id === message._id);
+        if (!exists) {
+          state.byChat[chatId].unshift(message);
+        }
+      })
+      .addCase(sendMessage.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
   },
 });
 
