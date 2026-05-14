@@ -25,6 +25,7 @@ const ChatListItem = React.memo(
 
     const unreadCount = chat.unreadCounts?.[myId] || 0;
 
+
     const isSelected = activeChatId === chat._id;
 
     const isTyping = typingUserId !== null && typingUserId !== undefined;

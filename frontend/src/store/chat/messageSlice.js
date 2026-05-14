@@ -25,13 +25,13 @@ export const sendMessage = createAsyncThunk(
         {
           headers: { "Content-Type": "multipart/form-data" },
           withCredentials: true,
-        }
+        },
       );
       return res.data.data; // This is the 'fullMessage' from your controller
     } catch (error) {
       return rejectWithValue(error.response?.data || "Failed to send message");
     }
-  }
+  },
 );
 
 const messageSlice = createSlice({
@@ -59,7 +59,7 @@ const messageSlice = createSlice({
       }
     },
 
-    deleteMessage: (state, {payload}) => {
+    deleteMessage: (state, { payload }) => {
       const { chatId, messageId } = payload;
 
       if (state.byChat[chatId]) {
@@ -69,27 +69,32 @@ const messageSlice = createSlice({
         );
       }
     },
+    clearChatMessages(state, { payload: chatId }) {
+      delete state.byChat[chatId];
+    },
 
     updateMessageStatus(state, { payload }) {
-      const { chatId, messageId, status } = payload;
+  const { chatId, messageId, status } = payload;
+  const list = state.byChat[chatId];
 
-      const list = state.byChat[chatId] || [];
-
-      const message = list.find((m) => m._id === messageId);
-
-      if (message) {
-        message.status = status;
-      }
-    },
+  if (list) {
+    // Return a new array reference to ensure React detects the change
+    state.byChat[chatId] = list.map((m) =>
+      m._id === messageId ? { ...m, status: status } : m
+    );
+  }
+},
+    
   },
 
   extraReducers: (builder) => {
-    builder.addCase(fetchMessages.fulfilled, (state, action) => {
-      const { chatId, messages } = action.payload;
+    builder
+      .addCase(fetchMessages.fulfilled, (state, action) => {
+        const { chatId, messages } = action.payload;
 
-      state.byChat[chatId] = messages;
-    })
-    // Sending Media Message
+        state.byChat[chatId] = messages;
+      })
+      // Sending Media Message
       .addCase(sendMessage.pending, (state) => {
         state.loading = true;
       })
@@ -101,7 +106,7 @@ const messageSlice = createSlice({
         if (!state.byChat[chatId]) {
           state.byChat[chatId] = [];
         }
-        
+
         // Add to state immediately for faster UI feedback
         const exists = state.byChat[chatId].find((m) => m._id === message._id);
         if (!exists) {
@@ -120,5 +125,6 @@ export const {
   editMessage,
   deleteMessage,
   updateMessageStatus,
+  clearChatMessages
 } = messageSlice.actions;
 export default messageSlice.reducer;

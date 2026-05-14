@@ -162,7 +162,6 @@ const MessageList = React.forwardRef(
                       {/* Bubble — no max-w here, parent controls it */}
                       {/* Bubble — logic updated for media */}
                       <div
-                       
                         className={`w-full rounded-2xl group px-3 py-2 transition-opacity ${
                           // If it's a media message (and NOT deleted), we remove the background and padding
                           msg.type !== "text" && !msg.deletedForEveryone
@@ -185,8 +184,8 @@ const MessageList = React.forwardRef(
                         hidden group-hover:flex items-center justify-center 
                             transition-all cursor-pointer z-60 text-gray-200`}
                           onClick={(e) => {
-                            e.stopPropagation(); 
-                            handleBubbleClick(e, msg, isMe); 
+                            e.stopPropagation();
+                            handleBubbleClick(e, msg, isMe);
                           }}
                         >
                           <IoChevronDown size={16} />
@@ -230,26 +229,27 @@ const MessageList = React.forwardRef(
                             )}
                           </div>
                         )}
-                          {msg.type !== "audio" && (
-
-                        <div className={`${msg.type!=="text"?"inline-flex p-1 bg-secondary rounded-2xl":""}  flex items-center justify-end gap-1 mt-1`}>
-                          <span
-                            className={`text-[10px] ${isMe ? "text-gray-200" : "text-gray-400"}`}
+                        {msg.type !== "audio" && (
+                          <div
+                            className={`${msg.type !== "text" ? "inline-flex p-1 bg-secondary rounded-2xl" : ""}  flex items-center justify-end gap-1 mt-1`}
                           >
-                            {new Date(msg.createdAt).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                          {isMe && (
                             <span
-                              className={`flex items-center ${msg.status === "read" ? "text-blue-300" : "text-blue-100"}`}
+                              className={`text-[10px] ${isMe ? "text-gray-200" : "text-gray-400"}`}
                             >
-                              {renderStatus(msg.status)}
+                              {new Date(msg.createdAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
                             </span>
-                          )}
-                        </div>
-                          )}
+                            {isMe && (
+                              <span
+                                className={`flex items-center ${msg.status === "read" ? "text-blue-300" : "text-blue-100"}`}
+                              >
+                                {renderStatus(msg.status)}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

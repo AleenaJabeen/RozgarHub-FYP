@@ -36,8 +36,11 @@ import Chat from "./pages/customer/Chat";
 import ChatWindow from "./components/chat/ChatWindow";
 import { connectSocket, disconnectSocket } from "./socket/socket";
 import NoChatSelectedComponent from "./components/chat/NoChatSelectedComponent";
+import { useGlobalSocket } from "./hooks/GlobalSocket";
 
 function App() {
+   useGlobalSocket();
+
   const dispatch = useDispatch();
   const { user, isAuthenticated, isLoading } = useSelector(
     (state) => state.auth,

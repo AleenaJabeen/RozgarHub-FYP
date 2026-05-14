@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import {
+  clearChatMessages,
   deleteMessage,
   fetchMessages,
   sendMessage,
@@ -16,7 +17,6 @@ import MessageList from "./chatWindow/MessageList";
 import ChatInput from "./chatWindow/ChatInput";
 import axiosInstance from "axios";
 import { markAsRead } from "../../store/chat/chatSlice";
-
 
 const ChatWindow = () => {
   const { chatId } = useParams();
@@ -79,30 +79,68 @@ const ChatWindow = () => {
   }, [socket, chatId, dispatch]);
 
   useEffect(() => {
-    if (!socket || !messages.length || !myId) return;
+    if (!socket) return;
 
-    messages.forEach((msg) => {
-      const senderId =
-        typeof msg.senderId === "object" ? msg.senderId._id : msg.senderId;
+    const handleStatusUpdate = ({
+      messageIds,
+      messageId,
+      status,
+      chatId: updatedChatId,
+    }) => {
+      if (updatedChatId !== chatId) return;
 
-      // only mark OTHER user's messages as read
-      if (senderId !== myId && msg.status !== "read") {
-        socket.emit("message_read", {
-          messageId: msg._id,
-          chatId,
-        });
-      }
+      // Handle both single ID or array of IDs from backend
+      const idsToUpdate = messageIds || [messageId];
+
+      idsToUpdate.forEach((id) => {
+        dispatch(
+          updateMessageStatus({
+            messageId: id,
+            status,
+            chatId,
+          }),
+        );
+      });
+    };
+
+    socket.on("message_status_updated", handleStatusUpdate);
+    // Also listen for the specific 'messages_read' event if your backend uses it
+    socket.on("messages_read", handleStatusUpdate);
+
+    return () => {
+      socket.off("message_status_updated", handleStatusUpdate);
+      socket.off("messages_read", handleStatusUpdate);
+    };
+  }, [socket, chatId, dispatch]);
+
+  // Inside ChatWindow.js
+useEffect(() => {
+  if (!socket || !messages.length || !myId) return;
+
+  const unreadMessageIds = messages
+    .filter((msg) => {
+      // Logic to ensure we don't mark our OWN messages as read
+      const senderId = typeof msg.senderId === "object" ? msg.senderId._id : msg.senderId;
+      return senderId !== myId && msg.status !== "read";
+    })
+    .map((msg) => msg._id);
+
+  if (unreadMessageIds.length > 0) {
+    socket.emit("messages_read", {
+      chatId,
+      messageIds: unreadMessageIds,
     });
-  }, [messages, socket, myId, chatId]);
+  }
+}, [messages, socket, myId, chatId]);
+ 
 
   useEffect(() => {
     if (chatId) dispatch(fetchMessages({ chatId }));
   }, [chatId, dispatch]);
   useEffect(() => {
-    if (!chatId || !messages.length) return;
-    dispatch(markAsRead(chatId));
-  }, [chatId, messages.length, dispatch]);
-
+    if (!chatId) return;
+    dispatch(markAsRead({ chatId, myId }));
+  }, [chatId, dispatch]);
   // Scroll Logic
   useEffect(() => {
     const container = containerRef.current;
@@ -166,43 +204,49 @@ const ChatWindow = () => {
     }
   };
   const mediaRecorderRef = useRef(null);
- const audioChunksRef = useRef([]);
+  const audioChunksRef = useRef([]);
 
- const handleVoiceAssistant = async () => {
-  if (!isRecording) {
-    // Start Recording
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
+  const handleVoiceAssistant = async () => {
+    if (!isRecording) {
+      // Start Recording
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunksRef.current.push(e.data);
+        };
 
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        const file = new File([audioBlob], "voice_message.webm", { type: "audio/webm" });
-        
-        // Use your existing media handler
-        handleSendMedia(file, "audio");
-        
-        // Stop all tracks to release the microphone
-        stream.getTracks().forEach(track => track.stop());
-      };
+        mediaRecorder.onstop = () => {
+          const audioBlob = new Blob(audioChunksRef.current, {
+            type: "audio/webm",
+          });
+          const file = new File([audioBlob], "voice_message.webm", {
+            type: "audio/webm",
+          });
 
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (err) {
-      console.error("Microphone access denied", err);
+          // Use your existing media handler
+          handleSendMedia(file, "audio");
+
+          // Stop all tracks to release the microphone
+          stream.getTracks().forEach((track) => track.stop());
+        };
+
+        mediaRecorder.start();
+        setIsRecording(true);
+      } catch (err) {
+        console.error("Microphone access denied", err);
+      }
+    } else {
+      // Stop Recording
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
     }
-  } else {
-    // Stop Recording
-    mediaRecorderRef.current?.stop();
-    setIsRecording(false);
-  }
-};
+  };
 
   // Inside ChatWindow component...
 
@@ -221,11 +265,22 @@ const ChatWindow = () => {
       // toast.error("Failed to send media");
     }
   };
+  useEffect(() => {
+    return () => {
+      dispatch(clearChatMessages(chatId));
+    };
+  }, [chatId]);
 
   const orderedMessages = useMemo(() => [...messages].reverse(), [messages]);
 
   if (!myId) return null;
-
+  if (chatId && !chatData) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
+      </div>
+    );
+  }
   if (chatId && chatData && !messages.length && !otherUser) {
     return (
       <div className="flex h-full items-center justify-center">

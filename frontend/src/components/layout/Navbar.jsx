@@ -1,5 +1,16 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { IoMenu, IoClose, IoLogOutOutline, IoChevronDown, IoSettingsOutline, IoPersonOutline, IoGridOutline, IoChatbubblesOutline } from "react-icons/io5";
+import {
+  IoMenu,
+  IoClose,
+  IoLogOutOutline,
+  IoChevronDown,
+  IoPersonOutline,
+  IoGridOutline,
+  IoChatbubblesOutline,
+  IoMailOutline,
+  IoNotificationsOutline,
+} from "react-icons/io5";
+import { IoMdHeartEmpty } from "react-icons/io";
 import { Logo2 } from "../../assets";
 import { useDispatch, useSelector } from "react-redux";
 import { logoutUser } from "../../store/auth-slice";
@@ -21,13 +32,21 @@ const Navbar = () => {
   const dropdownRef = useRef(null);
   const megaMenuRef = useRef(null);
 
+  const unreadNotifications = true; 
+
   const role = user?.role || "pending";
   const name = user?.name || "User";
   const email = user?.email || "";
   const avatar = user?.avatar || "";
-  const isOnline=user?.isOnline || false;
-  console.log("online",isOnline)
-
+  const isOnline = user?.isOnline || false;
+  const myId=user?._id;
+  const { items: chats = [] } = useSelector(
+  (state) => state.chats || {}
+);
+const hasUnreadMessages = chats.some((chat) => {
+  const unreadCount = chat.unreadCounts?.[myId] || 0;
+  return unreadCount > 0;
+});
 
   // Close mobile menu when resizing to desktop
   useEffect(() => {
@@ -78,13 +97,37 @@ const Navbar = () => {
       { name: "Home", href: "/customer" },
       { name: "Services", href: "/customer/services", isMega: true },
       { name: "Orders", href: "/customer/orders" },
-      { name: "Inbox", href: "/messages" },
+      {
+        name: "Messages",
+        href: "/messages",
+        icon: IoMailOutline,
+        unread: hasUnreadMessages,
+      },
+      {
+        name: "Notifications",
+        href: "/",
+        icon: IoNotificationsOutline,
+        unread: unreadNotifications,
+      },
+      { name: "Wishlist", href: "/", icon: IoMdHeartEmpty },
     ],
     serviceprovider: [
       { name: "Dashboard", href: "/serviceprovider" },
       { name: "Gigs", href: "/serviceprovider/gigs" },
-      { name: "Orders", href: "/serviceprovider/orders"},
-       { name: "Inbox", href: "/messages"}
+      { name: "Orders", href: "/serviceprovider/orders" },
+      {
+        name: "Messages",
+        href: "/messages",
+        icon: IoMailOutline,
+        unread: hasUnreadMessages,
+      },
+      {
+        name: "Notifications",
+        href: "/",
+        icon: IoNotificationsOutline,
+        unread: unreadNotifications,
+      },
+      //  { name: "Inbox", href: "/messages"}
     ],
   };
 
@@ -94,11 +137,15 @@ const Navbar = () => {
     const sizeClass = size === "sm" ? "w-10 h-10" : "w-16 h-16";
     const textClass = size === "sm" ? "text-base" : "text-2xl";
     return (
-      <div className={`${sizeClass} rounded-full border border-gray-300 overflow-hidden flex-shrink-0`}>
+      <div
+        className={`${sizeClass} rounded-full border border-gray-300 overflow-hidden flex-shrink-0`}
+      >
         {avatar ? (
           <img src={avatar} alt={name} className="w-full h-full object-cover" />
         ) : (
-          <div className={`w-full h-full flex items-center justify-center text-secondary font-bold ${textClass}`}>
+          <div
+            className={`w-full h-full flex items-center justify-center text-secondary font-bold ${textClass}`}
+          >
             {name[0]?.toUpperCase()}
           </div>
         )}
@@ -155,8 +202,8 @@ const Navbar = () => {
                   onMouseLeave={() => setDesktopMegaOpen(false)}
                 >
                   <Link
-                     to={link.href} 
-                      onClick={() => setDesktopMegaOpen(false)}
+                    to={link.href}
+                    onClick={() => setDesktopMegaOpen(false)}
                     className={`flex cursor-pointer  items-center text-gray-600 hover:text-secondary font-semibold transition-colors ${desktopMegaOpen ? "text-secondary" : ""}`}
                   >
                     {link.name}
@@ -167,7 +214,9 @@ const Navbar = () => {
                       className="absolute top-[90%] lg:right-[-5rem] md:right-[-7rem] w-[75vw] bg-white shadow-2xl border border-gray-300 p-8 animate-in fade-in slide-in-from-top-2 duration-300 rounded-xl"
                       style={{ zIndex: 100 }}
                     >
-                      <MegaMenuContent onLinkClick={() => setDesktopMegaOpen(false)} />
+                      <MegaMenuContent
+                        onLinkClick={() => setDesktopMegaOpen(false)}
+                      />
                     </div>
                   )}
                 </div>
@@ -175,19 +224,37 @@ const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.href}
-                  className="text-gray-600 hover:text-secondary font-semibold"
+                  className={`relative flex items-center ${
+                    link.icon ? "justify-center" : ""
+                  } text-gray-600 hover:text-secondary font-semibold`}
                 >
-                  {link.name}
+                  {link.icon ? (
+                    <>
+                      <link.icon className="text-2xl" />
+
+                      {link.unread && (
+                        <span className="absolute -top-1 right-0 w-1.5 h-1.5 bg-red-600 rounded-full"></span>
+                      )}
+                    </>
+                  ) : (
+                    <span>{link.name}</span>
+                  )}
                 </Link>
-              )
+              ),
             )}
 
             {role === "pending" ? (
               <div className="cursor-pointer flex items-center space-x-4">
-                <Link to="/auth?mode=login" className="text-gray-600 font-semibold hover:text-secondary">
+                <Link
+                  to="/auth?mode=login"
+                  className="text-gray-600 font-semibold hover:text-secondary"
+                >
                   Sign In
                 </Link>
-                <Link to="/auth?mode=signup" className="bg-secondary text-white px-6 py-2 rounded-lg font-semibold hover:bg-opacity-90 transition-all">
+                <Link
+                  to="/auth?mode=signup"
+                  className="bg-secondary text-white px-6 py-2 rounded-lg font-semibold hover:bg-opacity-90 transition-all"
+                >
                   Join Now
                 </Link>
               </div>
@@ -198,8 +265,9 @@ const Navbar = () => {
                   className="relative cursor-pointer flex items-center focus:outline-none"
                 >
                   <Avatar size="sm" />
-                  <div className={`w-2 h-2 absolute bottom-1 right-0 ${isOnline?"bg-green-500":"bg-red-500 "} rounded-full`}></div>
-
+                  <div
+                    className={`w-2 h-2 absolute bottom-1 right-0 ${isOnline ? "bg-green-500" : "bg-red-500 "} rounded-full`}
+                  ></div>
                 </button>
 
                 {dropdownOpen && (
@@ -210,36 +278,37 @@ const Navbar = () => {
                     <div className="flex items-center gap-3 border-b p-2 border-gray-300">
                       <Avatar size="sm" />
                       <div>
-                        <p className="text-sm font-bold text-gray-800 truncate">{capitalizeWords(name)}</p>
-                        <p className="text-xs text-gray-500 truncate">{email}</p>
+                        <p className="text-sm font-bold text-gray-800 truncate">
+                          {capitalizeWords(name)}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {email}
+                        </p>
                       </div>
                     </div>
                     <Link
-
-                      to={
-                        role === "serviceprovider"
-                          ? "/serviceprovider"
-                          : ""
-                      }
-                      className={`${role === "customer"?"hidden":"flex"}  gap-2 cursor-pointer items-center px-2 py-4 text-base text-gray-600 hover:bg-gray-50`}
+                      to={role === "serviceprovider" ? "/serviceprovider" : ""}
+                      className={`${role === "customer" ? "hidden" : "flex"}  gap-2 cursor-pointer items-center px-2 py-4 text-base text-gray-600 hover:bg-gray-50`}
                     >
                       <IoGridOutline className="text-lg" />
                       Dashboard
                     </Link>
                     <Link
-                 
-                      to={role === "serviceprovider" ? "/serviceprovider/view-profile" : "/customer/view-profile"}
+                      to={
+                        role === "serviceprovider"
+                          ? "/serviceprovider/view-profile"
+                          : "/customer/view-profile"
+                      }
                       className="flex items-center gap-2 cursor-pointer px-2 py-2.5 text-base text-gray-600 hover:bg-gray-50"
                     >
-                     <IoPersonOutline className="text-lg" />
+                      <IoPersonOutline className="text-lg" />
                       Profile Settings
                     </Link>
                     <Link
-                 
                       to="/messages"
                       className="flex items-center gap-2 cursor-pointer px-2 py-2.5 text-base text-gray-600 hover:bg-gray-50"
                     >
-                     <IoChatbubblesOutline className="text-lg" />
+                      <IoChatbubblesOutline className="text-lg" />
                       Messages
                     </Link>
                     <button
@@ -247,7 +316,7 @@ const Navbar = () => {
                       className="w-full cursor-pointer flex items-center justify-center  border-t border-gray-300 px-4 py-3 text-base text-red-600"
                     >
                       <IoLogOutOutline className="me-2 text-lg" />
-                      Log Out 
+                      Log Out
                     </button>
                   </div>
                 )}
@@ -272,7 +341,9 @@ const Navbar = () => {
             <div className="px-6 py-8 bg-gray-50 border-b border-gray-100 flex items-center space-x-4">
               <Avatar size="lg" />
               <div>
-                <h3 className="font-bold text-xl text-gray-800">{capitalizeWords(name)}</h3>
+                <h3 className="font-bold text-xl text-gray-800">
+                  {capitalizeWords(name)}
+                </h3>
                 <p className="text-sm text-gray-500">{email}</p>
               </div>
             </div>
@@ -285,20 +356,29 @@ const Navbar = () => {
                   <div className="w-full">
                     <div
                       className={`flex justify-between items-center w-full px-4 py-4 text-base font-semibold rounded-xl transition-colors ${
-                        mobileMegaOpen ? "bg-secondary/10 text-secondary" : "text-gray-600 hover:bg-gray-50"
+                        mobileMegaOpen
+                          ? "bg-secondary/10 text-secondary"
+                          : "text-gray-600 hover:bg-gray-50"
                       }`}
                     >
-                      <Link to={link.href} onClick={closeMobileMenu} className="flex-grow py-2">
+                      <Link
+                        to={link.href}
+                        onClick={closeMobileMenu}
+                        className="flex-grow py-2"
+                      >
                         {link.name}
                       </Link>
-                      <button onClick={(e) => {
-                        e.stopPropagation();
-                        setMobileMegaOpen((prev) => !prev)}} className="p-2">
-                            <IoChevronDown
-                              className={`transition-transform duration-300 ${mobileMegaOpen ? "rotate-180" : ""}`}
-                      />
-                       </button>
-                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMobileMegaOpen((prev) => !prev);
+                        }}
+                        className="p-2"
+                      >
+                        <IoChevronDown
+                          className={`transition-transform duration-300 ${mobileMegaOpen ? "rotate-180" : ""}`}
+                        />
+                      </button>
                     </div>
 
                     {mobileMegaOpen && (

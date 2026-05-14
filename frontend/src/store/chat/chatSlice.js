@@ -10,14 +10,14 @@ export const fetchMyChats = createAsyncThunk("chats/fetchAll", async () => {
 });
 export const markAsRead = createAsyncThunk(
   "chat/markAsRead",
-  async (chatId, thunkAPI) => {
+  async ({ chatId, myId }, thunkAPI) => {
     try {
       const response = await axios.put(
         "http://localhost:3000/api/v1/messages/read",
         { chatId },
         { withCredentials: true },
       );
-      return { chatId };
+      return { chatId, myId };
     } catch (error) {
       return thunkAPI.rejectWithValue(
         error.response?.data || "Failed to mark as read",
@@ -47,6 +47,32 @@ const chatSlice = createSlice({
   name: "chats",
   initialState: { items: [], loading: false },
   reducers: {
+    setUserOnline: (state, action) => {
+      const userId = action.payload;
+
+      state.items.forEach((chat) => {
+        chat.participants = chat.participants.map((p) =>
+          p._id === userId ? { ...p, isOnline: true } : p,
+        );
+      });
+    },
+
+    setUserOffline: (state, action) => {
+      const { userId, lastActiveAt } = action.payload;
+
+      state.items.forEach((chat) => {
+        chat.participants = chat.participants.map((p) =>
+          p._id === userId
+            ? {
+                ...p,
+                isOnline: false,
+                lastActiveAt,
+              }
+            : p,
+        );
+      });
+    },
+    
     updateLastMessage(state, { payload }) {
       const chatIndex = state.items.findIndex((c) => c._id === payload.chatId);
       if (chatIndex !== -1) {
@@ -107,18 +133,19 @@ const chatSlice = createSlice({
         state.loading = false;
       })
       .addCase(markAsRead.fulfilled, (state, { payload }) => {
-        const { chatId } = payload;
-
-        const myId = JSON.parse(localStorage.getItem("user"))?._id;
-
+        const { chatId, myId } = payload; // ✅ reliable, no localStorage
         const chat = state.items.find((c) => c._id === chatId);
-
         if (chat) {
           chat.unreadCounts = {
             ...chat.unreadCounts,
             [myId]: 0,
           };
         }
+      })
+      .addCase(deleteChat.pending, (state, action) => {
+        state.items = state.items.filter(
+          (chat) => chat._id !== action.meta.arg,
+        );
       })
       .addCase(deleteChat.fulfilled, (state, { payload }) => {
         state.items = state.items.filter((chat) => chat._id !== payload);
@@ -127,6 +154,8 @@ const chatSlice = createSlice({
 });
 
 export const {
+  setUserOnline,
+  setUserOffline,
   updateLastMessage,
   resetUnreadCount,
   toggleArchived,

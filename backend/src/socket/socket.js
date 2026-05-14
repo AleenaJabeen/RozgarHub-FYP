@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { Chat } from "../models/chat.model.js";
 import { Message } from "../models/message.model.js";
 import cookie from "cookie";
-import { sendPushNotification } from "../services/notification.service.js";
+// import { sendPushNotification } from "../services/notification.service.js";
 import { User } from "../models/user.model.js";
 
 let io;
@@ -32,7 +32,7 @@ export const initSocket = (httpServer) => {
 
       const parsed = cookie.parse(rawCookies);
 
-      const token = parsed.accessToken; // 👈 use your actual cookie name
+      const token = parsed.accessToken;
 
       if (!token) {
         return next(new Error("No access token"));
@@ -50,6 +50,12 @@ export const initSocket = (httpServer) => {
   // ─── Connection ────────────────────────────────────────────────────────────
   io.on("connection", async (socket) => {
     const userId = socket.user._id.toString();
+    const existingTimer = disconnectTimers.get(userId);
+
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+      disconnectTimers.delete(userId);
+    }
     // temp seting up online
     if (!onlineUsers.has(userId)) {
       onlineUsers.set(userId, new Set());
@@ -132,7 +138,6 @@ export const initSocket = (httpServer) => {
         // Verify participant
         const chat = await Chat.findOne({ _id: chatId, participants: userId });
         if (!chat) return socket.emit("error", { message: "Chat not found" });
-        
 
         // Persist
         const message = await Message.create({
@@ -148,7 +153,6 @@ export const initSocket = (httpServer) => {
         const receiverId = chat.participants
           .map((id) => id.toString())
           .find((id) => id !== userId);
-
 
         await Chat.findByIdAndUpdate(chatId, {
           lastMessage: message._id,
@@ -209,19 +213,21 @@ export const initSocket = (httpServer) => {
     // Payload: { messageId, chatId }
     socket.on("message_delivered", async ({ messageId, chatId }) => {
       try {
-        const message = await Message.findByIdAndUpdate(
-          messageId,
-          { status: "delivered" },
-          { new: true },
-        );
-        if (!message) return;
+        const message = await Message.findById(messageId);
 
-        // Tell the sender the message was delivered
+        if (!message) return;
+        if (message.status === "delivered" || message.status === "read") {
+          return;
+        }
+        // Notify sender
         io.to(message.senderId.toString()).emit("message_status_updated", {
           messageId,
           status: "delivered",
           chatId,
         });
+
+        message.status = "delivered";
+        await message.save();
       } catch (err) {
         console.error("message_delivered error:", err);
       }
@@ -230,22 +236,65 @@ export const initSocket = (httpServer) => {
     // ── message_read ─────────────────────────────────────────────────────────
     // Client emits when the user actually reads the message.
     // Payload: { messageId, chatId }
-    socket.on("message_read", async ({ messageId, chatId }) => {
-      try {
-        const message = await Message.findByIdAndUpdate(
-          messageId,
-          { status: "read" },
-          { new: true },
-        );
-        if (!message) return;
+    // socket.on("message_read", async ({ messageId, chatId }) => {
+    //   try {
+    //     const message = await Message.findByIdAndUpdate(
+    //       messageId,
+    //       { status: "read" },
+    //       { new: true },
+    //     );
+    //     if (!message) return;
 
-        io.to(message.senderId.toString()).emit("message_status_updated", {
-          messageId,
+    //     io.to(message.senderId.toString()).emit("message_status_updated", {
+    //       messageId,
+    //       status: "read",
+    //       chatId,
+    //     });
+    //   } catch (err) {
+    //     console.error("message_read error:", err);
+    //   }
+    // });
+
+    socket.on("messages_read", async ({ chatId, messageIds }) => {
+      try {
+        if (!Array.isArray(messageIds) || !messageIds.length) {
+          return;
+        }
+        // Update only unread messages
+        await Message.updateMany(
+          {
+            _id: { $in: messageIds },
+            status: { $ne: "read" },
+          },
+          {
+            status: "read",
+          },
+        );
+
+        // Find senders to notify
+        const messages = await Message.find({
+          _id: { $in: messageIds },
+        });
+
+        const senderIds = [
+          ...new Set(messages.map((m) => m.senderId.toString())),
+        ];
+
+        senderIds.forEach((senderId) => {
+          io.to(senderId).emit("messages_read", {
+            chatId,
+            messageIds,
+          });
+        });
+        io.to(chatId).emit("message_status_updated", {
+          messageIds,
           status: "read",
           chatId,
         });
+
+        // Update individual message status
       } catch (err) {
-        console.error("message_read error:", err);
+        console.error("messages_read error:", err);
       }
     });
 
@@ -311,14 +360,17 @@ export const initSocket = (httpServer) => {
         onlineUsers.delete(userId);
 
         const timer = setTimeout(async () => {
-          // Only mark offline if they haven't reconnected
+          const lastActiveAt = new Date();
           if (!onlineUsers.has(userId)) {
             await User.findByIdAndUpdate(userId, {
               isOnline: false,
-              lastActiveAt: new Date(),
+              lastActiveAt,
             });
             // ✅ emit to everyone EXCEPT the disconnected user
-            socket.broadcast.emit("user_offline", userId);
+            socket.broadcast.emit("user_offline", {
+              userId,
+              lastActiveAt,
+            });
           }
         }, 8000); // 8s grace period for slow connections
 

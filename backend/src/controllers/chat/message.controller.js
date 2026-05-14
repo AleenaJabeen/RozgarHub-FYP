@@ -4,7 +4,7 @@ import { uploadOnCloudinary } from "../../utils/cloudinary.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-
+import { getIO } from "../../socket/socket.js"; 
 export const sendMessage = asyncHandler(async (req, res) => {
   const { chatId, type, content } = req.body;
 
@@ -142,31 +142,36 @@ export const getMessages = asyncHandler(async (req, res) => {
 
 export const markAsRead = asyncHandler(async (req, res) => {
   const { chatId } = req.body;
-  await Chat.findByIdAndUpdate(chatId, {
-    $set: {
-      [`unreadCounts.${req.user._id}`]: 0,
-    },
-  });
+  if (!chatId) {
+    return res.status(400).json({ message: "chatId is required" });
+  }
 
-  await Message.updateMany(
-    {
-      chatId,
-      senderId: { $ne: req.user._id },
-      status: { $ne: "read" },
-    },
-    {
-      status: "read",
-    },
-  );
+  try {
+    
+    await Chat.findByIdAndUpdate(chatId, {
+      $set: { [`unreadCounts.${req.user._id}`]: 0 },
+    });
+ 
 
-  const io = req.app.get("io");
-  io.to(chatId).emit("messages_read", { chatId });
+    await Message.updateMany(
+      {
+        chatId,
+        senderId: { $ne: req.user._id },
+        status: { $ne: "read" },
+      },
+      { status: "read" }
+    );
+    const io=getIO()
+    io.to(chatId).emit("messages_read", { chatId });
+   
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, {}, "Messages marked as read"));
+    return res.status(200).json(new ApiResponse(200, {}, "Messages marked as read"));
+
+  } catch (err) {
+   
+    return res.status(500).json({ message: err.message });
+  }
 });
-
 export const editMessage = asyncHandler(async (req, res) => {
   const { messageId } = req.params;
   const { content } = req.body;

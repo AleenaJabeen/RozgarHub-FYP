@@ -38,6 +38,18 @@ const ChatSidebar = () => {
   }, [dispatch]);
 
   useEffect(() => {
+  if (!socket) return;
+
+  const handleMessagesRead = ({ chatId }) => {
+    // When the other person reads your messages, reset their unread count
+    dispatch(resetUnreadCount({ chatId, userId: myId }));
+  };
+
+  socket.on("messages_read", handleMessagesRead);
+  return () => socket.off("messages_read", handleMessagesRead);
+}, [socket, myId]);
+
+  useEffect(() => {
     if (!socket) return;
     const handleTyping = ({ chatId, isTyping, userId }) => {
       setTypingUsers((prev) => ({
@@ -48,7 +60,7 @@ const ChatSidebar = () => {
 
     socket.on("user_typing", handleTyping);
     return () => socket.off("user_typing", handleTyping);
-  }, []);
+  }, [socket]);
 
   const filteredChats = useMemo(() => {
     return chats.filter((chat) => {
@@ -130,20 +142,19 @@ const ChatSidebar = () => {
                 activeChatId={activeChatId}
                 typingUserId={typingUsers[chat._id]}
                 onClick={() => {
-                  dispatch(
-                    resetUnreadCount({
-                      chatId: chat._id,
-                      userId: myId,
-                    }),
-                  );
-
-                  dispatch(markAsRead(chat._id));
-
+                  if (chat._id === activeChatId) return;
+                  dispatch(markAsRead({chatId: chat._id , myId}));
                   navigate(`/messages/${chat._id}`);
                 }}
                 onStar={(chatId) => dispatch(toggleStarred(chatId))}
                 onArchive={(chatId) => dispatch(toggleArchived(chatId))}
-                onDelete={(chatId) => dispatch(deleteChat(chatId))}
+                onDelete={(chatId) => {
+                  dispatch(deleteChat(chatId)).then(() => {
+                    if (chatId === activeChatId) {
+                      navigate("/messages");
+                    }
+                  });
+                }}
               />
             ))}
           </div>
