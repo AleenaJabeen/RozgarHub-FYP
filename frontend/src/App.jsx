@@ -35,6 +35,7 @@ import GlobalUrgentOverlay from "./components/orders/serviceprovider/GlobalUrgen
 import Chat from "./pages/customer/Chat";
 import ChatWindow from "./components/chat/ChatWindow";
 import { connectSocket, disconnectSocket } from "./socket/socket";
+import NoChatSelectedComponent from "./components/chat/NoChatSelectedComponent";
 
 function App() {
   const dispatch = useDispatch();
@@ -46,13 +47,13 @@ function App() {
     dispatch(checkAuth());
   }, [dispatch]);
   // ✅ ADD THIS RIGHT HERE
-useEffect(() => {
-  if (isAuthenticated && user) {
-    connectSocket();
-  } else {
-    disconnectSocket();
-  }
-}, [isAuthenticated, user]);
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      connectSocket();
+    } else {
+      disconnectSocket();
+    }
+  }, [isAuthenticated, user]);
 
   if (isLoading) {
     return (
@@ -99,9 +100,9 @@ useEffect(() => {
             }
           />
           <Route path="/messages" element={<Chat />}>
-  <Route index element={<Chat/>}/>
-  <Route path=":chatId" element={<ChatWindow />} />
-</Route>
+            <Route index element={<NoChatSelectedComponent />} />
+            <Route path=":chatId" element={<ChatWindow />} />
+          </Route>
 
           <Route
             path="customer"
