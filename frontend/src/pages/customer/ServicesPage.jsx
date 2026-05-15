@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom"; 
 import { searchPublicGigs } from "../../store/customer/gigSearch-slice";
 import { getCategories } from "../../store/serviceProvider/category-slice";
 import CustomerGigCard from "../../components/customer/gigs/CustomerGigCard";
@@ -7,6 +8,7 @@ import { HiSearch, HiAdjustments } from "react-icons/hi";
 import { MdOutlineWifiTethering } from "react-icons/md";
 import { TbMoodEmpty } from "react-icons/tb";
 import { IoCalendarOutline, IoTimeOutline } from "react-icons/io5";
+import { FaBolt } from "react-icons/fa"; 
 
 const SORT_OPTIONS = [
   { label: "Top Rated",           value: "rating_desc"  },
@@ -19,6 +21,7 @@ const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sun
 
 const Services = () => {
   const dispatch   = useDispatch();
+  const navigate   = useNavigate(); 
   const gridRef    = useRef(null);
 
   const { gigs = [], loading, error } = useSelector((state) => state.gigSearch);
@@ -78,27 +81,42 @@ const Services = () => {
 
       {/* ── Hero Header ─────────────────────────────────────────────────────── */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="max-w-2xl mx-auto text-center mb-8">
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
-              Our Services
-            </h1>
-            <p className="mt-2 text-sm text-gray-500">
-              Discover skilled local professionals ready to help — today.
-            </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+          
+          {/* Header & Button Row */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+                Our Services
+              </h1>
+              <p className="mt-2 text-sm text-gray-500">
+                Discover skilled local professionals ready to help — today.
+              </p>
+            </div>
+            
+            <button
+              onClick={() => navigate("/customer/place-order", { 
+                state: { bookingType: 'urgent', isBroadcast: true } 
+              })}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-[#0d7a5f] text-white text-sm font-bold rounded-lg shadow-md hover:bg-[#095c47] hover:-translate-y-0.5 active:scale-95 transition-all duration-200 flex-shrink-0"
+            >
+              <FaBolt className="text-amber-400" />
+              Broadcast Urgent Request
+            </button>
           </div>
 
           {/* Search Bar */}
-          <div className="max-w-2xl mx-auto relative">
+          <div className="max-w-2xl relative">
             <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search for a service, skill, or provider..."
-              className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-full bg-white shadow-sm focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/10 transition-all text-sm"
+              className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-full bg-gray-50 hover:bg-white shadow-sm focus:bg-white focus:outline-none focus:border-[#0d7a5f] focus:ring-2 focus:ring-[#0d7a5f]/10 transition-all text-sm"
             />
           </div>
+
         </div>
       </div>
 
@@ -111,7 +129,7 @@ const Services = () => {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="flex-shrink-0 px-4 py-2 text-sm font-medium border border-gray-200 rounded-full bg-white text-gray-700 focus:outline-none focus:border-secondary transition-colors cursor-pointer"
+              className="flex-shrink-0 px-4 py-2 text-sm font-medium border border-gray-200 rounded-full bg-white text-gray-700 focus:outline-none focus:border-[#0d7a5f] transition-colors cursor-pointer"
             >
               <option value="">All Categories</option>
               {categories.map((cat) => (
@@ -133,7 +151,7 @@ const Services = () => {
             </button>
 
             {/* Day filter */}
-            <div className="flex-shrink-0 flex items-center gap-1.5 border border-gray-200 rounded-full px-3 py-2 bg-white focus-within:border-secondary transition-colors">
+            <div className="flex-shrink-0 flex items-center gap-1.5 border border-gray-200 rounded-full px-3 py-2 bg-white focus-within:border-[#0d7a5f] transition-colors">
               <IoCalendarOutline className="text-gray-400 text-sm" />
               <select
                 value={day}
@@ -148,7 +166,7 @@ const Services = () => {
             </div>
 
             {/* Time filter */}
-            <div className="flex-shrink-0 flex items-center gap-1.5 border border-gray-200 rounded-full px-3 py-2 bg-white focus-within:border-secondary transition-colors">
+            <div className="flex-shrink-0 flex items-center gap-1.5 border border-gray-200 rounded-full px-3 py-2 bg-white focus-within:border-[#0d7a5f] transition-colors">
               <IoTimeOutline className="text-gray-400 text-sm" />
               <input
                 type="time"
@@ -162,7 +180,7 @@ const Services = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="flex-shrink-0 px-4 py-2 text-sm font-medium border border-gray-200 rounded-full bg-white text-gray-700 focus:outline-none focus:border-secondary transition-colors cursor-pointer"
+              className="flex-shrink-0 px-4 py-2 text-sm font-medium border border-gray-200 rounded-full bg-white text-gray-700 focus:outline-none focus:border-[#0d7a5f] transition-colors cursor-pointer"
             >
               {SORT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -198,7 +216,7 @@ const Services = () => {
         {/* Loading */}
         {loading && (
           <div className="flex justify-center py-24">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary" />
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#0d7a5f]" />
           </div>
         )}
 
@@ -211,7 +229,7 @@ const Services = () => {
             <p className="text-red-500 font-semibold text-sm">{error}</p>
             <button
               onClick={buildAndDispatch}
-              className="mt-4 px-6 py-2 text-sm font-bold text-white bg-secondary rounded-full hover:bg-[#0e5641] hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
+              className="mt-4 px-6 py-2 text-sm font-bold text-white bg-[#0d7a5f] rounded-full hover:bg-[#095c47] hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
             >
               Retry
             </button>
@@ -231,7 +249,7 @@ const Services = () => {
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="mt-5 px-6 py-2 text-sm font-bold text-secondary border border-secondary rounded-full hover:bg-secondary hover:text-white transition-all duration-200"
+                className="mt-5 px-6 py-2 text-sm font-bold text-[#0d7a5f] border border-[#0d7a5f] rounded-full hover:bg-[#0d7a5f] hover:text-white transition-all duration-200"
               >
                 Clear All Filters
               </button>

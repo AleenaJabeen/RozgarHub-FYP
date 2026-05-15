@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { createOrder } from "../../../store/orders/order-slice";
+import { getCategories } from "../../../store/serviceProvider/category-slice"; 
 import { showToast } from "../../../utils/toastHelper";
 import { MdUploadFile } from "react-icons/md";
 import { IoClose } from "react-icons/io5";
@@ -13,9 +14,34 @@ import {
   HiOutlineTag
 } from "react-icons/hi";
 
+// ✅ STRICT LIST: Only allow these database categories to appear in the Urgent Broadcast dropdown
+const URGENT_ALLOWED_CATEGORIES = [
+  "Plumber",
+  "Electrician",
+  "Car Mechanic",
+  "AC & Fridge Repair",
+  "Appliance Repair",
+  "Carpenter",
+  "Labor Work",
+  "CCTV Installation"
+];
+
 const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroadcast = false, broadcastCoords, onSuccess }) => {
   const dispatch = useDispatch();
   const { loading } = useSelector((state) => state.orders);
+  
+  const { categories = [] } = useSelector((state) => state.categories);
+
+  useEffect(() => {
+    if (isBroadcast && categories.length === 0) {
+      dispatch(getCategories());
+    }
+  }, [dispatch, isBroadcast, categories.length]);
+
+  // ✅ FILTER: Extract only the categories that match our urgent criteria
+  const urgentCategories = categories.filter((cat) => 
+    URGENT_ALLOWED_CATEGORIES.includes(cat.name)
+  );
 
   const getBackendOrderType = () => {
     if (bookingType === "urgent") return "UrgentHire";
@@ -60,7 +86,6 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
     submitData.append("serviceLocation", formData.serviceLocation);
     if (formData.requirements) submitData.append("requirements", formData.requirements);
 
-    // ✅ STRICT SEPARATION: Broadcast vs Direct Hire
     if (isBroadcast || backendOrderType === "UrgentHire") {
       submitData.append("isBroadcast", "true");
       submitData.append("requestTitle", formData.requestTitle);
@@ -68,13 +93,11 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
       submitData.append("responseTimeLimit", formData.responseTimeLimit);
       submitData.append("isUrgent", true);
 
-      // ✅ ADDED: Append the captured GPS coordinates for the $near query
       if (broadcastCoords) {
         submitData.append("longitude", broadcastCoords.longitude);
         submitData.append("latitude", broadcastCoords.latitude);
       }
     } else {
-      // It's a Direct Hire (Hourly or Inspection)
       submitData.append("gigId", gig._id);
       submitData.append("serviceProviderId", serviceProviderId);
       if (formData.scheduledDate) submitData.append("scheduledDate", formData.scheduledDate);
@@ -97,6 +120,7 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
       showToast(err || "Failed to place order.", "error");
     }
   };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       
@@ -109,7 +133,7 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
             </label>
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <HiOutlineBriefcase className="text-amber-400 text-lg" />
+                <HiOutlineBriefcase className="text-orange-400 text-lg" />
               </div>
               <input
                 type="text"
@@ -118,7 +142,7 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
                 placeholder="E.g., Broken Pipe Flooding"
                 value={formData.requestTitle}
                 onChange={handleChange}
-                className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-sm font-medium text-gray-800 bg-gray-50/50 focus:bg-white"
+                className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm font-medium text-gray-800 bg-gray-50/50 focus:bg-white"
               />
             </div>
           </div>
@@ -129,20 +153,22 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
             </label>
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <HiOutlineTag className="text-amber-400 text-lg" />
+                <HiOutlineTag className="text-orange-400 text-lg" />
               </div>
+              {/* ✅ Now strictly mapping over the filtered urgentCategories array */}
               <select
                 name="category"
                 required
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-sm font-medium text-gray-800 bg-gray-50/50 focus:bg-white appearance-none"
+                className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm font-medium text-gray-800 bg-gray-50/50 focus:bg-white appearance-none"
               >
-                <option value="" disabled>Select a category...</option>
-                <option value="plumbing">Plumbing</option>
-                <option value="electrical">Electrical</option>
-                <option value="automotive">Automotive / Mechanic</option>
-                <option value="hvac">AC & Heating (HVAC)</option>
+                <option value="" disabled>Select an urgent category...</option>
+                {urgentCategories.map((cat) => (
+                  <option key={cat._id} value={cat.name}>
+                    {cat.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -193,13 +219,13 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
       </div>
 
       {backendOrderType === "UrgentHire" && (
-        <div className="p-6 bg-amber-50/50 border border-amber-200 rounded-2xl shadow-sm">
-          <label className="block text-xs font-bold text-amber-800 uppercase tracking-wide mb-2">
+        <div className="p-6 bg-orange-50/50 border border-orange-200 rounded-2xl shadow-sm">
+          <label className="block text-xs font-bold text-orange-800 uppercase tracking-wide mb-2">
             Required Response Time Limit <span className="text-red-500">*</span>
           </label>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <HiOutlineClock className="text-amber-400 group-focus-within:text-amber-600 transition-colors text-lg" />
+              <HiOutlineClock className="text-orange-400 group-focus-within:text-orange-600 transition-colors text-lg" />
             </div>
             <input
               type="text"
@@ -208,7 +234,7 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
               placeholder="E.g., Within 2 hours, ASAP"
               value={formData.responseTimeLimit}
               onChange={handleChange}
-              className="w-full pl-11 pr-4 py-3.5 border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-sm font-medium text-gray-800 bg-white placeholder-amber-900/30"
+              className="w-full pl-11 pr-4 py-3.5 border border-orange-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm font-medium text-gray-800 bg-white placeholder-orange-900/30"
             />
           </div>
         </div>
@@ -319,7 +345,7 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
             loading 
               ? "bg-gray-400 cursor-not-allowed shadow-none" 
               : isBroadcast
-                ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/30"
+                ? "bg-orange-500 hover:bg-orange-600 shadow-orange-500/30"
                 : "bg-secondary hover:bg-[#0e5641] shadow-secondary/30"
           }`}
         >
