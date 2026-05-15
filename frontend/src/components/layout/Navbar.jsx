@@ -211,7 +211,7 @@ const hasUnreadMessages = chats.some((chat) => {
 
                   {desktopMegaOpen && (
                     <div
-                      className="absolute top-[90%] lg:right-[-5rem] md:right-[-7rem] w-[75vw] bg-white shadow-2xl border border-gray-300 p-8 animate-in fade-in slide-in-from-top-2 duration-300 rounded-xl"
+                      className="absolute top-[90%] lg:right-[-9rem] md:right-[-7rem] w-[75vw] bg-white shadow-2xl border border-gray-300 p-8 animate-in fade-in slide-in-from-top-2 duration-300 rounded-xl"
                       style={{ zIndex: 100 }}
                     >
                       <MegaMenuContent
@@ -230,7 +230,7 @@ const hasUnreadMessages = chats.some((chat) => {
                 >
                   {link.icon ? (
                     <>
-                      <link.icon className="text-2xl" />
+                      <link.icon className="text-2xl" title={link.name} />
 
                       {link.unread && (
                         <span className="absolute -top-1 right-0 w-1.5 h-1.5 bg-red-600 rounded-full"></span>

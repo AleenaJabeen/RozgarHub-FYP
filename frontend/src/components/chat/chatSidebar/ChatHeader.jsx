@@ -12,8 +12,6 @@ const ChatHeader = ({ filterType, setFilterType, isSearchOpen, setIsSearchOpen, 
         >
           <option value="all">All messages</option>
           <option value="unread">Unread messages</option>
-          <option value="starred">Starred messages</option>
-          <option value="archived">Archived messages</option>
         </select>
         <ChevronDown size={18} className="absolute right-0 top-1/2 -translate-y-1/2 text-tertairy" />
       </div>

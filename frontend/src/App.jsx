@@ -37,6 +37,7 @@ import ChatWindow from "./components/chat/ChatWindow";
 import { connectSocket, disconnectSocket } from "./socket/socket";
 import NoChatSelectedComponent from "./components/chat/NoChatSelectedComponent";
 import { useGlobalSocket } from "./hooks/GlobalSocket";
+import UserInfoPage from "./components/chat/UserInfoPage";
 
 function App() {
    useGlobalSocket();
@@ -106,6 +107,7 @@ function App() {
             <Route index element={<NoChatSelectedComponent />} />
             <Route path=":chatId" element={<ChatWindow />} />
           </Route>
+          <Route path="/user-info/:userId" element={<UserInfoPage />} />
 
           <Route
             path="customer"
@@ -152,7 +154,6 @@ function App() {
           >
             <Route index element={<Dashboard />} />
             <Route path="createProfile" element={<Profile />} />
-
             <Route path="view-profile" element={<ViewProfile />} />
             <Route path="gigs" element={<Gig />} />
             <Route path="createGig" element={<CreateGig />} />

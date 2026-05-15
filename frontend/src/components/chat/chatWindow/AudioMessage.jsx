@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { IoMicOutline, IoPause, IoPlay } from "react-icons/io5";
 
-const AudioMessage = ({ msg, isMe }) => {
+const AudioMessage = ({ renderStatus, msg, isMe }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -117,14 +117,25 @@ const AudioMessage = ({ msg, isMe }) => {
           >
             {isPlaying ? formatTime(currentTime) : formatTime(duration)}
           </span>
+          <div className="flex items-center gap-1">
+
           <span
             className={`text-[10px] ${isMe ? "text-gray-300" : "text-gray-500"} uppercase`}
           >
             {new Date(msg.createdAt).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
+              hour12: true,
             })}
           </span>
+          {isMe && (
+            <span
+              className={`flex items-center ${msg.status === "read" ? "text-blue-300" : "text-blue-100"}`}
+            >
+              {renderStatus(msg.status)}
+            </span>
+          )}
+          </div>
         </div>
       </div>
     </div>

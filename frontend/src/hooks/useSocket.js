@@ -40,7 +40,7 @@ export const useSocket = (chatId) => {
         // READ immediately if:
         // - tab focused
         // - chat already open
-        if (!document.hidden) {
+       if (!document.hidden && incomingChatId === String(chatId)) {
           socket.emit("messages_read", {
             chatId,
             messageIds: [message._id],
@@ -61,27 +61,11 @@ export const useSocket = (chatId) => {
 
     const handleChatUpdated = (data) => {
       // ✅ ONLY update sidebar here
-      dispatch(updateLastMessage(data.lastMessage));
+     dispatch(updateLastMessage({ ...data.lastMessage, chatId: data.chatId,myId }));
 
-      // ❌ DO NOT append message again here
+     
     };
-    // const handleMessagesStatusUpdated = ({
-    //   messageIds,
-    //   status,
-    //   chatId: updatedChatId,
-    // }) => {
-    //   if (updatedChatId !== chatId) return;
-
-    //   messageIds.forEach((messageId) => {
-    //     dispatch(
-    //       updateMessageStatus({
-    //         messageId,
-    //         status,
-    //         chatId,
-    //       }),
-    //     );
-    //   });
-    // };
+   
     const handleStatusUpdate = ({
       messageIds,
       messageId,
@@ -103,6 +87,7 @@ export const useSocket = (chatId) => {
     socket.on("message_deleted", handleMessageDeleted);
     socket.on("chat_updated", handleChatUpdated);
     socket.on("message_status_updated", handleStatusUpdate);
+    socket.on("messages_read", handleStatusUpdate);
 
     // ✅ Cleanup properly
     return () => {
@@ -113,6 +98,7 @@ export const useSocket = (chatId) => {
       socket.off("message_deleted", handleMessageDeleted);
       socket.off("chat_updated", handleChatUpdated);
       socket.off("message_status_updated", handleStatusUpdate);
+      socket.off("messages_read", handleStatusUpdate);
     };
   }, [chatId, dispatch, myId]);
 };

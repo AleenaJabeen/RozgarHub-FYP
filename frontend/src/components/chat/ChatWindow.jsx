@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch, useSelector ,shallowEqual} from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   clearChatMessages,
@@ -35,6 +35,7 @@ const ChatWindow = () => {
   const myId = useSelector((state) => state.auth.user?._id);
   const messages = useSelector(
     (state) => state.messages?.byChat?.[chatId] || [],
+     shallowEqual 
   );
   const chats = useSelector((state) => state.chats?.items || []);
   const chatData = chats.find((c) => c._id === chatId);
@@ -51,32 +52,6 @@ const ChatWindow = () => {
     socket.on("user_typing", handleTyping);
     return () => socket.off("user_typing", handleTyping);
   }, [socket, otherUser]);
-
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleMessageStatusUpdate = ({
-      messageId,
-      status,
-      chatId: updatedChatId,
-    }) => {
-      if (updatedChatId !== chatId) return;
-
-      dispatch(
-        updateMessageStatus({
-          messageId,
-          status,
-          chatId,
-        }),
-      );
-    };
-
-    socket.on("message_status_updated", handleMessageStatusUpdate);
-
-    return () => {
-      socket.off("message_status_updated", handleMessageStatusUpdate);
-    };
-  }, [socket, chatId, dispatch]);
 
   useEffect(() => {
     if (!socket) return;
@@ -115,7 +90,7 @@ const ChatWindow = () => {
 
   // Inside ChatWindow.js
 useEffect(() => {
-  if (!socket || !messages.length || !myId) return;
+   if (!chatId || !socket || !myId) return;
 
   const unreadMessageIds = messages
     .filter((msg) => {
@@ -131,7 +106,7 @@ useEffect(() => {
       messageIds: unreadMessageIds,
     });
   }
-}, [messages, socket, myId, chatId]);
+}, [myId, chatId]);
  
 
   useEffect(() => {
@@ -151,7 +126,7 @@ useEffect(() => {
       threshold;
 
     if (messages.length > prevLengthRef.current) {
-      const lastMessage = messages[messages.length - 1];
+      const lastMessage = messages[0];
       const isMe =
         lastMessage.senderId?._id === myId || lastMessage.senderId === myId;
       if (isMe || isNearBottom) {

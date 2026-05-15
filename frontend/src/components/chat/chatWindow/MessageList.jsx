@@ -159,8 +159,6 @@ const MessageList = React.forwardRef(
                         </div>
                       )}
 
-                      {/* Bubble — no max-w here, parent controls it */}
-                      {/* Bubble — logic updated for media */}
                       <div
                         className={`w-full rounded-2xl group px-3 py-2 transition-opacity ${
                           // If it's a media message (and NOT deleted), we remove the background and padding
@@ -224,26 +222,46 @@ const MessageList = React.forwardRef(
                               <div
                                 className={`flex ${isMe ? "justify-end" : "justify-start"} mb-2`}
                               >
-                                <AudioMessage msg={msg} isMe={isMe} />
+                                <AudioMessage
+                                  renderStatus={renderStatus}
+                                  msg={msg}
+                                  isMe={isMe}
+                                />
                               </div>
                             )}
                           </div>
                         )}
                         {msg.type !== "audio" && (
                           <div
-                            className={`${msg.type !== "text" ? "inline-flex p-1 bg-secondary rounded-2xl" : ""}  flex items-center justify-end gap-1 mt-1`}
+                            className={`flex items-center justify-end gap-1 mt-1`}
                           >
                             <span
-                              className={`text-[10px] ${isMe ? "text-gray-200" : "text-gray-400"}`}
+                              className={`text-[10px] ${
+                                // Check if the message is media (image or video)
+                                msg.type === "image" || msg.type === "video"
+                                  ? "text-gray-500 font-medium" // Darker color for media
+                                  : isMe
+                                    ? "text-gray-200"
+                                    : "text-gray-400"
+                              }`}
                             >
                               {new Date(msg.createdAt).toLocaleTimeString([], {
                                 hour: "2-digit",
                                 minute: "2-digit",
+                                hour12: true,
                               })}
                             </span>
+
                             {isMe && (
                               <span
-                                className={`flex items-center ${msg.status === "read" ? "text-blue-300" : "text-blue-100"}`}
+                                className={`flex items-center ${
+                                  // Match the same logic for the status icon
+                                  msg.type === "image" || msg.type === "video"
+                                    ? "text-gray-500" // Darker status icon for media
+                                    : msg.status === "read"
+                                      ? "text-blue-300"
+                                      : "text-blue-100"
+                                }`}
                               >
                                 {renderStatus(msg.status)}
                               </span>

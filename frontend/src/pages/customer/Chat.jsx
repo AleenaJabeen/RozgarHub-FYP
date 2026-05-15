@@ -15,8 +15,8 @@ function Chat() {
       <div className={`
         ${chatId ? 'hidden' : 'block'} 
         md:block 
-        w-full md:w-80 
-        md:flex-shrink-0 
+        w-full lg:w-[25%] md:w-[35%]
+        lg:flex-shrink-0 
         h-full border-r border-gray-200
         overflow-y-auto
         overflow-x-hidden  

@@ -4,15 +4,12 @@ import {
   deleteChat,
   fetchMyChats,
   markAsRead,
-  resetUnreadCount,
-  toggleArchived,
-  toggleStarred,
+  resetUnreadCount
 } from "../../store/chat/chatSlice";
 import { useNavigate, useParams } from "react-router-dom";
 import { TbMessageCircleSearch } from "react-icons/tb";
 import { getSocket } from "../../socket/socket";
 import { capitalizeWords } from "../../utils/capitalize";
-
 // Sub-components
 import ChatHeader from "./chatSidebar/ChatHeader";
 import ChatListItem from "./chatSidebar/ChatListItem";
@@ -41,7 +38,6 @@ const ChatSidebar = () => {
   if (!socket) return;
 
   const handleMessagesRead = ({ chatId }) => {
-    // When the other person reads your messages, reset their unread count
     dispatch(resetUnreadCount({ chatId, userId: myId }));
   };
 
@@ -72,19 +68,15 @@ const ChatSidebar = () => {
       switch (filterType) {
         case "unread":
           return matchesSearch && unreadCount > 0;
-        case "starred":
-          return matchesSearch && chat.isStarred;
-        case "archived":
-          return matchesSearch && chat.isArchived;
         default:
-          return matchesSearch && !chat.isArchived;
+          return matchesSearch;
       }
     });
   }, [chats, searchQuery, filterType, myId]);
 
   if (loading && chats.length === 0) {
     return (
-      <div className="w-80 h-full border-r border-gray-300 flex items-center justify-center">
+      <div className="w-full h-full border-r border-gray-300 flex items-center justify-center">
         <div className="animate-pulse text-gray-400">Loading chats...</div>
       </div>
     );
@@ -146,8 +138,6 @@ const ChatSidebar = () => {
                   dispatch(markAsRead({chatId: chat._id , myId}));
                   navigate(`/messages/${chat._id}`);
                 }}
-                onStar={(chatId) => dispatch(toggleStarred(chatId))}
-                onArchive={(chatId) => dispatch(toggleArchived(chatId))}
                 onDelete={(chatId) => {
                   dispatch(deleteChat(chatId)).then(() => {
                     if (chatId === activeChatId) {

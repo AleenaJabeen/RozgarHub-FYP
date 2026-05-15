@@ -9,6 +9,7 @@ import {
   Trash2,
   MoreVertical,
 } from "lucide-react";
+import { MdDoNotDisturb } from "react-icons/md";
 
 const ChatListItem = React.memo(
   ({
@@ -24,7 +25,6 @@ const ChatListItem = React.memo(
     const otherUser = chat.participants.find((p) => p._id !== myId);
 
     const unreadCount = chat.unreadCounts?.[myId] || 0;
-
 
     const isSelected = activeChatId === chat._id;
 
@@ -112,6 +112,7 @@ const ChatListItem = React.memo(
                   ? new Date(chat.lastMessageAt).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
+                      hour12: true,
                     })
                   : ""}
               </span>
@@ -127,7 +128,7 @@ const ChatListItem = React.memo(
               ) : !chat.lastMessage ? (
                 "No messages yet"
               ) : chat.lastMessage.deletedForEveryone ? (
-                <span className="italic opacity-60">Message deleted</span>
+                <span className="flex gap-1 items-center italic opacity-60"><MdDoNotDisturb/> Message deleted</span>
               ) : (
                 <>
                   {chat.lastMessage.type === "image" && (
@@ -168,30 +169,6 @@ const ChatListItem = React.memo(
         {/* MENU */}
         {showMenu && (
           <div className="absolute right-4 top-14 z-50 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in duration-150">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onStar(chat._id);
-                setShowMenu(false);
-              }}
-              className="cursor-pointer w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-sm"
-            >
-              <Star size={16} />
-              {chat.isStarred ? "Unstar Chat" : "Star Chat"}
-            </button>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onArchive(chat._id);
-                setShowMenu(false);
-              }}
-              className="cursor-pointer w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-sm"
-            >
-              <Archive size={16} />
-              {chat.isArchived ? "Unarchive Chat" : "Archive Chat"}
-            </button>
-
             <button
               onClick={(e) => {
                 e.stopPropagation();

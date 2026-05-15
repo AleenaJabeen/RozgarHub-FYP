@@ -1,6 +1,7 @@
 import React from "react";
 import { useRef } from "react";
 import { IoHappyOutline, IoAdd, IoCameraOutline, IoSend, IoMicOutline } from "react-icons/io5";
+import { MdOutlineInsertPhoto } from "react-icons/md";
 
 const ChatInput = ({ text, setText, onSendMessage,onSendMedia, onVoiceAssistant, onTyping, isRecording }) => {
   const fileInputRef = useRef(null);
@@ -24,7 +25,7 @@ const ChatInput = ({ text, setText, onSendMessage,onSendMedia, onVoiceAssistant,
       <div className="flex items-center bg-white rounded-full px-3 py-1 flex-1 shadow-sm">
         {!isRecording && (
         <button onClick={() => fileInputRef.current.click()} className="p-2 text-gray-500 hover:text-gray-700 cursor-pointer">
-          <IoAdd size={28} />
+          <MdOutlineInsertPhoto size={28} />
           <input
         type="file"
         ref={fileInputRef}

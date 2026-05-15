@@ -13,7 +13,13 @@ import IncomingUrgentCard from '../../components/orders/serviceprovider/Incoming
 const Dashboard = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  
+    const myId=user?._id;
+    const { items: chats = [] } = useSelector(
+    (state) => state.chats || {}
+  );
+  const totalUnreadMessages = chats.reduce((total, chat) => {
+  return total + (chat.unreadCounts?.[myId] || 0);
+}, 0);
   
   const [urgentRequests, setUrgentRequests] = useState([]);
 
@@ -143,7 +149,7 @@ const Dashboard = () => {
               <div className="flex flex-wrap gap-3">
                 <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-gray-300 font-bold text-gray-700 hover:bg-gray-50 transition-colors">
                   <LiaEnvelopeSolid size={22} />
-                  Unread messages (0)
+                  Unread messages {totalUnreadMessages}
                 </button>
                 <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-gray-300 font-bold text-gray-700 hover:bg-gray-50 transition-colors">
                   <LiaBriefcaseSolid size={22} />

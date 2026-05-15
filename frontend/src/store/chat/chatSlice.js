@@ -43,9 +43,24 @@ export const deleteChat = createAsyncThunk(
   },
 );
 
+export const fetchUserInfo = createAsyncThunk(
+  "chat/fetchUserInfo",
+  async (userId, thunkAPI) => {
+    try {
+      const  response  = await axios.get(`http://localhost:3000/api/v1/chat/user-info/${userId}`, {
+        withCredentials: true,
+      });
+      return response.data.data; // This returns the merged User + ServiceProvider object
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data || "Failed to fetch user details"
+      );
+    }
+  }
+);
 const chatSlice = createSlice({
   name: "chats",
-  initialState: { items: [], loading: false },
+  initialState: { items: [], loading: false,selectedUserProfile: null,profileLoading: false },
   reducers: {
     setUserOnline: (state, action) => {
       const userId = action.payload;
@@ -81,7 +96,7 @@ const chatSlice = createSlice({
 
         // Increment unread count if the current user isn't the sender
         // Note: You might want to skip this if the chat is currently open
-        const myId = JSON.parse(localStorage.getItem("user"))?._id;
+        const myId = payload?.myId;
         if (payload.senderId._id !== myId) {
           const currentCount = state.items[chatIndex].unreadCounts?.[myId] || 0;
           state.items[chatIndex].unreadCounts = {
@@ -95,33 +110,18 @@ const chatSlice = createSlice({
         state.items.unshift(movedChat);
       }
     },
-
-    toggleStarred(state, { payload: chatId }) {
-      const chat = state.items.find((c) => c._id === chatId);
-
-      if (chat) {
-        chat.isStarred = !chat.isStarred;
-      }
-    },
-
-    toggleArchived(state, { payload: chatId }) {
-      const chat = state.items.find((c) => c._id === chatId);
-
-      if (chat) {
-        chat.isArchived = !chat.isArchived;
-      }
-    },
-
     removeChat(state, { payload: chatId }) {
       state.items = state.items.filter((c) => c._id !== chatId);
     },
-
     resetUnreadCount(state, { payload: { chatId, userId } }) {
       const chat = state.items.find((c) => c._id === chatId);
       if (chat && chat.unreadCounts) {
         chat.unreadCounts[userId] = 0;
       }
     },
+    clearSelectedProfile: (state) => {
+      state.selectedUserProfile = null;
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -142,6 +142,17 @@ const chatSlice = createSlice({
           };
         }
       })
+      .addCase(fetchUserInfo.pending, (state) => {
+        state.profileLoading = true;
+      })
+      .addCase(fetchUserInfo.fulfilled, (state, { payload }) => {
+        state.selectedUserProfile = payload;
+        state.profileLoading = false;
+      })
+      .addCase(fetchUserInfo.rejected, (state) => {
+        state.profileLoading = false;
+        state.selectedUserProfile = null;
+      })
       .addCase(deleteChat.pending, (state, action) => {
         state.items = state.items.filter(
           (chat) => chat._id !== action.meta.arg,
@@ -153,13 +164,14 @@ const chatSlice = createSlice({
   },
 });
 
+
+
 export const {
   setUserOnline,
   setUserOffline,
   updateLastMessage,
   resetUnreadCount,
-  toggleArchived,
-  toggleStarred,
   removeChat,
+  clearSelectedProfile
 } = chatSlice.actions;
 export default chatSlice.reducer;
