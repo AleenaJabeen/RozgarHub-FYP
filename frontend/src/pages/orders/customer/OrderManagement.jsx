@@ -66,16 +66,6 @@ const CustomerOrderManagement = () => {
               </p>
             </div>
           </div>
-
-          <button
-            onClick={() => navigate("/customer/place-order", { 
-              state: { bookingType: 'urgent', isBroadcast: true } 
-            })}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#0d7a5f] text-white text-sm font-bold rounded-lg shadow-md hover:bg-[#095c47] hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
-          >
-            <FaBolt />
-            Broadcast Urgent Request
-          </button>
         </div>
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -83,7 +73,8 @@ const CustomerOrderManagement = () => {
             <OrderTabs activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
           
-          <label className="flex items-center gap-3 cursor-pointer p-2 bg-white border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 w-max select-none">
+          {/* ✅ ADDED: md:-translate-y-1.5 to shift it up perfectly inline with the tabs */}
+          <label className="flex items-center gap-3 cursor-pointer p-2 bg-white border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 w-max select-none transform md:-translate-y-1.5">
             <div className="relative">
               <input 
                 type="checkbox" 
@@ -91,11 +82,11 @@ const CustomerOrderManagement = () => {
                 checked={showOnlyBroadcasts}
                 onChange={() => setShowOnlyBroadcasts(!showOnlyBroadcasts)}
               />
-              <div className={`block w-10 h-6 rounded-full transition-colors ${showOnlyBroadcasts ? 'bg-amber-500' : 'bg-gray-300'}`}></div>
+              <div className={`block w-10 h-6 rounded-full transition-colors ${showOnlyBroadcasts ? 'bg-orange-500' : 'bg-gray-300'}`}></div>
               <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${showOnlyBroadcasts ? 'transform translate-x-4' : ''}`}></div>
             </div>
             <span className="text-sm font-bold text-gray-700 flex items-center gap-1.5">
-              <FaBolt className={showOnlyBroadcasts ? "text-amber-500" : "text-gray-400"} />
+              <FaBolt className={showOnlyBroadcasts ? "text-orange-500" : "text-gray-400"} />
               Urgent Only
             </span>
           </label>

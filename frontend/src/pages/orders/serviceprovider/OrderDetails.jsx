@@ -473,7 +473,7 @@ const OrderDetails = () => {
           loading={loading}
           onConfirm={handleModalConfirm}
           onClose={() => setModal(null)}
-          prefilledRate={modal.rate}
+          prefilledRate={order.isBroadcast ? order.hourlyRate : order.gigId?.hourlyRate}
         />
       )}
     </div>

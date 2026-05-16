@@ -7,12 +7,14 @@ import {
   clearActiveOrder,
 } from "../../../store/orders/order-slice";
 import ActionModal from "../../../components/orders/ActionModal";
+import ReviewModal from "../../../components/orders/customer/ReviewModal"; // ✅ Added Review Modal
 import { showToast } from "../../../utils/toastHelper";
 import { HiArrowLeft, HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineClock } from "react-icons/hi";
 import { MdOutlineShoppingBag, MdOutlineAccountBalanceWallet } from "react-icons/md";
 import { IoPersonCircle, IoChevronForward, IoImageOutline } from "react-icons/io5";
+import { FaStar } from "react-icons/fa"; 
 
-import { getSocket, connectSocket } from "../../../socket/socket";
+import { getSocket, connectSocket } from "../../../socket/socket"; 
 
 const STATUS_STYLES = {
   pending:       "bg-amber-100 text-amber-700 border-amber-200",
@@ -50,6 +52,7 @@ const OrderDetails = () => {
 
   const { activeOrder: order, loading, error } = useSelector((state) => state.orders);
   const [showModal, setShowModal] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false); // ✅ Added Review state
 
   useEffect(() => {
     dispatch(getOrderById(orderId));
@@ -298,6 +301,17 @@ const OrderDetails = () => {
                   {provider?._id && <IoChevronForward className="text-gray-300 group-hover:text-secondary text-base transition-colors flex-shrink-0" />}
                 </div>
               )}
+
+              {/* ✅ Review Button - Only appears when completed and no review exists yet */}
+              {order.status === "completed" && !order.isReviewed && (
+                <button
+                  onClick={() => setIsReviewModalOpen(true)}
+                  className="w-full mt-5 py-3 text-sm font-bold text-white bg-[#0d7a5f] rounded-xl hover:bg-[#0e5641] active:scale-95 transition-all shadow-md shadow-[#0d7a5f]/20 flex items-center justify-center gap-2"
+                >
+                  <FaStar className="text-amber-400 text-lg" />
+                  Leave a Review
+                </button>
+              )}
             </div>
 
             {order.latePenaltyDiscount > 0 && (
@@ -330,6 +344,15 @@ const OrderDetails = () => {
           onClose={() => setShowModal(false)}
         />
       )}
+
+      {/* ✅ Review Modal Integration */}
+      <ReviewModal 
+        isOpen={isReviewModalOpen} 
+        onClose={() => setIsReviewModalOpen(false)} 
+        orderId={order._id}
+        providerName={providerName}
+        onSuccess={() => dispatch(getOrderById(orderId))} 
+      />
     </div>
   );
 };
