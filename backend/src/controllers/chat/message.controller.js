@@ -70,7 +70,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
   );
 
   // 🔥 SOCKET EMIT
-  const io = req.app.get("io");
+  const io = getIO();
   io.to(chatId).emit("new_message", fullMessage);
 
   return res

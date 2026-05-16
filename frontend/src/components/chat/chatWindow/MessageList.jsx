@@ -89,11 +89,11 @@ const MessageList = React.forwardRef(
 
     return (
       // Outer wrapper: flex-col so edit bar sits below scroll area
-      <div className="flex flex-col flex-1 min-h-0 bg-secondary/10">
+      <div className="flex flex-col flex-1 min-h-0 bg-secondary/10 ">
         {/* Scrollable message area */}
         <div
           ref={ref}
-          className="flex-1 overflow-y-auto min-h-0 p-4 flex flex-col"
+          className="flex-1 overflow-y-auto min-h-0 sm:p-4 p-3 flex flex-col"
           onClick={() => setContextMenu(null)}
         >
           <div className="flex-grow" />

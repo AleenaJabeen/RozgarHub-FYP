@@ -5,7 +5,6 @@ export const formatLastSeen = (lastActiveAt) => {
   const last = new Date(lastActiveAt);
   const diffMs = now - last;
   const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
 
   // Just now
   if (diffMins < 1) return "last seen just now";
@@ -13,10 +12,13 @@ export const formatLastSeen = (lastActiveAt) => {
   // Within an hour
   if (diffMins < 60) return `last seen ${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
 
+  // Shared time formatting options for clean 12-hour AM/PM
+  const timeOptions = { hour: "2-digit", minute: "2-digit", hour12: true };
+
   // Today
   const isToday = last.toDateString() === now.toDateString();
   if (isToday) {
-    const time = last.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const time = last.toLocaleTimeString([], timeOptions);
     return `last seen today at ${time}`;
   }
 
@@ -25,7 +27,7 @@ export const formatLastSeen = (lastActiveAt) => {
   yesterday.setDate(now.getDate() - 1);
   const isYesterday = last.toDateString() === yesterday.toDateString();
   if (isYesterday) {
-    const time = last.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const time = last.toLocaleTimeString([], timeOptions); // Fixed: Now strictly 12-hour with AM/PM
     return `last seen yesterday at ${time}`;
   }
 

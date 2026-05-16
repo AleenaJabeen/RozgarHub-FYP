@@ -230,11 +230,12 @@ useEffect(() => {
       // 1. Create FormData
       const formData = new FormData();
       formData.append("chatId", chatId);
-      formData.append("type", type); // 'image', 'video', or 'audio'
-      formData.append("content", ""); // Optional text content
-      formData.append("file", file); // This matches req.file in your backend
+      formData.append("type", type); 
+      formData.append("content", "");
+      formData.append("file", file);
 
       await dispatch(sendMessage(formData));
+      dispatch(fetchMessages({ chatId }));
     } catch (error) {
       console.error("Failed to send media", error);
       // toast.error("Failed to send media");
