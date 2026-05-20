@@ -9,7 +9,10 @@ const port = process.env.PORT || "8000";
 const httpServer = http.createServer(app);    
 
 connectDB().then(() => {
-    initSocket(httpServer);                          // ← NEW — must be after DB
+    const io = initSocket(httpServer);
+
+    // Store io instance on express app
+    app.set("io", io);                          // ← NEW — must be after DB
  
     httpServer.on("error", (error) => {             // ← was app.on(...)
       console.log("Server error", error);

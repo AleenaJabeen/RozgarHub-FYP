@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken'
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 const userSchema = new Schema(
   {
@@ -16,7 +16,7 @@ const userSchema = new Schema(
       unique: true,
       trim: true,
       lowercase: true,
-      index:true
+      index: true,
     },
     password: {
       type: String,
@@ -32,8 +32,8 @@ const userSchema = new Schema(
     authProvider: { type: String, enum: ["email", "google"], required: true },
     googleId: {
       type: String,
-      unique:true,
-      sparse: true 
+      unique: true,
+      sparse: true,
     },
     // --- Email verification ---
     emailOTP: {
@@ -54,10 +54,10 @@ const userSchema = new Schema(
     },
     // --- FORGOT PASSWORD LINK LOGIC ---
     resetPasswordToken: {
-        type:String
+      type: String,
     },
-    resetPasswordExpiry:{
-        type:Date
+    resetPasswordExpiry: {
+      type: Date,
     },
     // -- Phone verification --
     phone: String,
@@ -77,50 +77,56 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    avatar:{
-        type:String
+    avatar: {
+      type: String,
     },
     location: {
-  address: {
-    street: String,
-    city: String,
-    state: String,
-    country: String,
-    zipCode: String,
-  },
-  currentLocation: {
-  type: {
-    type: String,
-    enum: ["Point"],
-    // Remove default: "Point" 
-    required: function() {
-      // Only require 'Point' if coordinates are actually provided
-      return this.location?.currentLocation?.coordinates?.length > 0;
-    }
-  },
-  coordinates: {
-    type: [Number],
-    default: undefined, 
-    validate: {
-      validator: function (v) {
-        if (!v || v.length === 0) return true; // Allow empty/null
-        return (
-          Array.isArray(v) && 
-          v.length === 2 &&
-          v[0] >= -180 && v[0] <= 180 && // Longitude
-          v[1] >= -90 && v[1] <= 90      // Latitude
-        );
+      address: {
+        street: String,
+        city: String,
+        state: String,
+        country: String,
+        zipCode: String,
       },
-      message: "Coordinates must be a valid [longitude, latitude] array",
+      currentLocation: {
+        type: {
+          type: String,
+          enum: ["Point"],
+          // Remove default: "Point"
+          required: function () {
+            // Only require 'Point' if coordinates are actually provided
+            return this.location?.currentLocation?.coordinates?.length > 0;
+          },
+        },
+        coordinates: {
+          type: [Number],
+          default: undefined,
+          validate: {
+            validator: function (v) {
+              if (!v || v.length === 0) return true; // Allow empty/null
+              return (
+                Array.isArray(v) &&
+                v.length === 2 &&
+                v[0] >= -180 &&
+                v[0] <= 180 && // Longitude
+                v[1] >= -90 &&
+                v[1] <= 90 // Latitude
+              );
+            },
+            message: "Coordinates must be a valid [longitude, latitude] array",
+          },
+        },
+      },
     },
-  },
-},
-},
     isOnline: { type: Boolean, default: false },
     lastActiveAt: { type: Date, default: Date.now },
+    fcmTokens: {
+      type: [String],
+      default: [],
+    },
     refreshToken: {
-        type:String
-    }
+      type: String,
+    },
   },
   {
     timestamps: true,
@@ -130,36 +136,44 @@ const userSchema = new Schema(
 userSchema.index({ isOnline: 1 });
 userSchema.index({ "location.currentLocation": "2dsphere" });
 
-userSchema.pre("save", async function() {
+userSchema.pre("save", async function () {
   // If the password isn't modified, just exit the function
   if (!this.isModified("password") || !this.password) {
-    return; 
+    return;
   }
 
   // Hash the password and let the function finish
   this.password = await bcrypt.hash(this.password, 10);
 });
 
-userSchema.methods.isPasswordCorrect=async function(password){
-    return await bcrypt.compare(password,this.password)
-}
+userSchema.methods.isPasswordCorrect = async function (password) {
+  return await bcrypt.compare(password, this.password);
+};
 
-userSchema.methods.generateAccessToken=function(){
-  return jwt.sign({
-    _id:this._id,
-    role:this.role
-  },process.env.ACCESS_TOKEN_SECRET,{
-    expiresIn:process.env.ACCESS_TOKEN_EXPIRY
-  });
-}
+userSchema.methods.generateAccessToken = function () {
+  return jwt.sign(
+    {
+      _id: this._id,
+      role: this.role,
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    {
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+    },
+  );
+};
 
-userSchema.methods.generateRefreshToken=function(){
-  return jwt.sign({
-    _id:this._id,
-    role:this.role
-  },process.env.REFRESH_TOKEN_SECRET,{
-    expiresIn:process.env.REFRESH_TOKEN_EXPIRY
-  });
-}
+userSchema.methods.generateRefreshToken = function () {
+  return jwt.sign(
+    {
+      _id: this._id,
+      role: this.role,
+    },
+    process.env.REFRESH_TOKEN_SECRET,
+    {
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+    },
+  );
+};
 
 export const User = mongoose.model("User", userSchema);

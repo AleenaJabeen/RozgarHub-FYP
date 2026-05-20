@@ -105,7 +105,7 @@ const hasUnreadMessages = chats.some((chat) => {
       },
       {
         name: "Notifications",
-        href: "/",
+        href: "/notifications",
         icon: IoNotificationsOutline,
         unread: unreadNotifications,
       },
@@ -123,7 +123,7 @@ const hasUnreadMessages = chats.some((chat) => {
       },
       {
         name: "Notifications",
-        href: "/",
+        href: "/notifications",
         icon: IoNotificationsOutline,
         unread: unreadNotifications,
       },

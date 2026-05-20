@@ -3,8 +3,9 @@ import jwt from "jsonwebtoken";
 import { Chat } from "../models/chat.model.js";
 import { Message } from "../models/message.model.js";
 import cookie from "cookie";
-// import { sendPushNotification } from "../services/notification.service.js";
+import { sendPushNotification } from "../services/notification.service.js";
 import { User } from "../models/user.model.js";
+import { createNotification } from "../controllers/notification/notification.controller.js";
 
 let io;
 const onlineUsers = new Map();
@@ -182,12 +183,17 @@ export const initSocket = (httpServer) => {
             lastMessage: message,
             lastMessageAt: message.createdAt,
           });
-          const receiverSockets = onlineUsers.get(otherId);
-          console.log("Receiver Sockets:", receiverSockets);
+          const isReceiverInChatRoom = [...(roomMembers || [])].some(
+            (socketId) => {
+              const socketInstance = io.sockets.sockets.get(socketId);
 
-          const isReceiverOnline = receiverSockets?.size > 0;
+              return socketInstance?.user?._id?.toString() === otherId;
+            },
+          );
 
-          if (!isReceiverOnline) {
+          console.log("Receiver in chat room:", isReceiverInChatRoom);
+
+          if (!isReceiverInChatRoom) {
             await sendPushNotification({
               userId: otherId,
               title: message.senderId.name,
@@ -195,7 +201,16 @@ export const initSocket = (httpServer) => {
               data: {
                 type: "message",
                 chatId: chatId.toString(),
+                messageType: type,
               },
+            });
+            await createNotification({
+              recipient: otherId,
+              sender: userId,
+              type: "message",
+              title: "New Message",
+              message: message.content || "Sent you a message",
+              link: `/messages/${chatId}`,
             });
           }
         }
