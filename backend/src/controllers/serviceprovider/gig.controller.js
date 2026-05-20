@@ -232,13 +232,8 @@ export const deleteGig = asyncHandler(async (req, res) => {
   if (!gig) {
     throw new ApiError(404, "Gig not found");
   }
-  const provider = await ServiceProvider.findOne({
-    user: req.user._id,
-  });
-  if (!provider) {
-    throw new ApiError(404, "Service provider not found");
-  }
-  if (gig.serviceProviderId.toString() !== provider._id.toString()) {
+
+  if (gig.serviceProviderId.toString() !== req.user._id.toString()) {
     throw new ApiError(403, "Unauthorized");
   }
 

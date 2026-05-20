@@ -165,18 +165,4 @@ const checkAuth = asyncHandler(async (req, res) => {
   );
 });
 
-const saveFCMToken = async (req, res) => {
-  const { token } = req.body;
-
-  await User.findByIdAndUpdate(req.user._id, {
-    $addToSet: {
-      fcmTokens: token,
-    },
-  });
-
-  res.json({
-    success: true,
-  });
-};
-
-export { registerUserWithEmail, logoutUser, loginUser,generateAccessTokenandRefreshToken,updateUserRole ,checkAuth,saveFCMToken};
+export { registerUserWithEmail, logoutUser, loginUser,generateAccessTokenandRefreshToken,updateUserRole ,checkAuth};

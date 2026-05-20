@@ -9,7 +9,6 @@ import gigSearchReducer from "./customer/gigSearch-slice";
 import chatReducer from './chat/chatSlice'
 import messageReducer from './chat/messageSlice'
 import reviewReducer from "./customer/review-slice";
-import notificationReducer from "./notification-slice";
 
 const store = configureStore({
   reducer: {
@@ -24,7 +23,6 @@ const store = configureStore({
     chats: chatReducer,
     messages: messageReducer,
     reviews: reviewReducer,
-    notifications: notificationReducer,
   },
 });
 

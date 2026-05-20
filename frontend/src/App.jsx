@@ -34,14 +34,10 @@ import CustomerGigDetails from "./pages/customer/CustomerGigDetails";
 import GlobalUrgentOverlay from "./components/orders/serviceprovider/GlobalUrgentOverlay";
 import Chat from "./pages/customer/Chat";
 import ChatWindow from "./components/chat/ChatWindow";
-import Notification from "./pages/Notification";
 import { connectSocket, disconnectSocket } from "./socket/socket";
 import NoChatSelectedComponent from "./components/chat/NoChatSelectedComponent";
 import { useGlobalSocket } from "./hooks/GlobalSocket";
 import UserInfoPage from "./components/chat/UserInfoPage";
-import {
-  initializeNotifications,
-} from "./utils/notification";
 
 function App() {
    useGlobalSocket();
@@ -58,11 +54,6 @@ function App() {
   useEffect(() => {
     if (isAuthenticated && user) {
       connectSocket();
-      const setupNotifications = async () => {
-        await initializeNotifications();
-      };
-
-      setupNotifications();
     } else {
       disconnectSocket();
     }
@@ -117,7 +108,6 @@ function App() {
             <Route path=":chatId" element={<ChatWindow />} />
           </Route>
           <Route path="/user-info/:userId" element={<UserInfoPage />} />
-          <Route path="/notifications" element={<Notification />} />
 
           <Route
             path="customer"
