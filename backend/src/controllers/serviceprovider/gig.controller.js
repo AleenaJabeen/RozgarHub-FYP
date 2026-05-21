@@ -39,7 +39,10 @@ export const createGig = asyncHandler(async (req, res) => {
 
   const provider = await ServiceProvider.findOne({ user: req.user._id });
   if (!provider) {
-    throw new ApiError(404, "Service Provider profile not found. Please complete your profile.");
+    throw new ApiError(
+      404,
+      "Service Provider profile not found. Please complete your profile.",
+    );
   }
 
   let imageObjects = [];
@@ -88,9 +91,11 @@ export const createGig = asyncHandler(async (req, res) => {
 export const getMyGigs = asyncHandler(async (req, res) => {
   // 1. Find the provider profile linked to the logged-in user
   const provider = await ServiceProvider.findOne({ user: req.user._id });
-  
+
   if (!provider) {
-    return res.status(200).json(new ApiResponse(200, [], "Gigs fetched successfully"));
+    return res
+      .status(200)
+      .json(new ApiResponse(200, [], "Gigs fetched successfully"));
   }
 
   // 2. Fetch gigs using the correct Provider ID
@@ -100,7 +105,7 @@ export const getMyGigs = asyncHandler(async (req, res) => {
     .populate("categoryId", "name")
     .populate({
       path: "serviceProviderId",
-      populate: { path: "user", select: "name avatar" } // Deep populate for the SP dashboard card!
+      populate: { path: "user", select: "name avatar" }, // Deep populate for the SP dashboard card!
     });
 
   return res
@@ -112,10 +117,10 @@ export const getMyGigs = asyncHandler(async (req, res) => {
 
 export const getGigById = asyncHandler(async (req, res) => {
   const gig = await Gig.findById(req.params.id)
-  .populate("categoryId", "name")
-  .populate({
+    .populate("categoryId", "name")
+    .populate({
       path: "serviceProviderId",
-      populate: { path: "user", select: "name avatar isOnline" } 
+      populate: { path: "user", select: "name avatar isOnline" },
     });
 
   if (!gig) {
@@ -138,7 +143,7 @@ export const searchPublicGigs = asyncHandler(async (req, res) => {
     sortBy,
     day,
     time,
-    page  = 1,
+    page = 1,
     limit = 12,
   } = req.query;
 
@@ -147,7 +152,7 @@ export const searchPublicGigs = asyncHandler(async (req, res) => {
   // ── Text search on title and description ──────────────────────
   if (search?.trim()) {
     query.$or = [
-      { title:       { $regex: search.trim(), $options: "i" } },
+      { title: { $regex: search.trim(), $options: "i" } },
       { description: { $regex: search.trim(), $options: "i" } },
     ];
   }
@@ -170,9 +175,9 @@ export const searchPublicGigs = asyncHandler(async (req, res) => {
   if (day && time) {
     query.availabilityHours = {
       $elemMatch: {
-        days:      day,          // e.g. "Monday"
+        days: day, // e.g. "Monday"
         startTime: { $lte: time }, // "09:00" <= "14:00"
-        endTime:   { $gte: time }, // "18:00" >= "14:00"
+        endTime: { $gte: time }, // "18:00" >= "14:00"
       },
     };
   } else if (day) {
@@ -185,14 +190,23 @@ export const searchPublicGigs = asyncHandler(async (req, res) => {
   // ── Sorting ───────────────────────────────────────────────────
   let sort = {};
   switch (sortBy) {
-    case "price_asc":    sort = { hourlyRate:    1  }; break;
-    case "price_desc":   sort = { hourlyRate:   -1  }; break;
-    case "rating_desc":  sort = { averageRating: -1 }; break;
-    case "reviews_desc": sort = { totalReviews:  -1 }; break;
-    default:             sort = { createdAt:     -1 };
+    case "price_asc":
+      sort = { hourlyRate: 1 };
+      break;
+    case "price_desc":
+      sort = { hourlyRate: -1 };
+      break;
+    case "rating_desc":
+      sort = { averageRating: -1 };
+      break;
+    case "reviews_desc":
+      sort = { totalReviews: -1 };
+      break;
+    default:
+      sort = { createdAt: -1 };
   }
 
-  const skip  = (Number(page) - 1) * Number(limit);
+  const skip = (Number(page) - 1) * Number(limit);
   const total = await Gig.countDocuments(query);
 
   const gigs = await Gig.find(query)
@@ -202,7 +216,7 @@ export const searchPublicGigs = asyncHandler(async (req, res) => {
       // Populate the nested User document so the frontend always gets
       // real name/avatar without falling back to placeholder values.
       populate: {
-        path:   "user",
+        path: "user",
         select: "name avatar isOnline",
       },
     })
@@ -212,15 +226,19 @@ export const searchPublicGigs = asyncHandler(async (req, res) => {
     .limit(Number(limit));
 
   res.status(200).json(
-    new ApiResponse(200, {
-      gigs,
-      pagination: {
-        total,
-        page:       Number(page),
-        limit:      Number(limit),
-        totalPages: Math.ceil(total / Number(limit)),
+    new ApiResponse(
+      200,
+      {
+        gigs,
+        pagination: {
+          total,
+          page: Number(page),
+          limit: Number(limit),
+          totalPages: Math.ceil(total / Number(limit)),
+        },
       },
-    }, "Gigs fetched successfully.")
+      "Gigs fetched successfully.",
+    ),
   );
 });
 
@@ -232,8 +250,13 @@ export const deleteGig = asyncHandler(async (req, res) => {
   if (!gig) {
     throw new ApiError(404, "Gig not found");
   }
-
-  if (gig.serviceProviderId.toString() !== req.user._id.toString()) {
+  const provider = await ServiceProvider.findOne({
+    user: req.user._id,
+  });
+  if (!provider) {
+    throw new ApiError(404, "Service provider not found");
+  }
+  if (gig.serviceProviderId.toString() !== provider._id.toString()) {
     throw new ApiError(403, "Unauthorized");
   }
 
@@ -258,21 +281,23 @@ export const setGigUnavailable = asyncHandler(async (req, res) => {
   if (!gig) throw new ApiError(404, "Gig not found");
 
   const provider = await ServiceProvider.findOne({ user: req.user._id });
-    if (gig.serviceProviderId.toString() !== provider._id.toString()) {
-      throw new ApiError(403, "Unauthorized");
-    }
+  if (gig.serviceProviderId.toString() !== provider._id.toString()) {
+    throw new ApiError(403, "Unauthorized");
+  }
 
   gig.availabilityStatus = "unavailable";
   gig.statusMode = "manual";
 
   await gig.save();
   const populatedGig = await Gig.findById(gig._id)
-  .populate("categoryId", "name")
-  .populate("subcategories", "name");
+    .populate("categoryId", "name")
+    .populate("subcategories", "name");
 
   return res
     .status(200)
-    .json(new ApiResponse(200, populatedGig, "Gig set to unavailable manually"));
+    .json(
+      new ApiResponse(200, populatedGig, "Gig set to unavailable manually"),
+    );
 });
 
 export const setGigAvailable = asyncHandler(async (req, res) => {
@@ -290,12 +315,18 @@ export const setGigAvailable = asyncHandler(async (req, res) => {
 
   await gig.save();
   const populatedGig = await Gig.findById(gig._id)
-  .populate("categoryId", "name")
-  .populate("subcategories", "name");
+    .populate("categoryId", "name")
+    .populate("subcategories", "name");
 
   return res
     .status(200)
-    .json(new ApiResponse(200, populatedGig, "Gig set to available and auto mode enabled"));
+    .json(
+      new ApiResponse(
+        200,
+        populatedGig,
+        "Gig set to available and auto mode enabled",
+      ),
+    );
 });
 
 //enabledauto mode when gig is updated
@@ -311,8 +342,8 @@ export const enableAutoMode = asyncHandler(async (req, res) => {
 
   await gig.save();
   const populatedGig = await Gig.findById(gig._id)
-  .populate("categoryId", "name")
-  .populate("subcategories", "name");
+    .populate("categoryId", "name")
+    .populate("subcategories", "name");
 
   return res
     .status(200)
@@ -404,8 +435,10 @@ export const updateGig = asyncHandler(async (req, res) => {
 
   await gig.save();
   const populatedGig = await Gig.findById(gig._id)
-  .populate("categoryId", "name")
-  .populate("subcategories", "name");
+    .populate("categoryId", "name")
+    .populate("subcategories", "name");
 
-  return res.status(200).json(new ApiResponse(200, populatedGig, "Gig updated"));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, populatedGig, "Gig updated"));
 });

@@ -165,4 +165,21 @@ const checkAuth = asyncHandler(async (req, res) => {
   );
 });
 
-export { registerUserWithEmail, logoutUser, loginUser,generateAccessTokenandRefreshToken,updateUserRole ,checkAuth};
+const saveFCMToken = async (req, res) => {
+  const { token } = req.body;
+  if (!token) {
+    throw new ApiError(400, "FCM token is required");
+  }
+
+  await User.findByIdAndUpdate(req.user._id, {
+    $addToSet: {
+      fcmTokens: token,
+    },
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, null, "FCM token saved")
+  );
+};
+
+export { registerUserWithEmail, logoutUser, loginUser,generateAccessTokenandRefreshToken,updateUserRole ,checkAuth,saveFCMToken};
