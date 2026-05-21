@@ -28,6 +28,27 @@ export const registerUser = createAsyncThunk(
   },
 );
 
+export const saveFCMToken = createAsyncThunk(
+  "notifications/saveFCMToken",
+  async (token, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/notifications/save-token`,
+        { token },
+        {
+          withCredentials: true,
+        },
+      );
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to save notification token",
+      );
+    }
+  },
+);
+
 // Login Thunk
 export const loginUser = createAsyncThunk(
   "/auth/login",
@@ -190,15 +211,15 @@ export const addSavedAddress = createAsyncThunk(
       const res = await axios.patch(
         `${BASE_URL}/add-address`,
         { address },
-        { withCredentials: true }
+        { withCredentials: true },
       );
       return res.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to add address"
+        error.response?.data?.message || "Failed to add address",
       );
     }
-  }
+  },
 );
 
 export const removeSavedAddress = createAsyncThunk(
@@ -208,15 +229,15 @@ export const removeSavedAddress = createAsyncThunk(
       const res = await axios.patch(
         `${BASE_URL}/remove-address`,
         { address },
-        { withCredentials: true }
+        { withCredentials: true },
       );
       return res.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to remove address"
+        error.response?.data?.message || "Failed to remove address",
       );
     }
-  }
+  },
 );
 
 const authSlice = createSlice({
@@ -298,6 +319,19 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user = null;
         state.isAuthenticated = false;
+        state.error = action.payload;
+      })
+      .addCase(saveFCMToken.pending, (state) => {
+        // optional: you can add a loading flag if you want
+        state.isLoading = true;
+      })
+      .addCase(saveFCMToken.fulfilled, (state, action) => {
+        state.isLoading = false;
+        // no change needed in user state
+        // token is stored in backend
+      })
+      .addCase(saveFCMToken.rejected, (state, action) => {
+        state.isLoading = false;
         state.error = action.payload;
       })
       // ── Saved Addresses ──────────────────────

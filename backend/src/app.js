@@ -31,8 +31,9 @@ import orderRouter from './routes/order.route.js';
 import chatRouter     from './routes/chat.route.js';
 import messageRouter from './routes/message.route.js'
 import reviewRouter from "./routes/review.routes.js";
+import notificationRouter from './routes/notification.route.js';
 
-
+app.use('/api/v1/notification', notificationRouter);
 
 app.use('/api/v1/categories',categoryRouter);
 app.use('/api/v1/gigs',gigRouter);

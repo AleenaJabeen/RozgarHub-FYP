@@ -32,21 +32,21 @@ const Navbar = () => {
   const dropdownRef = useRef(null);
   const megaMenuRef = useRef(null);
 
-  const unreadNotifications = true; 
+  const { unreadCount } = useSelector((state) => state.notifications);
+
+  const unreadNotifications = unreadCount > 0;
 
   const role = user?.role || "pending";
   const name = user?.name || "User";
   const email = user?.email || "";
   const avatar = user?.avatar || "";
   const isOnline = user?.isOnline || false;
-  const myId=user?._id;
-  const { items: chats = [] } = useSelector(
-  (state) => state.chats || {}
-);
-const hasUnreadMessages = chats.some((chat) => {
-  const unreadCount = chat.unreadCounts?.[myId] || 0;
-  return unreadCount > 0;
-});
+  const myId = user?._id;
+  const { items: chats = [] } = useSelector((state) => state.chats || {});
+  const hasUnreadMessages = chats.some((chat) => {
+    const unreadCount = chat.unreadCounts?.[myId] || 0;
+    return unreadCount > 0;
+  });
 
   // Close mobile menu when resizing to desktop
   useEffect(() => {
@@ -105,7 +105,7 @@ const hasUnreadMessages = chats.some((chat) => {
       },
       {
         name: "Notifications",
-        href: "/",
+        href: "/notifications",
         icon: IoNotificationsOutline,
         unread: unreadNotifications,
       },
@@ -123,7 +123,7 @@ const hasUnreadMessages = chats.some((chat) => {
       },
       {
         name: "Notifications",
-        href: "/",
+        href: "/notifications",
         icon: IoNotificationsOutline,
         unread: unreadNotifications,
       },
