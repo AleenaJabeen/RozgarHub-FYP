@@ -115,7 +115,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     });
     const notification = await createNotification({
       recipient: receiverId,
-      sender: senderId,
+      sender: req.user._id,
       type: "message",
       title: "New Message",
       message: notificationBody,
