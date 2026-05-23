@@ -88,7 +88,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
 
   if (!user) {
-    throw new ApiError(404, "User not found");
+    throw new ApiError(404, "Invalid Email or Password");
   }
   if(!user.isEmailVerified){
     throw new ApiError(401,"Email not verified.Verify your email!")
@@ -96,7 +96,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const isPasswordValid = await user.isPasswordCorrect(password);
   if (!isPasswordValid) {
-    throw new ApiError(404, "Password is incorrect");
+    throw new ApiError(404, "Invalid Email or Password");
   }
 
   const { accessToken, refreshToken } =

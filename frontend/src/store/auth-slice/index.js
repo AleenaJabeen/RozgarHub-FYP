@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
+
 const initialState = {
   user: null, // user object
   isAuthenticated: false,
@@ -188,22 +189,30 @@ export const logoutUser = createAsyncThunk(
   },
 );
 
+
+
 export const checkAuth = createAsyncThunk(
   "auth/checkAuth",
   async (_, { rejectWithValue }) => {
+
     try {
-      const response = await axios.get(`${BASE_URL}/check-auth`, {
-        withCredentials: true,
+      const response = await axios.get(`${BASE_URL}/check-auth`, { 
+        withCredentials:true,
+        validateStatus: (status) => status === 200 || status === 401,
       });
+
+      if (response.status === 401) {
+        
+        return rejectWithValue(null);
+      }
+
+     
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Not authenticated",
-      );
+      return rejectWithValue(error.response?.data?.message || "Not authenticated");
     }
-  },
+  }
 );
-
 export const addSavedAddress = createAsyncThunk(
   "customerProfile/addSavedAddress",
   async (address, { rejectWithValue }) => {
@@ -300,10 +309,15 @@ const authSlice = createSlice({
         state.user = action.payload.data || action.payload.user;
         state.isAuthenticated = true;
       })
-      .addCase(checkAuth.rejected, (state) => {
+      .addCase(checkAuth.rejected, (state,action) => {
         state.isLoading = false;
         state.user = null;
         state.isAuthenticated = false;
+        // console.log(action.payload)
+        // come and check it 
+        if (action.payload !== null) {
+          state.error = action.payload;
+        }
       })
       .addCase(logoutUser.pending, (state) => {
         state.isLoading = true;

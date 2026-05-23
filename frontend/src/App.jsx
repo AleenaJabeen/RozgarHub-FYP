@@ -54,7 +54,7 @@ function App() {
   useEffect(() => {
     dispatch(checkAuth());
   }, [dispatch]);
-  // ✅ ADD THIS RIGHT HERE
+ 
   useEffect(() => {
     if (isAuthenticated && user) {
       connectSocket();
@@ -67,6 +67,8 @@ function App() {
       disconnectSocket();
     }
   }, [isAuthenticated, user]);
+ 
+
 
   if (isLoading) {
     return (

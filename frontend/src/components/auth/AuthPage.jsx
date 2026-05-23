@@ -1,12 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { login } from "../../assets";
 import { useDispatch } from "react-redux";
-import { checkAuth, loginUser, registerUser, sendEmailOTP } from "../../store/auth-slice";
+import DOMPurify from "dompurify";
+import {
+  checkAuth,
+  loginUser,
+  registerUser,
+  sendEmailOTP,
+} from "../../store/auth-slice";
 import { showToast } from "../../utils/toastHelper";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
 import VerifyEmailModal from "./VerifyEmailModal";
 import { useLocation } from "react-router-dom";
+import { PasswordStrengthBar } from "./PasswordStrengthBar";
+import { Eye, EyeOff } from "lucide-react";
+import { config } from "../../config";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -17,6 +26,7 @@ const AuthPage = () => {
 
   const [isLogin, setIsLogin] = useState(false);
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
   // --- Modal Logic ---
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
@@ -29,28 +39,49 @@ const AuthPage = () => {
   });
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:3000/api/v1/auth/google";
+    window.location.href = config.googleAuthUrl;
   };
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: "" });
-    }
-  };
+ const handleChange = useCallback((e) => {
+  const { name, value } = e.target;
+  const sanitizedValue = name === "password" ? value : DOMPurify.sanitize(value);
+  setFormData((prev) => ({ ...prev, [name]: sanitizedValue })); // ← also use functional update
+  if (name === "password" && !isLogin) {
+    const error = validatePassword(value);
+    setErrors((prev) => ({ ...prev, password: error }));
+  }
+}, [isLogin]);
 
-  const validate = () => {
-    let newErrors = {};
-    if (!isLogin && !formData.name.trim())
-      newErrors.name = "Full name is required";
-    if (!formData.email.includes("@"))
-      newErrors.email = "Valid email is required";
-    if (formData.password.length < 8)
-      newErrors.password = "Password must be at least 8 characters";
+ const validate = useCallback(() => {
+  let newErrors = {};
+  if (!isLogin && !formData.name.trim())
+    newErrors.name = "Full name is required";
+  if (!formData.email.trim()) {
+    newErrors.email = "Email is required";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    newErrors.email = "Invalid email format";
+  }
+  if (!formData.password.trim()) {
+    newErrors.password = "Password is required";
+  } else if (!isLogin) {
+    const passwordError = validatePassword(formData.password);
+    if (passwordError) newErrors.password = passwordError;
+  }
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+}, [isLogin, formData]);
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+const validatePassword = (password) => {
+  const rules = [
+    { test: password.length >= 8, message: "At least 8 characters" },
+    { test: /[A-Z]/.test(password), message: "Add One uppercase letter(A-Z)" },
+    { test: /[a-z]/.test(password), message: "Add One lowercase letter(a-z)" },
+    { test: /[0-9]/.test(password), message: "Add One number(0-9)" },
+    { test: /[!@#$%^&*]/.test(password), message: "One special character (!@#$%^&*)" },
+  ];
+  const failed = rules.filter((r) => !r.test);
+  return failed.length === 0 ? null : failed[0].message;
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -73,8 +104,8 @@ const AuthPage = () => {
         const data = await dispatch(registerUser(formData)).unwrap();
         showToast(data.message);
         await dispatch(sendEmailOTP(formData.email)).unwrap();
-      showToast("OTP sent to your email");
-       
+        showToast("OTP sent to your email");
+
         navigate("/auth", {
           state: {
             showVerifyModal: true,
@@ -85,6 +116,22 @@ const AuthPage = () => {
       }
     } catch (error) {
       showToast(error, "error");
+      const isUnverifiedError =
+      typeof error === "string" &&
+      error.toLowerCase().includes("verify your email");
+      console.log(isUnverifiedError)
+      if (isUnverifiedError) {
+      await dispatch(sendEmailOTP(formData.email)).unwrap();
+        showToast("OTP sent to your email");
+
+        navigate("/auth", {
+          state: {
+            showVerifyModal: true,
+            email: formData.email,
+            password: formData.password,
+          },
+        });
+    }
     }
   };
 
@@ -94,16 +141,18 @@ const AuthPage = () => {
     } else if (mode === "signup") {
       setIsLogin(false);
     }
+    setFormData({ name: "", email: "", password: "" });
+    setErrors({});
   }, [mode]);
 
- useEffect(() => {
-  if (location.state?.showVerifyModal) {
-    const { email, password } = location.state;
-    setTempUserData({ email, password });
-    setIsVerifyModalOpen(true);
-    navigate(location.pathname, { replace: true, state: null });
-  }
-}, [location.state]);
+  useEffect(() => {
+    if (location.state?.showVerifyModal) {
+      const { email, password } = location.state;
+      setTempUserData({ email, password });
+      setIsVerifyModalOpen(true);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state]);
   return (
     <div className="flex justify-center lg:p-12 md:p-6 p-4">
       {/* Verify Modal Integration */}
@@ -141,13 +190,14 @@ const AuthPage = () => {
               {isLogin ? "Welcome Back" : "Create an Account"}
             </h2>
 
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form className="space-y-4" onSubmit={handleSubmit} noValidate>
               {!isLogin && (
                 <div>
                   <input
                     name="name"
                     type="text"
                     placeholder="Full Name"
+                    maxLength={50}
                     value={formData.name}
                     onChange={handleChange}
                     className={`w-full px-4 py-3 rounded-full border ${errors.name ? "border-red-500" : "border-gray-300"} focus:ring-1 focus:ring-secondary outline-none`}
@@ -175,16 +225,32 @@ const AuthPage = () => {
                   </p>
                 )}
               </div>
-
               <div>
-                <input
-                  name="password"
-                  type="password"
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 rounded-full border ${errors.password ? "border-red-500" : "border-gray-300"} focus:ring-1 focus:ring-secondary outline-none`}
-                />
+                <div className="relative">
+                  <input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 pr-12 rounded-full border ${
+                      errors.password ? "border-red-500" : "border-gray-300"
+                    } focus:ring-1 focus:ring-secondary focus:outline-none outline-none `}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-4  top-1/2 -translate-y-1/2 focus:outline-none text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+
+                {/* Strength Bar — show only on Registration */}
+                {!isLogin && formData.password && (
+                  <PasswordStrengthBar password={formData.password} />
+                )}
+
                 {errors.password && (
                   <p className="text-red-500 text-xs mt-1 ml-4">
                     {errors.password}
