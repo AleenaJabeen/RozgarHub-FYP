@@ -4,7 +4,6 @@ import { getSocket, connectSocket } from "../../../socket/socket";
 import { claimBroadcastOrderThunk, getOrders } from "../../../store/orders/order-slice";
 import { showToast } from "../../../utils/toastHelper";
 
-// ✅ 1. Replaced old synonyms with your actual database Category/Subcategory structure
 const CATEGORIES = [
   {
     name: "Plumber",
@@ -53,7 +52,7 @@ const CATEGORIES = [
   {
     name: "Appliance Repair",
     subcategories: ["Refrigerator Repair", "Washing Machine Repair", "Air Conditioner Repair", "Microwave Repair", "Generator Repair"]
-  },
+  }
 ];
 
 const IncomingRequestCard = ({ request, onAccept, onIgnore }) => {
@@ -63,10 +62,10 @@ const IncomingRequestCard = ({ request, onAccept, onIgnore }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  // ✅ 2. Timestamp-based Countdown for Late Logins
+  // ✅ FIX: Use updatedAt so rebroadcasts get a fresh 30 seconds!
   const calculateTimeLeft = () => {
-    // Assuming a 30-second max lifespan for broadcasts
-    const expireTime = new Date(request.createdAt).getTime() + 30 * 1000;
+    const baseTime = request.updatedAt ? new Date(request.updatedAt).getTime() : new Date(request.createdAt).getTime();
+    const expireTime = baseTime + 30 * 1000;
     const remaining = Math.floor((expireTime - Date.now()) / 1000);
     return Math.max(0, remaining);
   };
@@ -74,7 +73,6 @@ const IncomingRequestCard = ({ request, onAccept, onIgnore }) => {
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
   useEffect(() => {
-    // If it's already expired when it arrives (or if SP logs in way too late), ignore immediately
     if (timeLeft <= 0) {
       onIgnore(request);
       return;
@@ -126,8 +124,9 @@ const IncomingRequestCard = ({ request, onAccept, onIgnore }) => {
           <h4 className="text-base font-bold text-gray-900 leading-tight flex-1 truncate">
             {request.requestTitle || "Urgent Hiring Request"}
           </h4>
+          {/* ✅ FIX: Display the correct updated time */}
           <span className="text-xs font-mono font-medium text-gray-400 mt-0.5 flex-shrink-0">
-            {new Date(request.createdAt).toLocaleTimeString("en-PK", { hour: "numeric", minute: "2-digit" })}
+            {new Date(request.updatedAt || request.createdAt).toLocaleTimeString("en-PK", { hour: "numeric", minute: "2-digit" })}
           </span>
         </div>
 
@@ -205,7 +204,6 @@ const GlobalUrgentOverlay = () => {
       socket = connectSocket();
     }
 
-    // Standardize SP skills for comparison
     const providerSkills = (profile.skills || []).map(s => 
       (typeof s === "object" ? s.name : s).toLowerCase().trim()
     );
@@ -214,23 +212,20 @@ const GlobalUrgentOverlay = () => {
       const reqCategory = (newRequest.category || "").toLowerCase().trim();
       const reqSubCategory = (newRequest.subCategory || "").toLowerCase().trim();
       
-      // Find the overarching category block to get related subcategories
       const categoryBlock = CATEGORIES.find(c => c.name.toLowerCase() === reqCategory);
       
-      // ✅ 3. Build an array of valid match terms (The Category itself + ALL its subcategories)
       let validMatches = [reqCategory];
       if (reqSubCategory) validMatches.push(reqSubCategory);
       if (categoryBlock) {
         validMatches = [...validMatches, ...categoryBlock.subcategories.map(s => s.toLowerCase().trim())];
       }
 
-      // Check if the SP has ANY of these terms in their skills
       const isSkillMatch = providerSkills.some(skill => 
         validMatches.some(match => skill.includes(match) || match.includes(skill))
       );
 
       if (!isSkillMatch) {
-        return; // Drop the request if their skills don't match the category or subcategories
+        return; 
       }
 
       setUrgentRequests((prev) => {
