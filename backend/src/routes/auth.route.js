@@ -1,9 +1,10 @@
 import {Router} from 'express';
-import {checkAuth, loginUser, logoutUser, registerUserWithEmail, updateUserRole } from '../controllers/auth/auth.controller.js';
+import {checkAuth, loginUser, logoutUser, registerUserWithEmail, updateUserRole, saveFCMToken } from '../controllers/auth/auth.controller.js';
 import { getGoogleLoginCallback,getGoogleLoginPage } from '../controllers/auth/google.controller.js';
 import {verifyJWT}  from '../middlewares/auth.middleware.js';
 import { verifyEmailOTP,sendEmailOTP } from '../controllers/auth/email_verification.controller.js';
 import { postForgotPassword, resetPassword } from '../controllers/auth/password.controller.js';
+import { loginRateLimiter } from '../middlewares/rateLimiter.js';
 
 const router=Router();
 
@@ -11,8 +12,9 @@ const router=Router();
 router.route('/register').post(registerUserWithEmail);
 router.route('/google').get(getGoogleLoginPage);
 router.route('/google/callback').get(getGoogleLoginCallback);
-router.route('/login').post(loginUser);
+router.route('/login').post(loginRateLimiter,loginUser);
 router.route('/logout').post(verifyJWT,logoutUser);
+router.post("/notifications/save-token", verifyJWT, saveFCMToken);
 
 // email verification routes
 router.route("/send-email-otp").post(sendEmailOTP);

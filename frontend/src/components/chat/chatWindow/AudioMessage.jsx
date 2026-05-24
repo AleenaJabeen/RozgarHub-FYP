@@ -44,7 +44,7 @@ const AudioMessage = ({ renderStatus, msg, isMe }) => {
 
   return (
     <div
-      className={`flex items-center gap-2 p-2.5 min-w-[280px] max-w-[320px] rounded-xl shadow-sm relative ${
+      className={`flex items-center gap-2 p-2.5  sm:min-w-[280px]  min-w-[220px] rounded-xl shadow-sm relative ${
         isMe
           ? "bg-secondary ml-auto rounded-tr-none"
           : "bg-white mr-auto rounded-tl-none"

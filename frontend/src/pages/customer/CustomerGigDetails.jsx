@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { getPublicGigById } from "../../store/customer/gigSearch-slice";
+import { getGigReviews } from "../../store/customer/review-slice"; // ✅ Imported review fetcher
 import {
   HiArrowLeft,
   HiOutlineLocationMarker,
@@ -35,6 +36,25 @@ const StarRating = ({ rating = 0 }) => (
   </div>
 );
 
+// ✅ Helper for relative time (e.g. "1 month ago")
+const timeAgo = (dateInput) => {
+  const date = new Date(dateInput);
+  const now = new Date();
+  const seconds = Math.round((now - date) / 1000);
+  const minutes = Math.round(seconds / 60);
+  const hours = Math.round(minutes / 60);
+  const days = Math.round(hours / 24);
+  const months = Math.round(days / 30);
+  const years = Math.round(days / 365);
+
+  if (seconds < 60) return "Just now";
+  if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+  if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+  if (days < 30) return `${days} day${days !== 1 ? 's' : ''} ago`;
+  if (months < 12) return `${months} month${months !== 1 ? 's' : ''} ago`;
+  return `${years} year${years !== 1 ? 's' : ''} ago`;
+};
+
 const DAY_ORDER = [
   "Monday",
   "Tuesday",
@@ -51,18 +71,19 @@ const CustomerGigDetails = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const {
-    activeGig: gig,
-    loading,
-    error,
-  } = useSelector((state) => state.gigSearch);
+  const { activeGig: gig, loading, error } = useSelector((state) => state.gigSearch);
+  // ✅ Extract reviews state
+  const { reviewsList, loading: reviewsLoading } = useSelector((state) => state.reviews) || {};
 
   const [activeImage, setActiveImage] = useState(0);
-  const [bookingType, setBookingType] = useState("hourly"); // Default booking type
+  const [bookingType, setBookingType] = useState("hourly");
   const [isNavigating, setIsNavigating] = useState(false); 
 
   useEffect(() => {
-    if (gigId) dispatch(getPublicGigById(gigId));
+    if (gigId) {
+      dispatch(getPublicGigById(gigId));
+      dispatch(getGigReviews(gigId)); // ✅ Fetch reviews on load
+    }
   }, [dispatch, gigId]);
 
   // ── Loading State ──
@@ -120,7 +141,7 @@ const CustomerGigDetails = () => {
             categoryId: gig.categoryId,
           },
           serviceProviderId: spId,
-          bookingType: bookingType, // ✅ Pass the selected type to the next page!
+          bookingType: bookingType,
         },
       });
     }, 600);
@@ -128,16 +149,10 @@ const CustomerGigDetails = () => {
 
   const handleContactProvider = async (participantId, gigId) => {
     try {
-      // 1. Trigger the API to get or create a chat
       const response = await axios.post(
       "http://localhost:3000/api/v1/chat", 
-      {
-        participantId,
-        gigId,
-      },
-      {
-        withCredentials: true, // This allows cookies/sessions to be sent
-      }
+      { participantId, gigId },
+      { withCredentials: true }
     );
       if (response.data?.success) {
         const chat = response.data.data;
@@ -336,6 +351,75 @@ const CustomerGigDetails = () => {
                 </div>
               </div>
             )}
+
+            {/* ════════════════════════════════════
+                ✅ REVIEWS SECTION (Fiverr Style)
+            ════════════════════════════════════ */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm mt-6">
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Reviews <span className="text-gray-400 font-medium text-base ml-1">({gig.totalReviews || 0})</span>
+                </h2>
+              </div>
+
+              {reviewsLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="w-8 h-8 border-2 border-secondary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : reviewsList && reviewsList.length > 0 ? (
+                <div className="space-y-6">
+                  {reviewsList.map((review) => (
+                    <div key={review._id} className="border-b border-gray-50 pb-6 last:border-0 last:pb-0">
+                      <div className="flex items-start gap-4">
+                        
+                        {/* Customer Avatar */}
+                        {review.customerId?.user?.avatar ? (
+                          <img 
+                            src={review.customerId.user.avatar} 
+                            alt="customer" 
+                            className="w-12 h-12 rounded-full object-cover border border-gray-200 flex-shrink-0" 
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                            <span className="font-bold text-gray-500 uppercase text-lg">
+                              {review.customerId?.user?.name?.charAt(0) || "C"}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Review Content */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-bold text-gray-900 capitalize">
+                            {review.customerId?.user?.name || "Anonymous Customer"}
+                          </h4>
+                          
+                          {/* Stars & Time */}
+                          <div className="flex items-center gap-2 mt-1">
+                            <StarRating rating={review.rating} />
+                            <span className="text-xs font-bold text-amber-500">{review.rating.toFixed(1)}</span>
+                            <span className="text-gray-300 text-[10px]">|</span>
+                            <span className="text-xs font-medium text-gray-400">{timeAgo(review.createdAt)}</span>
+                          </div>
+                          
+                          {/* Optional Comment */}
+                          {review.comment && (
+                            <p className="text-sm text-gray-700 mt-3 leading-relaxed">
+                              {review.comment}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+                  <p className="text-sm text-gray-500 font-medium">No reviews yet.</p>
+                  <p className="text-xs text-gray-400 mt-1">Book this service and be the first to leave a review!</p>
+                </div>
+              )}
+            </div>
+
           </div>
 
           {/* RIGHT COLUMN — Sticky Booking CTA */}
@@ -459,12 +543,12 @@ const CustomerGigDetails = () => {
           </div>
         </div>
       </div>
+      
       {/* --- FLOATING CONTACT BUTTON --- */}
       <div
         onClick={() => handleContactProvider(providerUser?._id , gig._id || gigId)}
         className="cursor-pointer fixed bottom-10 left-10 z-[60] flex flex-col items-end gap-3"
       >
-        {/* Status Indicator Tooltip */}
         <div className="bg-white shadow-2xl border border-gray-100 rounded-2xl p-4 flex items-center gap-4 animate-bounce-subtle">
           <div className="relative">
             <img

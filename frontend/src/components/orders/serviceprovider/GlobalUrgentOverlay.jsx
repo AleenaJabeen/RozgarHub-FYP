@@ -4,42 +4,92 @@ import { getSocket, connectSocket } from "../../../socket/socket";
 import { claimBroadcastOrderThunk, getOrders } from "../../../store/orders/order-slice";
 import { showToast } from "../../../utils/toastHelper";
 
-const PREDEFINED_CATEGORIES = [
-  "Plumbing", "Electrical", "Automotive / Mechanic", "Automotive", 
-  "Mechanic", "Car Mechanic", "Auto Repair", "AC & Heating (HVAC)", 
-  "AC & Heating", "HVAC"
+const CATEGORIES = [
+  {
+    name: "Plumber",
+    subcategories: ["Pipe Installation", "Pipe Leakage Repair", "Bathroom Plumbing", "Kitchen Plumbing", "Water Tank Installation", "Drain Cleaning"]
+  },
+  {
+    name: "Electrician",
+    subcategories: ["House Wiring", "Switch Board Repair", "Fan Installation", "Light Installation", "Power Backup / UPS Setup", "Electrical Fault Repair"]
+  },
+  {
+    name: "Car Mechanic",
+    subcategories: ["Engine Repair", "Oil Change", "Brake Repair", "Battery Replacement", "Car Diagnostics", "General Car Service"]
+  },
+  {
+    name: "Carpenter",
+    subcategories: ["Furniture Making", "Furniture Repair", "Door Installation", "Window Installation", "Wood Polishing"]
+  },
+  {
+    name: "AC & Fridge Repair",
+    subcategories: ["AC Installation", "AC Gas Refill", "AC Service", "Fridge Repair", "Fridge Gas Refill"]
+  },
+  {
+    name: "Painter",
+    subcategories: ["House Painting", "Wall Texture", "Wall Putty", "Exterior Painting", "Interior Painting"]
+  },
+  {
+    name: "Makeup Artist",
+    subcategories: ["Bridal Makeup", "Party Makeup", "Fashion Makeup", "Hair Styling", "Event Makeup"]
+  },
+  {
+    name: "Event Manager",
+    subcategories: ["Wedding Planning", "Birthday Events", "Corporate Events", "Stage Decoration", "Event Photography"]
+  },
+  {
+    name: "Labor Work",
+    subcategories: ["Construction Labor", "Loading / Unloading", "Moving Help", "Helper for House Work"]
+  },
+  {
+    name: "Gardener",
+    subcategories: ["Garden Setup", "Plant Maintenance", "Lawn Care", "Tree Trimming", "Landscape Design"]
+  },
+  {
+    name: "CCTV Installation",
+    subcategories: ["Home CCTV Setup", "Office CCTV Setup", "CCTV Camera Repair", "CCTV Maintenance", "Security Camera Installation"]
+  },
+  {
+    name: "Appliance Repair",
+    subcategories: ["Refrigerator Repair", "Washing Machine Repair", "Air Conditioner Repair", "Microwave Repair", "Generator Repair"]
+  }
 ];
-
-const SMART_SKILL_SYNONYMS = {
-  "Plumbing": ["pipe", "leak", "drain", "water heater", "plumber"],
-  "Electrical": ["wire", "wiring", "light", "switch", "circuit", "electrician"],
-  "Automotive / Mechanic": ["car", "engine", "brake", "tire", "auto", "vehicle", "diagnostic", "towing", "jumpstart", "battery"],
-  "Automotive": ["car", "engine", "brake", "tire", "auto", "vehicle", "diagnostic", "towing", "jumpstart", "battery"],
-  "Mechanic": ["car", "engine", "brake", "tire", "auto", "vehicle", "diagnostic", "towing", "jumpstart", "battery"],
-  "Car Mechanic": ["car", "engine", "brake", "tire", "auto", "vehicle", "diagnostic", "towing", "jumpstart", "battery"],
-  "Auto Repair": ["car", "engine", "brake", "tire", "auto", "vehicle", "diagnostic", "towing", "jumpstart", "battery"],
-  "AC & Heating (HVAC)": ["ac", "cooling", "heat", "heating", "air condition", "ventilation", "hvac"],
-  "AC & Heating": ["ac", "cooling", "heat", "heating", "air condition", "ventilation", "hvac"],
-  "HVAC": ["ac", "cooling", "heat", "heating", "air condition", "ventilation", "hvac"]
-};
 
 const IncomingRequestCard = ({ request, onAccept, onIgnore }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(30);
   const [hourlyRate, setHourlyRate] = useState("");
-  
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  // ✅ FIX: Use updatedAt so rebroadcasts get a fresh 30 seconds!
+  const calculateTimeLeft = () => {
+    const baseTime = request.updatedAt ? new Date(request.updatedAt).getTime() : new Date(request.createdAt).getTime();
+    const expireTime = baseTime + 30 * 1000;
+    const remaining = Math.floor((expireTime - Date.now()) / 1000);
+    return Math.max(0, remaining);
+  };
+
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
   useEffect(() => {
     if (timeLeft <= 0) {
       onIgnore(request);
       return;
     }
-    const timerId = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+
+    const timerId = setInterval(() => {
+      const remaining = calculateTimeLeft();
+      setTimeLeft(remaining);
+      
+      if (remaining <= 0) {
+        clearInterval(timerId);
+        onIgnore(request);
+      }
+    }, 1000);
+
     return () => clearInterval(timerId);
-  }, [timeLeft, onIgnore, request]);
+  }, [request, onIgnore]);
 
   const handlePointerDown = (e) => {
     if (e.target.closest("button") || e.target.closest("input")) return; 
@@ -74,13 +124,15 @@ const IncomingRequestCard = ({ request, onAccept, onIgnore }) => {
           <h4 className="text-base font-bold text-gray-900 leading-tight flex-1 truncate">
             {request.requestTitle || "Urgent Hiring Request"}
           </h4>
+          {/* ✅ FIX: Display the correct updated time */}
           <span className="text-xs font-mono font-medium text-gray-400 mt-0.5 flex-shrink-0">
-            {new Date(request.createdAt).toLocaleTimeString("en-PK", { hour: "numeric", minute: "2-digit" })}
+            {new Date(request.updatedAt || request.createdAt).toLocaleTimeString("en-PK", { hour: "numeric", minute: "2-digit" })}
           </span>
         </div>
 
         <div className="space-y-1 text-sm text-gray-600">
           <p><span className="text-gray-400">Category:</span> {request.category || "General"}</p>
+          {request.subCategory && <p><span className="text-gray-400">Sub-Category:</span> {request.subCategory}</p>}
           <p className="font-bold text-red-600"><span className="text-gray-400 font-medium">Time Limit:</span> {request.responseTimeLimit}</p>
           <p className={!isExpanded ? "truncate" : ""}><span className="text-gray-400">Location:</span> {request.serviceLocation}</p>
 
@@ -147,31 +199,33 @@ const GlobalUrgentOverlay = () => {
   useEffect(() => {
     if (!user || user.role !== "serviceprovider" || !profile) return;
 
-    // ✅ Get the shared socket, or create it if the user just refreshed the page
     let socket = getSocket();
     if (!socket) {
       socket = connectSocket();
     }
 
-    const providerSkills = profile.skills || [];
-    const skillsString = providerSkills.map((s) => (typeof s === "object" ? s.name : s).toLowerCase()).join(" ");
+    const providerSkills = (profile.skills || []).map(s => 
+      (typeof s === "object" ? s.name : s).toLowerCase().trim()
+    );
 
     const handleNewRequest = (newRequest) => {
-      const incomingCategory = newRequest.category || "";
-      const categoryKeywords = incomingCategory.toLowerCase().split(/[\s,&()/]+/).filter((w) => w.length >= 2);
+      const reqCategory = (newRequest.category || "").toLowerCase().trim();
+      const reqSubCategory = (newRequest.subCategory || "").toLowerCase().trim();
       
-      const foundKey = Object.keys(SMART_SKILL_SYNONYMS).find(k => k.toLowerCase() === incomingCategory.toLowerCase());
-      const mappedKeywords = foundKey ? SMART_SKILL_SYNONYMS[foundKey] : [];
+      const categoryBlock = CATEGORIES.find(c => c.name.toLowerCase() === reqCategory);
       
-      const allKeywordsToCheck = [...categoryKeywords, ...mappedKeywords];
+      let validMatches = [reqCategory];
+      if (reqSubCategory) validMatches.push(reqSubCategory);
+      if (categoryBlock) {
+        validMatches = [...validMatches, ...categoryBlock.subcategories.map(s => s.toLowerCase().trim())];
+      }
 
-      const isSkillMatch = allKeywordsToCheck.some((keyword) => {
-        const regex = new RegExp(`\\b${keyword}`, "i");
-        return regex.test(skillsString);
-      });
+      const isSkillMatch = providerSkills.some(skill => 
+        validMatches.some(match => skill.includes(match) || match.includes(skill))
+      );
 
       if (!isSkillMatch) {
-        return;
+        return; 
       }
 
       setUrgentRequests((prev) => {
@@ -180,7 +234,6 @@ const GlobalUrgentOverlay = () => {
       });
     };
 
-    // ✅ Listen for the backend event
     socket.on("new_urgent_request", handleNewRequest);
 
     return () => {

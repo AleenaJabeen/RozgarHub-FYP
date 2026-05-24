@@ -19,6 +19,7 @@ import {
 } from "react-icons/tb";
 import { PiIdentificationCard } from "react-icons/pi";
 import { HiOutlineMapPin } from "react-icons/hi2";
+import LocationPickerMap from "./Locationpickermap";
 
 // ─── Reusable input wrapper with left icon ────────────────────────────────────
 const IconInput = ({ icon: Icon, error, children }) => (
@@ -365,8 +366,8 @@ const PersonalInfo = ({ formData, setFormData, onNext }) => {
           <div className="space-y-1 mt-4">
             <label className="block text-sm font-semibold text-gray-700 ml-1">
               GPS Location
-            </label>
-            <div
+            </label> 
+           <div
               className={`flex md:w-1/2 w-full items-center gap-2 px-4 py-2.5 border rounded-full ${
                 errors.location ? "border-red-500" : "border-gray-300"
               } focus-within:ring-2 focus-within:ring-secondary/40 transition-all`}
@@ -387,6 +388,18 @@ const PersonalInfo = ({ formData, setFormData, onNext }) => {
                 <FaLocationCrosshairs className="text-lg" />
               </button>
             </div>
+  
+{/* <LocationPickerMap
+  value={formData.location ? { lat: formData.location.latitude, lng: formData.location.longitude } : null}
+  onChange={(loc) => {
+    setFormData((prev) => ({
+      ...prev,
+      location: { latitude: loc.lat, longitude: loc.lng },
+    }));
+    setErrors((p) => ({ ...p, location: "" }));
+  }}
+  error={errors.location}
+/> */}
             {errors.location && (
               <p className="text-red-500 text-xs ml-2">{errors.location}</p>
             )}

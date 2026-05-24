@@ -4,7 +4,9 @@ import { uploadOnCloudinary } from "../../utils/cloudinary.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-import { getIO } from "../../socket/socket.js"; 
+import { getIO } from "../../socket/socket.js";
+import { sendPushNotification } from "../../services/notification.service.js";
+import { createNotification } from "../notification/notification.controller.js";
 export const sendMessage = asyncHandler(async (req, res) => {
   const { chatId, type, content } = req.body;
 
@@ -70,8 +72,57 @@ export const sendMessage = asyncHandler(async (req, res) => {
   );
 
   // 🔥 SOCKET EMIT
-  const io = req.app.get("io");
+  const io = getIO();
   io.to(chatId).emit("new_message", fullMessage);
+
+  console.log("Emitted new_message to chat room:", chatId);
+  // Check if receiver is currently inside this chat room
+  const roomMembers = io.sockets.adapter.rooms.get(chatId);
+
+  const isReceiverInChatRoom = [...(roomMembers || [])].some((socketId) => {
+    const socketInstance = io.sockets.sockets.get(socketId);
+
+    return socketInstance?.user?._id?.toString() === receiverId;
+  });
+
+  console.log("Receiver in chat room:", isReceiverInChatRoom);
+
+  // Send push notification only if receiver is NOT viewing chat
+  if (!isReceiverInChatRoom) {
+    let notificationBody = "Sent you a message";
+
+    if (type === "image") {
+      notificationBody = "Sent an image";
+    }
+
+    if (type === "video") {
+      notificationBody = "Sent a video";
+    }
+
+    if (type === "audio") {
+      notificationBody = "Sent an audio message";
+    }
+
+    await sendPushNotification({
+      userId: receiverId,
+      title: fullMessage.senderId.name,
+      body: notificationBody,
+      data: {
+        type: "message",
+        chatId: chatId.toString(),
+        messageType: type,
+      },
+    });
+    const notification = await createNotification({
+      recipient: receiverId,
+      sender: req.user._id,
+      type: "message",
+      title: "New Message",
+      message: notificationBody,
+      link: `/messages/${chatId}`,
+    });
+    io.to(receiverId.toString()).emit("new_notification", notification);
+  }
 
   return res
     .status(201)
@@ -147,11 +198,9 @@ export const markAsRead = asyncHandler(async (req, res) => {
   }
 
   try {
-    
     await Chat.findByIdAndUpdate(chatId, {
       $set: { [`unreadCounts.${req.user._id}`]: 0 },
     });
- 
 
     await Message.updateMany(
       {
@@ -159,16 +208,15 @@ export const markAsRead = asyncHandler(async (req, res) => {
         senderId: { $ne: req.user._id },
         status: { $ne: "read" },
       },
-      { status: "read" }
+      { status: "read" },
     );
-    const io=getIO()
+    const io = getIO();
     io.to(chatId).emit("messages_read", { chatId });
-   
 
-    return res.status(200).json(new ApiResponse(200, {}, "Messages marked as read"));
-
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Messages marked as read"));
   } catch (err) {
-   
     return res.status(500).json({ message: err.message });
   }
 });

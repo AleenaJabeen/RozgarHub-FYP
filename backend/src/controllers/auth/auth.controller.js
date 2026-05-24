@@ -88,7 +88,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
 
   if (!user) {
-    throw new ApiError(404, "User not found");
+    throw new ApiError(404, "Invalid Email or Password");
   }
   if(!user.isEmailVerified){
     throw new ApiError(401,"Email not verified.Verify your email!")
@@ -96,7 +96,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const isPasswordValid = await user.isPasswordCorrect(password);
   if (!isPasswordValid) {
-    throw new ApiError(404, "Password is incorrect");
+    throw new ApiError(404, "Invalid Email or Password");
   }
 
   const { accessToken, refreshToken } =
@@ -165,4 +165,21 @@ const checkAuth = asyncHandler(async (req, res) => {
   );
 });
 
-export { registerUserWithEmail, logoutUser, loginUser,generateAccessTokenandRefreshToken,updateUserRole ,checkAuth};
+const saveFCMToken = async (req, res) => {
+  const { token } = req.body;
+  if (!token) {
+    throw new ApiError(400, "FCM token is required");
+  }
+
+  await User.findByIdAndUpdate(req.user._id, {
+    $addToSet: {
+      fcmTokens: token,
+    },
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, null, "FCM token saved")
+  );
+};
+
+export { registerUserWithEmail, logoutUser, loginUser,generateAccessTokenandRefreshToken,updateUserRole ,checkAuth,saveFCMToken};
