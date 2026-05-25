@@ -223,7 +223,7 @@ const createOrder = asyncHandler(async (req, res) => {
 
     const isProviderOnline = io.sockets.adapter.rooms.has(
       provider.user._id.toString(),
-    ); 
+    );
 
     if (!isProviderOnline) {
       await sendPushNotification({
@@ -257,10 +257,23 @@ const createOrder = asyncHandler(async (req, res) => {
 
       const io = getIO();
 
-      nearbyProviders.forEach((provider) => {
+      for (const provider of nearbyProviders) {
         const targetRoom = provider.user.toString();
         io.to(targetRoom).emit("new_urgent_request", order);
-      });
+        const isProviderOnline = io.sockets.adapter.rooms.has(targetRoom);
+
+        if (!isProviderOnline) {
+          await sendPushNotification({
+            userId: provider.user,
+            title: "Urgent Service Request",
+            body: "A nearby customer requested urgent service.",
+            data: {
+              type: "urgent-order",
+              orderId: order._id.toString(),
+            },
+          });
+        }
+      }
 
       const halfTimeMs = (targetMinutes / 2) * 60 * 1000;
       setTimeout(async () => {
@@ -851,10 +864,23 @@ const rebroadcastOrder = asyncHandler(async (req, res) => {
     }).select("user");
 
     const io = getIO();
-    nearbyProviders.forEach((provider) => {
+    for (const provider of nearbyProviders) {
       const targetRoom = provider.user.toString();
       io.to(targetRoom).emit("new_urgent_request", order);
-    });
+      const isProviderOnline = io.sockets.adapter.rooms.has(targetRoom);
+
+      if (!isProviderOnline) {
+        await sendPushNotification({
+          userId: provider.user,
+          title: "Urgent Request Re-broadcasted",
+          body: "A nearby urgent request is available again.",
+          data: {
+            type: "urgent-order",
+            orderId: order._id.toString(),
+          },
+        });
+      }
+    }
 
     const halfTimeMs = (targetMinutes / 2) * 60 * 1000;
     setTimeout(async () => {
@@ -885,6 +911,35 @@ const rebroadcastOrder = asyncHandler(async (req, res) => {
     );
 });
 
+const getPendingBroadcastOrders = asyncHandler(async (req, res) => {
+  const providerProfile = await ServiceProvider.findOne({
+    user: req.user._id,
+  });
+
+  if (!providerProfile) {
+    throw new ApiError(404, "Service provider profile not found.");
+  }
+
+  const orders = await Order.find({
+    isBroadcast: true,
+    status: "pending",
+    broadcastCount: { $lt: 4 },
+    updatedAt: {
+      $gte: new Date(Date.now() - 30 * 1000),
+    },
+  }).sort({ updatedAt: -1 });
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        orders,
+        "Pending urgent requests fetched successfully.",
+      ),
+    );
+});
+
 export {
   createOrder,
   getOrders,
@@ -895,4 +950,5 @@ export {
   cancelOrder,
   claimBroadcastOrder,
   rebroadcastOrder,
+  getPendingBroadcastOrders,
 };

@@ -4,6 +4,10 @@ import { Customer } from "../../models/customer.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import { getIO } from "../../socket/socket.js";
+import { createNotification } from "../notification/notification.controller.js";
+import { sendPushNotification } from "../../services/notification.service.js";
+import { ServiceProvider } from "../../models/serviceProvider.model.js";
 
 // @desc    Create a new review (Customer Only)
 // @route   POST /api/v1/reviews
@@ -48,6 +52,49 @@ const createReview = asyncHandler(async (req, res) => {
 
   // 6. Update order status
   await Order.findByIdAndUpdate(orderId, { isReviewed: true });
+    // ================= REVIEW NOTIFICATION =================
+
+  const io = getIO();
+
+  const provider = await ServiceProvider.findById(
+    order.serviceProviderId,
+  ).populate("user", "name");
+
+  const notification = await createNotification({
+    recipient: provider.user._id,
+    sender: req.user._id,
+    type: "review",
+    title: "New Review Received",
+    message: `${req.user.name} left you a review.`,
+    link: "/serviceprovider",
+    metadata: {
+      orderId: order._id,
+      reviewId: review._id,
+      rating,
+    },
+  });
+
+  io.to(provider.user._id.toString()).emit(
+    "new_notification",
+    notification,
+  );
+
+  const isProviderOnline = io.sockets.adapter.rooms.has(
+    provider.user._id.toString(),
+  );
+
+  if (!isProviderOnline) {
+    await sendPushNotification({
+      userId: provider.user._id,
+      title: "New Review Received",
+      body: `${req.user.name} left you a review.`,
+      data: {
+        type: "review",
+        orderId: order._id.toString(),
+        reviewId: review._id.toString(),
+      },
+    });
+  }
 
   // 7. Send standard ApiResponse
   return res
