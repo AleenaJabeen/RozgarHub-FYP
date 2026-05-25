@@ -83,7 +83,7 @@ function App() {
     <>
       <ScrollToTop />
       <ToastContainer />
-
+      <GlobalUrgentOverlay />
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route
@@ -158,7 +158,7 @@ function App() {
               >
                 <>
                   <ProviderHome />
-                  <GlobalUrgentOverlay />
+                  
                 </>
               </CheckAuth>
             }
