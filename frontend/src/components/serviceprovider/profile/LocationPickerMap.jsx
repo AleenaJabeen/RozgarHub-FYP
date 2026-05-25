@@ -11,6 +11,7 @@ import "leaflet/dist/leaflet.css";
 import { FaLocationCrosshairs, FaMapLocationDot } from "react-icons/fa6";
 import { FiSearch, FiX, FiCheck, FiMapPin } from "react-icons/fi";
 
+
 // ─── Fix Leaflet's default icon paths broken by bundlers ──────────────────
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -25,9 +26,9 @@ const greenIcon = L.divIcon({
   className: "",
   html: `<div style="width:36px;height:44px;display:flex;align-items:center;justify-content:center;">
     <svg viewBox="0 0 36 44" xmlns="http://www.w3.org/2000/svg" style="width:36px;height:44px;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.35))">
-      <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26S36 31.5 36 18C36 8.06 27.94 0 18 0z" fill="#16a34a"/>
+      <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 26 18 26S36 31.5 36 18C36 8.06 27.94 0 18 0z" fill="#0D7A5F"/>
       <circle cx="18" cy="18" r="8" fill="white"/>
-      <circle cx="18" cy="18" r="4" fill="#16a34a"/>
+      <circle cx="18" cy="18" r="4" fill="#0D7A5F"/>
     </svg>
   </div>`,
   iconSize: [36, 44],
@@ -148,12 +149,12 @@ function MapModal({ onConfirm, onClose, initialLatLng }) {
     >
       <div
         className="relative bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
-        style={{ width: "min(680px,100%)", height: "min(580px,90vh)" }}
+        style={{ width: "min(680px,90%)", height: "min(580px,90vh)" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <FaMapLocationDot className="text-green-600 text-xl" />
+            <FaMapLocationDot className="text-secondary text-xl" />
             <span className="font-semibold text-gray-800 text-sm">
               Set Your Location
             </span>
@@ -165,72 +166,86 @@ function MapModal({ onConfirm, onClose, initialLatLng }) {
             <FiX className="text-lg" />
           </button>
         </div>
-        {/* Search */}
-        <div className="px-4 py-3 border-b border-gray-100 relative z-[1000]">
-          <div className="flex gap-2">
-            <div className="flex-1 flex items-center gap-2 border border-gray-200 rounded-full px-3 py-2 focus-within:ring-2 focus-within:ring-green-400/40 focus-within:border-green-400 transition-all">
-              <FiSearch className="text-gray-400 flex-shrink-0" />
-              <input
-                type="text"
-                className="flex-1 text-sm outline-none bg-transparent text-gray-700 placeholder-gray-400"
-                placeholder="Search a place, area, or address…"
-                value={searchQ}
-                onChange={(e) => setSearchQ(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              />
-              {searchQ && (
-                <button
-                  onClick={() => {
-                    setSearchQ("");
-                    setResults([]);
-                  }}
-                >
-                  <FiX className="text-gray-400 hover:text-gray-600" />
-                </button>
-              )}
-              {/* ✅ Locate me — inside the search bar, right side */}
-              <div className="w-px h-4 bg-gray-200 mx-1" /> {/* divider */}
-              <button
-                type="button"
-                onClick={handleLocate}
-                disabled={locating}
-                className="flex items-center gap-1.5 text-green-600 hover:text-green-700 transition-colors disabled:opacity-50 whitespace-nowrap pr-1"
-              >
-                <FaLocationCrosshairs
-                  className={`text-base ${locating ? "animate-spin" : ""}`}
-                />
-                <span className="text-xs font-semibold">
-                  {locating ? "Locating…" : "Locate me"}
-                </span>
-              </button>
-            </div>
+       {/* Search */}
+<div className="px-4 py-3 border-b border-gray-100 relative z-[1000]">
+  <div className="flex flex-col sm:flex-row gap-2">
+    
+    {/* Search Input */}
+    <div className="flex-1 flex items-center gap-2 border border-gray-200 rounded-2xl sm:rounded-full px-3 py-2 focus-within:ring-2 focus-within:ring-green-400/40 focus-within:border-green-400 transition-all">
+      <FiSearch className="text-gray-400 flex-shrink-0" />
 
-            <button
-              onClick={handleSearch}
-              disabled={searching}
-              className="px-4 py-2 bg-green-600 text-white rounded-full text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-60"
-            >
-              {searching ? "…" : "Search"}
-            </button>
-          </div>
+      <input
+        type="text"
+        className="flex-1 text-sm outline-none bg-transparent text-gray-700 placeholder-gray-400 min-w-0"
+        placeholder="Search a place, area, or address…"
+        value={searchQ}
+        onChange={(e) => setSearchQ(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+      />
 
-          {results.length > 0 && (
-            <div className="absolute left-4 right-4 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
-              {results.map((r, i) => (
-                <button
-                  key={i}
-                  onClick={() => pickResult(r)}
-                  className="w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-green-50 transition-colors border-b border-gray-50 last:border-0"
-                >
-                  <FiMapPin className="text-green-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-gray-700 leading-snug">
-                    {r.display_name}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+      {searchQ && (
+        <button
+          type="button"
+          onClick={() => {
+            setSearchQ("");
+            setResults([]);
+          }}
+          className="flex-shrink-0"
+        >
+          <FiX className="text-gray-400 hover:text-gray-600" />
+        </button>
+      )}
+    </div>
+
+    {/* Action Buttons */}
+    <div className="flex gap-2 sm:w-auto w-full">
+      
+      {/* Locate Me */}
+      <button
+        type="button"
+        onClick={handleLocate}
+        disabled={locating}
+        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-2xl sm:rounded-full text-secondary hover:bg-gray-50 transition-colors disabled:opacity-50"
+      >
+        <FaLocationCrosshairs
+          className={`${locating ? "animate-spin" : ""}`}
+        />
+
+        <span className="text-sm font-medium whitespace-nowrap">
+          {locating ? "Locating…" : "Locate me"}
+        </span>
+      </button>
+
+      {/* Search */}
+      <button
+        onClick={handleSearch}
+        disabled={searching}
+        className="flex-1 sm:flex-none px-5 py-2 bg-secondary text-white rounded-2xl sm:rounded-full text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-60"
+      >
+        {searching ? "..." : "Search"}
+      </button>
+    </div>
+  </div>
+
+  {/* Results */}
+  {results.length > 0 && (
+    <div className="absolute left-4 right-4 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
+      {results.map((r, i) => (
+        <button
+          key={i}
+          onClick={() => pickResult(r)}
+          className="w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-green-50 transition-colors border-b border-gray-50 last:border-0"
+        >
+          <FiMapPin className="text-green-600 mt-0.5 flex-shrink-0" />
+
+          <span className="text-sm text-gray-700 leading-snug">
+            {r.display_name}
+          </span>
+        </button>
+      ))}
+    </div>
+  )}
+</div>
         {/* Map */}
         <div className="flex-1 relative">
           <MapContainer
@@ -259,17 +274,6 @@ function MapModal({ onConfirm, onClose, initialLatLng }) {
             <InvalidateSize />
           </MapContainer>
 
-          {/* Current location FAB */}
-          {/* <button
-            onClick={handleLocate}
-            disabled={locating}
-            style={{ zIndex: 1000 }}
-            title="Use my current location"
-            className="absolute bottom-4 right-4 z-[999] bg-white shadow-lg rounded-full p-3 text-green-600 hover:bg-green-50 transition-colors disabled:opacity-60 border border-gray-100"
-          >
-            <FaLocationCrosshairs className={`text-lg ${locating ? "animate-pulse" : ""}`} />
-          </button> */}
-
           {/* Hint */}
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[999] bg-white/90 backdrop-blur-sm text-xs text-gray-500 px-3 py-1.5 rounded-full shadow border border-gray-100 pointer-events-none">
             Tap map or drag pin to set location
@@ -278,7 +282,7 @@ function MapModal({ onConfirm, onClose, initialLatLng }) {
 
         {/* Footer  */}
          <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex items-center gap-3">
-          <FiMapPin className="text-green-600 flex-shrink-0 text-base" />
+          <FiMapPin className="text-secondary flex-shrink-0 text-xl" />
           <p className="flex-1 text-sm text-gray-700 truncate min-w-0">
             {loading ? (
               <span className="text-gray-400 animate-pulse">Fetching address…</span>
@@ -287,9 +291,9 @@ function MapModal({ onConfirm, onClose, initialLatLng }) {
             )}
           </p>
           <button
-            onClick={() => onConfirm({ lat: pin.lat, lng: pin.lng })}
+           onClick={() => onConfirm({ lat: pin.lat, lng: pin.lng, displayName: address })}
             disabled={loading || !address}
-            className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white rounded-full text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex-shrink-0"
+            className="flex items-center gap-1.5 px-4 py-2 bg-secondary text-white rounded-full text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex-shrink-0"
           >
             <FiCheck />
             Confirm
@@ -300,15 +304,6 @@ function MapModal({ onConfirm, onClose, initialLatLng }) {
   );
 }
 
-// ─── Main exported component ───────────────────────────────────────────────
-/**
- * LocationPickerMap
- *
- * Props:
- *   value    – { lat, lng } | null
- *   onChange – ({ lat, lng }) => void
- *   error    – string | undefined
- */
 export default function LocationPickerMap({ value, onChange, error }) {
   const [open, setOpen] = useState(false);
 
@@ -316,12 +311,12 @@ export default function LocationPickerMap({ value, onChange, error }) {
     <>
       <div className="space-y-1 mt-4">
         <label className="block text-sm font-semibold text-gray-700 ml-1">
-          GPS Location
+          Location
         </label>
         <div
           className={`flex md:w-1/2 w-full items-center gap-2 px-4 py-2.5 border rounded-full cursor-pointer ${
             error ? "border-red-500" : "border-gray-300"
-          } hover:border-green-400 focus-within:ring-2 focus-within:ring-secondary/40 transition-all bg-white`}
+          } hover:border-secondary  focus-within:ring-2 focus-within:ring-secondary transition-all bg-white`}
           onClick={() => setOpen(true)}
         >
           <input
@@ -340,7 +335,7 @@ export default function LocationPickerMap({ value, onChange, error }) {
           <button
             type="button"
             title="Pick location on map"
-            className="text-green-600 hover:text-green-700 transition-colors"
+            className="cursor-pointer text-secondary hover:text-green-700 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               setOpen(true);
@@ -356,9 +351,10 @@ export default function LocationPickerMap({ value, onChange, error }) {
       {open && (
         <MapModal
           // onConfirm call — add address
-          onClick={() =>
-            onConfirm({ lat: pin.lat, lng: pin.lng, displayName: address })
-          }
+         onConfirm={(loc) => {
+      onChange(loc);   // pass full { lat, lng, displayName } up
+      setOpen(false);  // close the modal
+    }}
           onClose={() => setOpen(false)}
           initialLatLng={value?.lat != null ? value : null}
         />

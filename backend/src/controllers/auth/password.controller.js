@@ -125,5 +125,22 @@ const resetPassword = asyncHandler(async (req, res) => {
       ),
     );
 });
+const verifyResetToken = asyncHandler(async (req, res) => {
+  const { token } = req.params;
 
-export { postForgotPassword, resetPassword };
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+  const user = await User.findOne({
+    resetPasswordToken: tokenHash,
+    resetPasswordExpiry: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new ApiError(400, "Token is invalid or has expired");
+  }
+
+  return res.status(200).json(new ApiResponse(200, {}, "Token is valid"));
+});
+
+
+export { postForgotPassword, resetPassword,verifyResetToken };

@@ -33,10 +33,6 @@ function Chat() {
         h-full 
         flex flex-col 
       `}>
-        {/* 
-            REPLACE <ChatWindow /> with <Outlet /> 
-            This allows the router to pick between your "No Chat" view and the "Chat Window"
-        */}
         <Outlet />
       </div>
       
