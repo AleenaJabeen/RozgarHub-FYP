@@ -136,12 +136,12 @@ const ChatSidebar = () => {
                 onClick={() => {
                   if (chat._id === activeChatId) return;
                   dispatch(markAsRead({chatId: chat._id , myId}));
-                  navigate(`/messages/${chat._id}`);
+                 navigate(`/messages/${chat._id}`);
                 }}
                 onDelete={(chatId) => {
                   dispatch(deleteChat(chatId)).then(() => {
                     if (chatId === activeChatId) {
-                      navigate("/messages");
+                       navigate(`/messages`);
                     }
                   });
                 }}

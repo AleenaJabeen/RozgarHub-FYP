@@ -272,7 +272,7 @@ useEffect(() => {
         isTyping={isTyping}
         isOnline={otherUser?.isOnline}
         lastActiveAt={otherUser?.lastActiveAt}
-        onBack={() => navigate("/messages")}
+        onBack={() => navigate('/messages')}
       />
 
       <MessageList

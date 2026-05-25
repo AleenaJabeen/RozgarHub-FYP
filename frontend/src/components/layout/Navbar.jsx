@@ -92,7 +92,7 @@ const Navbar = () => {
   }, []);
 
   const navLinks = {
-    pending: [{ name: "Services", href: "/services", isMega: true }],
+    pending: [{ name: "Services", href: "/", isMega: true }],
     customer: [
       { name: "Home", href: "/customer" },
       { name: "Services", href: "/customer/services", isMega: true },
@@ -127,7 +127,6 @@ const Navbar = () => {
         icon: IoNotificationsOutline,
         unread: unreadNotifications,
       },
-      //  { name: "Inbox", href: "/messages"}
     ],
   };
 
@@ -305,7 +304,7 @@ const Navbar = () => {
                       Profile Settings
                     </Link>
                     <Link
-                      to="/messages"
+                    to="/messages"
                       className="flex items-center gap-2 cursor-pointer px-2 py-2.5 text-base text-gray-600 hover:bg-gray-50"
                     >
                       <IoChatbubblesOutline className="text-lg" />
@@ -336,7 +335,7 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-white fixed inset-0 top-20 z-50 overflow-y-auto">
+        <div className="md:hidden bg-white fixed inset-0 top-19 z-70 overflow-y-auto">
           {role !== "pending" && (
             <div className="px-6 py-8 bg-gray-50 border-b border-gray-100 flex items-center space-x-4">
               <Avatar size="lg" />

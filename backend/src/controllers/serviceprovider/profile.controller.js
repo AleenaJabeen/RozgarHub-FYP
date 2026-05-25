@@ -39,41 +39,57 @@ export const sendOtp = asyncHandler(async (req, res) => {
 export const verifyOtp = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const { phone, otp } = req.body;
-  console.log(phone);
+
   if (!phone || !otp) {
     throw new ApiError(400, "Phone and OTP are required");
   }
 
   const user = await User.findById(userId);
-
   if (!user) {
     throw new ApiError(404, "User not found");
   }
 
+  // Format phone to E.164 standard for Pakistan (+92...)
   const formattedPhone = phone.startsWith("03")
     ? "+92" + phone.slice(1)
     : phone;
 
-  const verificationCheck = await client.verify.v2
-    .services(process.env.TWILIO_SERVICE_ID)
-    .verificationChecks.create({
-      to: formattedPhone,
-      code: otp,
-    });
+  try {
+    console.log("Attempting Twilio verification for:", formattedPhone);
 
-  // console.log(verificationCheck.status);
-  if (verificationCheck.status !== "approved") {
-    throw new ApiError(400, "Invalid or expired OTP");
+    const verificationCheck = await client.verify.v2
+      .services(process.env.TWILIO_SERVICE_ID)
+      .verificationChecks.create({
+        to: formattedPhone,
+        code: otp,
+      });
+
+    console.log("Twilio Response Status:", verificationCheck.status);
+
+    if (verificationCheck.status !== "approved") {
+      throw new ApiError(400, "Invalid or expired OTP");
+    }
+
+  } catch (err) {
+    // CRITICAL: Log the actual error to your terminal so you can see what went wrong
+    console.error("Twilio Error Caught:", err);
+
+    if (err.code === 20404) {
+      throw new ApiError(400, "OTP expired or already used. Please request a new one.");
+    }
+    
+    // Fallback for other Twilio errors (e.g., invalid credentials, bad phone format)
+    throw new ApiError(err.status || 500, err.message || "Twilio verification failed");
   }
 
+  // If everything passes, update user status
   user.isPhoneVerified = true;
   await user.save();
 
-  res
+  return res
     .status(200)
     .json(new ApiResponse(200, null, "Phone verified successfully"));
 });
-
 const createServiceProviderProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
@@ -95,129 +111,165 @@ const createServiceProviderProfile = asyncHandler(async (req, res) => {
     latitude,
   } = req.body;
 
-  const requiredFields = [
-    cnicNo,
-    bio,
-    phone,
-    city,
-    country,
-    longitude,
-    latitude,
-    name,
-  ];
-  if (requiredFields.some((field) => !field || field.trim() === "")) {
+  // 1. Safe Mandatory Fields Validation (Prevents .trim() crashes on Numbers)
+  const requiredFields = [cnicNo, bio, phone, city, country, longitude, latitude, name];
+  
+  const hasEmptyFields = requiredFields.some((field) => {
+    if (field === undefined || field === null) return true;
+    if (typeof field === "string" && field.trim() === "") return true;
+    return false;
+  });
+
+  if (hasEmptyFields) {
     throw new ApiError(400, "All mandatory fields must be filled");
   }
-  const existingProfile = await ServiceProvider.findOne({ user: userId });
 
+  // Check if profile already exists
+  const existingProfile = await ServiceProvider.findOne({ user: userId });
   if (existingProfile) {
     throw new ApiError(400, "Service provider profile already exists");
   }
 
-  if (!req.files?.cnicImg?.[0]) {
-    throw new ApiError(400, "CNIC image is required");
+  // 2. Validate Files structure safely
+  if (!req.files || !req.files.cnicImg || !req.files.cnicImg[0]) {
+    throw new ApiError(400, "CNIC image file is required");
   }
 
-  const uploadedCnic = await uploadOnCloudinary(req.files.cnicImg[0].path, {
-    folder: "providers/cnic",
-  });
-  if (!uploadedCnic?.secure_url) {
-    throw new ApiError(500, "Failed to upload CNIC image to Cloudinary");
-  }
-
-  let avatarUrl;
-  if (req.files?.avatar?.[0]) {
-    const uploadedAvatar = await uploadOnCloudinary(req.files.avatar[0].path, {
-      folder: "providers/avatar",
+  // Wrap Cloudinary and DB calls in a clean try/catch to debug 500 errors easily
+  try {
+    // Upload CNIC
+    const uploadedCnic = await uploadOnCloudinary(req.files.cnicImg[0].path, {
+      folder: "providers/cnic",
     });
-    avatarUrl = uploadedAvatar?.secure_url;
-  }
-
-  let parsedSkills = skills;
-  if (typeof skills === "string") {
-    parsedSkills = skills.split(",");
-  }
-
-  let certificates = [];
-  if (req.files?.certificates) {
-    for (const file of req.files.certificates) {
-      const uploaded = await uploadOnCloudinary(file.path, {
-        folder: "providers/certificates",
-      });
-      if (uploaded?.secure_url) certificates.push(uploaded.secure_url);
+    if (!uploadedCnic?.secure_url) {
+      throw new ApiError(500, "Failed to upload CNIC image to Cloudinary");
     }
-  }
 
-  let experienceDocuments = [];
-  if (req.files?.experienceDocuments) {
-    for (const file of req.files.experienceDocuments) {
-      const uploaded = await uploadOnCloudinary(file.path, {
-        folder: "providers/experience",
+    // Upload Avatar if it exists
+    let avatarUrl;
+    if (req.files?.avatar?.[0]) {
+      const uploadedAvatar = await uploadOnCloudinary(req.files.avatar[0].path, {
+        folder: "providers/avatar",
       });
-      if (uploaded?.secure_url) {
-        experienceDocuments.push({
-          title: file.originalname,
-          documentUrl: uploaded.secure_url,
+      avatarUrl = uploadedAvatar?.secure_url;
+    }
+
+    // Parse Skills safely
+    let parsedSkills = [];
+    if (Array.isArray(skills)) {
+      parsedSkills = skills;
+    } else if (typeof skills === "string" && skills.trim() !== "") {
+      parsedSkills = skills.split(",").map(s => s.trim());
+    }
+
+    // Upload Certificates
+    let certificates = [];
+    if (req.files?.certificates) {
+      for (const file of req.files.certificates) {
+        const uploaded = await uploadOnCloudinary(file.path, {
+          folder: "providers/certificates",
         });
+        if (uploaded?.secure_url) certificates.push(uploaded.secure_url);
       }
     }
-  }
 
-  const providerData = {
-    user: userId,
-    cnicNo,
-    cnicImg: uploadedCnic.secure_url,
-    bio,
-    education,
-    experienceDetails,
-    skills: Array.isArray(parsedSkills) ? parsedSkills : [],
-    urgentHire,
-    certificates,
-    experienceDocuments,
-  };
+    // Upload Experience Documents
+    let experienceDocuments = [];
+    if (req.files?.experienceDocuments) {
+      for (const file of req.files.experienceDocuments) {
+        const uploaded = await uploadOnCloudinary(file.path, {
+          folder: "providers/experience",
+        });
+        if (uploaded?.secure_url) {
+          experienceDocuments.push({
+            title: file.originalname,
+            documentUrl: uploaded.secure_url,
+          });
+        }
+      }
+    }
 
-  // ✅ Add location on creation if activating Urgent Hire
-  if ((urgentHire === "true" || urgentHire === true) && longitude && latitude) {
-    providerData.location = {
-      type: "Point",
-      coordinates: [Number(longitude), Number(latitude)]
+    // Parse coordinates safely to prevent Mongo GeoJSON errors
+    const numLng = Number(longitude);
+    const numLat = Number(latitude);
+
+    if (isNaN(numLng) || isNaN(numLat)) {
+      throw new ApiError(400, "Longitude and Latitude must be valid numeric values");
+    }
+
+    const providerData = {
+      user: userId,
+      cnicNo,
+      cnicImg: uploadedCnic.secure_url,
+      bio,
+      education,
+      experienceDetails,
+      skills: parsedSkills,
+      urgentHire: urgentHire === "true" || urgentHire === true,
+      certificates,
+      experienceDocuments,
     };
-  }
 
-  const provider = await ServiceProvider.create(providerData);
+    // Add location on creation if activating Urgent Hire
+    if (providerData.urgentHire) {
+      providerData.location = {
+        type: "Point",
+        coordinates: [numLng, numLat], // Ensure they are numbers!
+      };
+    }
 
-  const userUpdate = {
-    name,
-    phone,
-    "location.address.street": street,
-    "location.address.city": city,
-    "location.address.state": state,
-    "location.address.country": country,
-    "location.address.zipCode": zipCode,
-  };
+    // Create Service Provider
+    const provider = await ServiceProvider.create(providerData);
 
-  if (avatarUrl) {
-    userUpdate.avatar = avatarUrl;
-  }
+    // Prepare User update payload
+    const userUpdate = {
+      name,
+      phone,
+      "location.address.street": street,
+      "location.address.city": city,
+      "location.address.state": state,
+      "location.address.country": country,
+      "location.address.zipCode": zipCode,
+    };
 
-  if (longitude && latitude) {
+    if (avatarUrl) {
+      userUpdate.avatar = avatarUrl;
+    }
+
     userUpdate["location.currentLocation"] = {
       type: "Point",
-      coordinates: [Number(longitude), Number(latitude)],
+      coordinates: [numLng, numLat],
     };
+
+    // Update User Document
+    await User.findByIdAndUpdate(userId, userUpdate, { new: true });
+
+    return res
+      .status(201)
+      .json(
+        new ApiResponse(
+          201,
+          provider,
+          "Service provider profile created successfully",
+        ),
+      );
+
+  } catch (error) {
+    // Catch MongoDB Duplicate Key Errors (Error Code 11000)
+    if (error.code === 11000) {
+      const duplicateField = Object.keys(error.keyValue)[0];
+      
+      throw new ApiError(
+        400, 
+        `A service provider with this ${duplicateField} already exists.`
+      );
+    }
+
+    console.error("CRITICAL PROFILE CREATION ERROR:", error);
+    
+    throw error;
+  
   }
-
-  await User.findByIdAndUpdate(userId, userUpdate, { new: true });
-
-  res
-    .status(201)
-    .json(
-      new ApiResponse(
-        200,
-        provider,
-        "Service provider profile created successfully",
-      ),
-    );
 });
 
 const updateServiceProviderProfile = asyncHandler(async (req, res) => {

@@ -364,7 +364,7 @@ const PersonalInfo = ({ formData, setFormData, onNext }) => {
 
           {/* Location */}
           <div className="space-y-1 mt-4">
-            <label className="block text-sm font-semibold text-gray-700 ml-1">
+            {/* <label className="block text-sm font-semibold text-gray-700 ml-1">
               GPS Location
             </label> 
            <div
@@ -388,18 +388,31 @@ const PersonalInfo = ({ formData, setFormData, onNext }) => {
                 <FaLocationCrosshairs className="text-lg" />
               </button>
             </div>
-  
-{/* <LocationPickerMap
-  value={formData.location ? { lat: formData.location.latitude, lng: formData.location.longitude } : null}
+   */}
+<LocationPickerMap
+  value={
+    formData.location
+      ? {
+          lat: formData.location.latitude,
+          lng: formData.location.longitude,
+          displayName: formData.location.displayName,
+        }
+      : null
+  }
   onChange={(loc) => {
     setFormData((prev) => ({
       ...prev,
-      location: { latitude: loc.lat, longitude: loc.lng },
+      location: {
+        latitude: loc.lat,
+        longitude: loc.lng,
+        displayName: loc.displayName, // store for UI only
+      },
     }));
+
     setErrors((p) => ({ ...p, location: "" }));
   }}
   error={errors.location}
-/> */}
+/>
             {errors.location && (
               <p className="text-red-500 text-xs ml-2">{errors.location}</p>
             )}

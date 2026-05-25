@@ -8,6 +8,7 @@ import { showToast } from "../../utils/toastHelper";
 function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -23,8 +24,8 @@ function ForgotPassword() {
       setError("Please enter a valid email address.");
       return;
     }
+    setLoading(true);
     try {
-      console.log(email)
       const data = await dispatch(resetPassword(email)).unwrap();
 
       showToast(data.message);
@@ -32,6 +33,8 @@ function ForgotPassword() {
     
     } catch (error) {
       showToast(error, "error");
+    }finally{
+      setLoading(false);
     }
     setTimeout(() => {
       handleClose();
@@ -56,7 +59,7 @@ function ForgotPassword() {
         </h2>
 
         {!submitted ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-2">
             <input
               type="email"
               placeholder="Email"
@@ -75,9 +78,10 @@ function ForgotPassword() {
 
             <button
               type="submit"
-              className="w-full px-6 py-2 bg-secondary text-white rounded-full hover:opacity-90 transition-opacity"
+               disabled={loading}
+              className="cursor-pointer w-full px-6 disabled:opacity-50 disabled:cursor-not-allowed py-2 bg-secondary text-white rounded-full hover:opacity-90 transition-opacity"
             >
-              Submit
+              {loading ? "Sending..." : "Submit"}
             </button>
           </form>
         ) : (

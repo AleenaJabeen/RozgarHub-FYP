@@ -114,12 +114,12 @@ function App() {
               </CheckAuth>
             }
           />
-          <Route path="/messages" element={<Chat />}>
+          <Route path="/user-info/:userId" element={<UserInfoPage />} />
+           <Route path="/notifications" element={<Notification />} />
+            <Route path="/messages" element={<Chat />}>
             <Route index element={<NoChatSelectedComponent />} />
             <Route path=":chatId" element={<ChatWindow />} />
           </Route>
-          <Route path="/user-info/:userId" element={<UserInfoPage />} />
-           <Route path="/notifications" element={<Notification />} />
 
           <Route
             path="customer"
@@ -137,7 +137,6 @@ function App() {
             <Route path="view-profile" element={<CustomerViewProfile />} />
             <Route path="services" element={<ServicesPage />} />
             <Route path="profile" element={<CustomerProfile />} />
-
             <Route path="place-order" element={<CustomerOrderPage />} />
             <Route path="orders" element={<CustomerOrderManagement />} />
             <Route path="orders/:orderId" element={<OrderDetails />} />

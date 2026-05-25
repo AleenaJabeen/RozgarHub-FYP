@@ -3,7 +3,7 @@ import {checkAuth, loginUser, logoutUser, registerUserWithEmail, updateUserRole,
 import { getGoogleLoginCallback,getGoogleLoginPage } from '../controllers/auth/google.controller.js';
 import {verifyJWT}  from '../middlewares/auth.middleware.js';
 import { verifyEmailOTP,sendEmailOTP } from '../controllers/auth/email_verification.controller.js';
-import { postForgotPassword, resetPassword } from '../controllers/auth/password.controller.js';
+import { postForgotPassword, resetPassword, verifyResetToken } from '../controllers/auth/password.controller.js';
 import { loginRateLimiter } from '../middlewares/rateLimiter.js';
 
 const router=Router();
@@ -23,6 +23,7 @@ router.route("/verify-email").post(verifyEmailOTP);
 // reset password routes
 router.route('/reset-password').post(postForgotPassword);
 router.route('/reset-password/:token').post(resetPassword);
+router.route("/verify-reset-token/:token").get(verifyResetToken);
 
 // choose-role
 router.route('/choose-role').put(verifyJWT,updateUserRole);

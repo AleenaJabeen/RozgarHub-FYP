@@ -113,7 +113,6 @@ export const resetPassword = createAsyncThunk(
       const response = await axios.post(
         `${BASE_URL}/reset-password`,
         { email },
-        { withCredentials: true },
       );
       return response.data;
     } catch (error) {
@@ -136,7 +135,6 @@ export const resetPasswordConfirm = createAsyncThunk(
       const response = await axios.post(
         `${BASE_URL}/reset-password/${token}`,
         { password },
-        { withCredentials: true },
       );
 
       return response.data;
@@ -149,6 +147,17 @@ export const resetPasswordConfirm = createAsyncThunk(
       return rejectWithValue(errorMessage);
     }
   },
+);
+export const verifyResetToken = createAsyncThunk(
+  "auth/verifyResetToken",
+  async (token, { rejectWithValue }) => {
+    try {
+      const res = await axios.get(`${BASE_URL}/verify-reset-token/${token}`);
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Invalid token");
+    }
+  }
 );
 
 export const updateUserRole = createAsyncThunk(

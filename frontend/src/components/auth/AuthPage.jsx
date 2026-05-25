@@ -14,7 +14,7 @@ import { FcGoogle } from "react-icons/fc";
 import VerifyEmailModal from "./VerifyEmailModal";
 import { useLocation } from "react-router-dom";
 import { PasswordStrengthBar } from "./PasswordStrengthBar";
-import { Eye, EyeOff } from "lucide-react";
+import { FaRegEye, FaRegEyeSlash } from "react-icons/fa6";
 import { config } from "../../config";
 
 const AuthPage = () => {
@@ -217,7 +217,7 @@ const validatePassword = (password) => {
                   placeholder="Email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 rounded-full border ${errors.email ? "border-red-500" : "border-gray-300"} focus:ring-1 focus:ring-secondary outline-none`}
+                  className={`w-full px-4 py-3 rounded-full border ${errors.email ? "border-red-500" : "border-gray-300"} focus:ring-1 focus:ring-secondary focus:outline-none`}
                 />
                 {errors.email && (
                   <p className="text-red-500 text-xs mt-1 ml-4">
@@ -240,12 +240,11 @@ const validatePassword = (password) => {
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-4  top-1/2 -translate-y-1/2 focus:outline-none text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-4  top-1/2 -translate-y-1/2 focus:outline-none outline-none text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPassword ? <FaRegEyeSlash size={18} /> : <FaRegEye size={18} />}
                   </button>
                 </div>
-
                 {/* Strength Bar — show only on Registration */}
                 {!isLogin && formData.password && (
                   <PasswordStrengthBar password={formData.password} />
