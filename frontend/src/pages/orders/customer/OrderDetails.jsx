@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getOrderById,
   cancelOrder,
   clearActiveOrder,
+  payForOrderThunk 
 } from "../../../store/orders/order-slice";
 import ActionModal from "../../../components/orders/ActionModal";
-import ReviewModal from "../../../components/orders/customer/ReviewModal"; // ✅ Added Review Modal
+import ReviewModal from "../../../components/orders/customer/ReviewModal";
 import { showToast } from "../../../utils/toastHelper";
 import { HiArrowLeft, HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineClock } from "react-icons/hi";
 import { MdOutlineShoppingBag, MdOutlineAccountBalanceWallet } from "react-icons/md";
 import { IoPersonCircle, IoChevronForward, IoImageOutline } from "react-icons/io5";
-import { FaStar } from "react-icons/fa"; 
+import { FaStar, FaCheckCircle } from "react-icons/fa";
 
 import { getSocket, connectSocket } from "../../../socket/socket"; 
 
@@ -48,11 +49,28 @@ const InfoRow = ({ icon, label, value }) => (
 const OrderDetails = () => {
   const { orderId } = useParams();
   const navigate    = useNavigate();
+  const location    = useLocation(); 
   const dispatch    = useDispatch();
 
   const { activeOrder: order, loading, error } = useSelector((state) => state.orders);
   const [showModal, setShowModal] = useState(false);
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false); // ✅ Added Review state
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false); 
+  const [isPaying, setIsPaying] = useState(false);
+
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    
+    if (query.get("payment") === "success") {
+      showToast("Payment successful! The funds have been secured.", "success");
+      navigate(location.pathname, { replace: true }); 
+      dispatch(getOrderById(orderId)); 
+    }
+    
+    if (query.get("payment") === "cancelled") {
+      showToast("Payment was cancelled.", "error");
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.search, navigate, dispatch, orderId]);
 
   useEffect(() => {
     dispatch(getOrderById(orderId));
@@ -62,7 +80,6 @@ const OrderDetails = () => {
       socket = connectSocket();
     }
 
-    // Define named handlers so we can cleanly remove them later
     const handleBroadcastClaimed = (claimedOrderId) => {
       if (claimedOrderId === orderId) {
         showToast("A provider has accepted your urgent request.", "success");
@@ -77,9 +94,17 @@ const OrderDetails = () => {
       }
     };
 
-    // Attach listeners
+    // ✅ ADDED: Listen for Stripe clearing the payment instantly
+    const handlePaymentCompleted = (paidOrderId) => {
+      if (paidOrderId === orderId) {
+        // Silently refresh the UI without a toast to show the paid badge instantly
+        dispatch(getOrderById(orderId)); 
+      }
+    };
+
     socket.on("broadcast_claimed", handleBroadcastClaimed);
     socket.on("order_auto_cancelled", handleOrderAutoCancelled);
+    socket.on("payment_completed", handlePaymentCompleted); // ✅ Attached listener
 
     return () => { 
       dispatch(clearActiveOrder()); 
@@ -87,6 +112,7 @@ const OrderDetails = () => {
       if (socket) {
         socket.off("broadcast_claimed", handleBroadcastClaimed);
         socket.off("order_auto_cancelled", handleOrderAutoCancelled);
+        socket.off("payment_completed", handlePaymentCompleted); // ✅ Cleaned up listener
       }
     };
   }, [dispatch, orderId]);
@@ -99,6 +125,19 @@ const OrderDetails = () => {
       navigate(-1);
     } catch (err) {
       showToast(err || "Something went wrong.", "error");
+    }
+  };
+
+  const handlePayment = async () => {
+    setIsPaying(true);
+    try {
+      const result = await dispatch(payForOrderThunk(order._id)).unwrap();
+      if (result.url) {
+        window.location.href = result.url;
+      }
+    } catch (err) {
+      showToast(err || "Failed to connect to payment gateway.", "error");
+      setIsPaying(false);
     }
   };
 
@@ -183,7 +222,6 @@ const OrderDetails = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
 
-            {/* Billing Summary — only visible after work is completed */}
             {order.status === "completed" && (
               <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-6">
@@ -214,9 +252,43 @@ const OrderDetails = () => {
                       <p className="text-sm text-gray-600 italic">"{order.finalDescription}"</p>
                     </div>
                   )}
+                  
+                  {/* ✅ SMART PAYMENT CHECK */}
+                  {order.isPaid ? (
+                    <div className="mt-6 border-t pt-6">
+                      <div className="flex items-center gap-3 bg-emerald-50 text-emerald-700 px-4 py-3 rounded-xl border border-emerald-100">
+                        <FaCheckCircle className="text-xl" />
+                        <div>
+                          <p className="text-sm font-bold">Payment Successful</p>
+                          <p className="text-xs mt-0.5">Your payment of Rs {order.totalAmount} has been processed via Stripe.</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-6 border-t pt-6">
+                      <div className="flex items-center justify-between bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <div>
+                          <p className="text-sm text-blue-800 font-bold">Payment Required</p>
+                          <p className="text-xs text-blue-600 mt-0.5">Securely pay the final amount to complete this order.</p>
+                        </div>
+                        <button
+                          onClick={handlePayment}
+                          disabled={isPaying}
+                          className="px-6 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-lg shadow hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-70 flex items-center gap-2"
+                        >
+                          {isPaying ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : null}
+                          {isPaying ? "Connecting..." : `Pay Rs ${order.totalAmount}`}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
                 </div>
               </div>
             )}
+
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
                 <MdOutlineShoppingBag className="text-secondary text-lg" />
@@ -302,8 +374,8 @@ const OrderDetails = () => {
                 </div>
               )}
 
-              {/* ✅ Review Button - Only appears when completed and no review exists yet */}
-              {order.status === "completed" && !order.isReviewed && (
+              {/* Review Button */}
+              {order.status === "completed" && order.isPaid && !order.isReviewed && (
                 <button
                   onClick={() => setIsReviewModalOpen(true)}
                   className="w-full mt-5 py-3 text-sm font-bold text-white bg-[#0d7a5f] rounded-xl hover:bg-[#0e5641] active:scale-95 transition-all shadow-md shadow-[#0d7a5f]/20 flex items-center justify-center gap-2"
@@ -345,7 +417,6 @@ const OrderDetails = () => {
         />
       )}
 
-      {/* ✅ Review Modal Integration */}
       <ReviewModal 
         isOpen={isReviewModalOpen} 
         onClose={() => setIsReviewModalOpen(false)} 

@@ -1,9 +1,11 @@
 import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
-
+import { stripeWebhook } from "./controllers/payment/payment.controller.js"
 
 const app=express();
+
+app.post("/api/v1/payments/webhook", express.raw({ type: "application/json" }), stripeWebhook);
 
 app.use(cors({
     origin: 'http://localhost:5173', // Allow only your frontend
@@ -32,8 +34,10 @@ import chatRouter     from './routes/chat.route.js';
 import messageRouter from './routes/message.route.js'
 import reviewRouter from "./routes/review.routes.js";
 import notificationRouter from './routes/notification.route.js';
+import paymentRoutes from "./routes/payment.route.js";
 
 app.use('/api/v1/notification', notificationRouter);
+app.use('/api/v1/payments', paymentRoutes);
 
 app.use('/api/v1/categories',categoryRouter);
 app.use('/api/v1/gigs',gigRouter);
