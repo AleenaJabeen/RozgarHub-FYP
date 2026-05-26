@@ -21,6 +21,7 @@ const notificationSchema = new mongoose.Schema(
         "message",
         "order",
         "urgent-order",
+        "review",
       ],
       required: true,
     },

@@ -16,10 +16,10 @@ export const createOrder = createAsyncThunk(
       return res.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to create order"
+        error.response?.data?.message || "Failed to create order",
       );
     }
-  }
+  },
 );
 
 export const getOrders = createAsyncThunk(
@@ -34,10 +34,10 @@ export const getOrders = createAsyncThunk(
       return res.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch orders"
+        error.response?.data?.message || "Failed to fetch orders",
       );
     }
-  }
+  },
 );
 
 export const getOrderById = createAsyncThunk(
@@ -50,10 +50,10 @@ export const getOrderById = createAsyncThunk(
       return res.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch order"
+        error.response?.data?.message || "Failed to fetch order",
       );
     }
-  }
+  },
 );
 
 export const respondToOrder = createAsyncThunk(
@@ -63,15 +63,15 @@ export const respondToOrder = createAsyncThunk(
       const res = await axios.patch(
         `${BASE_URL}/${orderId}/respond`,
         { action, cancellationReason },
-        { withCredentials: true }
+        { withCredentials: true },
       );
       return res.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to respond to order"
+        error.response?.data?.message || "Failed to respond to order",
       );
     }
-  }
+  },
 );
 
 export const startWork = createAsyncThunk(
@@ -81,33 +81,36 @@ export const startWork = createAsyncThunk(
       const res = await axios.patch(
         `${BASE_URL}/${orderId}/start`,
         {},
-        { withCredentials: true }
+        { withCredentials: true },
       );
       return res.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to start work"
+        error.response?.data?.message || "Failed to start work",
       );
     }
-  }
+  },
 );
 
 export const completeOrder = createAsyncThunk(
   "orders/completeOrder",
-  async ({ orderId, hoursWorked, hourlyRate, finalDescription }, { rejectWithValue }) => {
+  async (
+    { orderId, hoursWorked, hourlyRate, finalDescription },
+    { rejectWithValue },
+  ) => {
     try {
       const res = await axios.patch(
         `${BASE_URL}/${orderId}/complete`,
         { hoursWorked, hourlyRate, finalDescription },
-        { withCredentials: true }
+        { withCredentials: true },
       );
       return res.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to complete order"
+        error.response?.data?.message || "Failed to complete order",
       );
     }
-  }
+  },
 );
 
 export const claimBroadcastOrderThunk = createAsyncThunk(
@@ -115,28 +118,40 @@ export const claimBroadcastOrderThunk = createAsyncThunk(
   async ({ orderId, hourlyRate }, { rejectWithValue }) => {
     try {
       // Pass hourlyRate in the request body
-      const response = await axios.patch(`${BASE_URL}/${orderId}/claim`, { hourlyRate }, {
-        withCredentials: true,
-      });
+      const response = await axios.patch(
+        `${BASE_URL}/${orderId}/claim`,
+        { hourlyRate },
+        {
+          withCredentials: true,
+        },
+      );
       return response.data.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Failed to claim request.");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to claim request.",
+      );
     }
-  }
+  },
 );
 
 export const rebroadcastOrderThunk = createAsyncThunk(
   "orders/rebroadcast",
   async (orderId, { rejectWithValue }) => {
     try {
-      const response = await axios.patch(`${BASE_URL}/${orderId}/rebroadcast`, {}, {
-        withCredentials: true,
-      });
+      const response = await axios.patch(
+        `${BASE_URL}/${orderId}/rebroadcast`,
+        {},
+        {
+          withCredentials: true,
+        },
+      );
       return response.data.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Failed to rebroadcast order.");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to rebroadcast order.",
+      );
     }
-  }
+  },
 );
 export const cancelOrder = createAsyncThunk(
   "orders/cancelOrder",
@@ -145,26 +160,44 @@ export const cancelOrder = createAsyncThunk(
       const res = await axios.patch(
         `${BASE_URL}/${orderId}/cancel`,
         { cancellationReason },
-        { withCredentials: true }
+        { withCredentials: true },
       );
       return res.data;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to cancel order"
+        error.response?.data?.message || "Failed to cancel order",
       );
     }
-  }
+  },
+);
+
+export const getPendingBroadcastOrdersThunk = createAsyncThunk(
+  "orders/getPendingBroadcastOrders",
+  async (_, thunkAPI) => {
+    try {
+      const response = await axios.get(`${BASE_URL}/urgent/pending`, {
+        withCredentials: true,
+      });
+
+      return response.data.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || "Failed to fetch urgent requests",
+      );
+    }
+  },
 );
 
 // ── Slice ─────────────────────────────────────────────────────────────────────
 
 const initialState = {
-  orders:     [],
+  orders: [],
+  pendingBroadcastOrders: [],
   activeOrder: null,
   pagination: null,
-  loading:    false,
-  error:      null,
-  success:    false,
+  loading: false,
+  error: null,
+  success: false,
 };
 
 // Helper: replace a single order in the orders array by _id
@@ -180,7 +213,7 @@ const orderSlice = createSlice({
     },
     resetOrderState: (state) => {
       state.loading = false;
-      state.error   = null;
+      state.error = null;
       state.success = false;
     },
     clearActiveOrder: (state) => {
@@ -193,123 +226,123 @@ const orderSlice = createSlice({
       // ── Create Order ────────────────────────────────────────────────────────
       .addCase(createOrder.pending, (state) => {
         state.loading = true;
-        state.error   = null;
+        state.error = null;
         state.success = false;
       })
       .addCase(createOrder.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
         // Prepend to list so the new order appears at the top
-        state.orders  = [action.payload.data, ...state.orders];
+        state.orders = [action.payload.data, ...state.orders];
       })
       .addCase(createOrder.rejected, (state, action) => {
         state.loading = false;
-        state.error   = action.payload;
+        state.error = action.payload;
         state.success = false;
       })
 
       // ── Get Orders ──────────────────────────────────────────────────────────
       .addCase(getOrders.pending, (state) => {
         state.loading = true;
-        state.error   = null;
+        state.error = null;
       })
       .addCase(getOrders.fulfilled, (state, action) => {
-        state.loading    = false;
-        state.orders     = action.payload.data.orders;
+        state.loading = false;
+        state.orders = action.payload.data.orders;
         state.pagination = action.payload.data.pagination;
-        state.error      = null;
+        state.error = null;
       })
       .addCase(getOrders.rejected, (state, action) => {
         state.loading = false;
-        state.error   = action.payload;
+        state.error = action.payload;
       })
 
       // ── Get Order By ID ─────────────────────────────────────────────────────
       .addCase(getOrderById.pending, (state) => {
-        state.loading     = true;
-        state.error       = null;
+        state.loading = true;
+        state.error = null;
         state.activeOrder = null;
       })
       .addCase(getOrderById.fulfilled, (state, action) => {
-        state.loading     = false;
+        state.loading = false;
         state.activeOrder = action.payload.data;
-        state.error       = null;
+        state.error = null;
       })
       .addCase(getOrderById.rejected, (state, action) => {
         state.loading = false;
-        state.error   = action.payload;
+        state.error = action.payload;
       })
 
       // ── Respond To Order ────────────────────────────────────────────────────
       .addCase(respondToOrder.pending, (state) => {
         state.loading = true;
-        state.error   = null;
+        state.error = null;
       })
       .addCase(respondToOrder.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
-        state.orders  = replaceOrder(state.orders, action.payload.data);
+        state.orders = replaceOrder(state.orders, action.payload.data);
         if (state.activeOrder?._id === action.payload.data._id) {
           state.activeOrder = action.payload.data;
         }
       })
       .addCase(respondToOrder.rejected, (state, action) => {
         state.loading = false;
-        state.error   = action.payload;
+        state.error = action.payload;
       })
 
       // ── Start Work ──────────────────────────────────────────────────────────
       .addCase(startWork.pending, (state) => {
         state.loading = true;
-        state.error   = null;
+        state.error = null;
       })
       .addCase(startWork.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
-        state.orders  = replaceOrder(state.orders, action.payload.data);
+        state.orders = replaceOrder(state.orders, action.payload.data);
         if (state.activeOrder?._id === action.payload.data._id) {
           state.activeOrder = action.payload.data;
         }
       })
       .addCase(startWork.rejected, (state, action) => {
         state.loading = false;
-        state.error   = action.payload;
+        state.error = action.payload;
       })
 
       // ── Complete Order ──────────────────────────────────────────────────────
       .addCase(completeOrder.pending, (state) => {
         state.loading = true;
-        state.error   = null;
+        state.error = null;
       })
       .addCase(completeOrder.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
-        state.orders  = replaceOrder(state.orders, action.payload.data);
+        state.orders = replaceOrder(state.orders, action.payload.data);
         if (state.activeOrder?._id === action.payload.data._id) {
           state.activeOrder = action.payload.data;
         }
       })
       .addCase(completeOrder.rejected, (state, action) => {
         state.loading = false;
-        state.error   = action.payload;
+        state.error = action.payload;
       })
 
       // ── Cancel Order ────────────────────────────────────────────────────────
       .addCase(cancelOrder.pending, (state) => {
         state.loading = true;
-        state.error   = null;
+        state.error = null;
       })
       .addCase(cancelOrder.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
-        state.orders  = replaceOrder(state.orders, action.payload.data);
+        state.orders = replaceOrder(state.orders, action.payload.data);
         if (state.activeOrder?._id === action.payload.data._id) {
           state.activeOrder = action.payload.data;
         }
       })
       .addCase(cancelOrder.rejected, (state, action) => {
         state.loading = false;
-        state.error   = action.payload;
+        state.error = action.payload;
       })
       .addCase(claimBroadcastOrderThunk.pending, (state) => {
         state.loading = true;
@@ -341,9 +374,21 @@ const orderSlice = createSlice({
       .addCase(rebroadcastOrderThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(getPendingBroadcastOrdersThunk.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getPendingBroadcastOrdersThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.pendingBroadcastOrders = action.payload;
+      })
+      .addCase(getPendingBroadcastOrdersThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { clearOrderError, resetOrderState, clearActiveOrder } = orderSlice.actions;
+export const { clearOrderError, resetOrderState, clearActiveOrder } =
+  orderSlice.actions;
 export default orderSlice.reducer;
