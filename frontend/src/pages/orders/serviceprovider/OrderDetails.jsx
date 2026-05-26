@@ -15,7 +15,10 @@ import { showToast } from "../../../utils/toastHelper";
 import { HiArrowLeft, HiOutlineCalendar, HiOutlineLocationMarker } from "react-icons/hi";
 import { MdOutlineShoppingBag, MdOutlineAccountBalanceWallet } from "react-icons/md";
 import { IoPersonCircle, IoTimeOutline, IoCallOutline, IoMailOutline } from "react-icons/io5";
-import { FaCheckCircle, FaTimesCircle, FaPlayCircle, FaFlagCheckered, FaBan } from "react-icons/fa";
+import { FaCheckCircle, FaTimesCircle, FaPlayCircle, FaFlagCheckered, FaBan, FaCheckDouble } from "react-icons/fa";
+
+// ✅ ADDED: Import socket functions for real-time payment updates
+import { getSocket, connectSocket } from "../../../socket/socket";
 
 // ─────────────────────────────────────────────
 // Status Badge — same colour map as OrderCard
@@ -63,12 +66,31 @@ const OrderDetails = () => {
   const { activeOrder: order, loading, error } = useSelector((state) => state.orders);
   const [modal, setModal] = useState(null); // { mode }
 
-  // Fetch on mount — clear both order and error on unmount
+  // ✅ UPDATED: Fetch on mount and listen for Stripe payment completion
   useEffect(() => {
     dispatch(getOrderById(orderId));
+
+    let socket = getSocket();
+    if (!socket) {
+      socket = connectSocket();
+    }
+
+    // Listen for the customer's payment success
+    const handlePaymentCompleted = (paidOrderId) => {
+      if (paidOrderId === orderId) {
+        dispatch(getOrderById(orderId)); // Refresh UI instantly
+      }
+    };
+
+    socket.on("payment_completed", handlePaymentCompleted);
+
     return () => {
       dispatch(clearActiveOrder());
       dispatch(clearOrderError());
+      
+      if (socket) {
+        socket.off("payment_completed", handlePaymentCompleted);
+      }
     };
   }, [dispatch, orderId]);
 
@@ -118,7 +140,6 @@ const OrderDetails = () => {
     }
   };
 
-  // ── Loading ──────────────────────────────────────────────────────
   if (loading || !order) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -127,7 +148,6 @@ const OrderDetails = () => {
     );
   }
 
-  // ── Error ────────────────────────────────────────────────────────
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
@@ -173,7 +193,7 @@ const OrderDetails = () => {
               <div>
                 <div className="flex items-center gap-3 flex-wrap">
                   <h1 className="text-lg font-bold text-gray-800">
-                    {gig?.title || "Order Details"}
+                    {order.isBroadcast ? order.requestTitle : (gig?.title || "Order Details")}
                   </h1>
                   <StatusBadge status={order.status} />
                 </div>
@@ -193,12 +213,10 @@ const OrderDetails = () => {
         {/* ── 12-Column Grid ──────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-          {/* ══════════════════════════════════════
-              LEFT COLUMN — 8 spans
-          ══════════════════════════════════════ */}
+          {/* LEFT COLUMN — 8 spans */}
           <div className="lg:col-span-8 space-y-6">
 
-            {/* ✅ UPDATED: Clickable Customer Details Card */}
+            {/* Clickable Customer Details Card */}
             <div 
               onClick={() => navigate(`/serviceprovider/customer/${customerDoc?._id}`, { 
                 state: { customerProfile: customerDoc } 
@@ -328,9 +346,7 @@ const OrderDetails = () => {
             )}
           </div>
 
-          {/* ══════════════════════════════════════
-              RIGHT COLUMN — 4 spans (sidebar)
-          ══════════════════════════════════════ */}
+          {/* RIGHT COLUMN — 4 spans (sidebar) */}
           <div className="lg:col-span-4 space-y-5">
 
             {/* ── Action Panel ─────────────────────────────────────────────── */}
@@ -440,10 +456,28 @@ const OrderDetails = () => {
                       Rs {order.totalAmount ?? "—"}
                     </span>
                   </div>
+                  
+                  {/* ✅ SMART PAYMENT STATUS BADGE */}
+                  <div className="border-t border-gray-100 mt-4 pt-4 flex flex-col gap-2">
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">Payment Status</span>
+                    {order.isPaid ? (
+                      <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-2 rounded-lg border border-emerald-100">
+                        <FaCheckDouble className="text-emerald-500" />
+                        <span className="text-sm font-bold">Paid via Stripe</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between bg-amber-50 text-amber-700 px-3 py-2 rounded-lg border border-amber-100">
+                        <span className="text-sm font-bold">Awaiting Payment</span>
+                        <span className="text-[10px] uppercase font-bold bg-amber-200 px-2 py-0.5 rounded-full text-amber-800">Pending</span>
+                      </div>
+                    )}
+                  </div>
+
                   {order.finalDescription && (
-                    <p className="text-xs text-gray-500 pt-1 leading-relaxed border-t border-gray-100">
-                      {order.finalDescription}
-                    </p>
+                    <div className="mt-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                      <p className="text-xs text-gray-400 uppercase font-bold mb-1">Work Note</p>
+                      <p className="text-sm text-gray-600 italic">"{order.finalDescription}"</p>
+                    </div>
                   )}
                 </div>
               </div>

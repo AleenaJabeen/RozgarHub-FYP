@@ -113,6 +113,24 @@ export const completeOrder = createAsyncThunk(
   },
 );
 
+export const payForOrderThunk = createAsyncThunk(
+  "orders/pay",
+  async (orderId, { rejectWithValue }) => {
+    try {
+      const res = await axios.post(
+        `http://localhost:3000/api/v1/payments/create-checkout-session/${orderId}`,
+        {}, // Empty body, we only need the orderId from the URL
+        { withCredentials: true }
+      );
+      return res.data.data; // This will contain { url: "https://checkout.stripe.com/..." }
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to initiate payment."
+      );
+    }
+  }
+);
+
 export const claimBroadcastOrderThunk = createAsyncThunk(
   "orders/claimBroadcast",
   async ({ orderId, hourlyRate }, { rejectWithValue }) => {

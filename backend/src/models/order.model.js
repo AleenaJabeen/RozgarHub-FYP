@@ -147,6 +147,10 @@ const orderSchema = new Schema(
       default: "pending",
       index: true,
     },
+    isPaid: {
+      type: Boolean,
+      default: false,
+    },
     cancellationReason: {
       type: String,
       trim: true,

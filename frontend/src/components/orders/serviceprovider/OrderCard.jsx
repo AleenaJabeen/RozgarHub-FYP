@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { HiOutlineCalendar, HiOutlineLocationMarker } from "react-icons/hi";
 import { IoPersonCircle } from "react-icons/io5";
+import { FaCheckCircle } from "react-icons/fa"; // ✅ Imported Check Circle
 import { startWork } from "../../../store/orders/order-slice";
 import { showToast } from "../../../utils/toastHelper";
 
@@ -105,10 +106,24 @@ const OrderCard = ({ order, role, onRespond, onCancel, onComplete }) => {
           </div>
         </div>
 
+        {/* ✅ ADDED: Total Billed Badge with Payment Status */}
         {order.status === "completed" && order.totalAmount != null && (
-          <div className="mt-2 flex items-center justify-between px-4 py-2.5 bg-emerald-50 border border-emerald-100 rounded-xl">
-            <span className="text-xs text-emerald-700 font-medium">Total Billed</span>
-            <span className="text-sm font-bold text-emerald-700">Rs {order.totalAmount}</span>
+          <div className="mt-2 flex items-center justify-between px-4 py-3 bg-[#e6f4f1] border border-[#b3ddd3] rounded-xl transition-all animate-in fade-in slide-in-from-bottom-2">
+            <div className="flex flex-col">
+               <span className="text-xs text-[#0d7a5f] font-bold uppercase tracking-wider">Total Billed</span>
+               {order.isPaid ? (
+                 <span className="text-[10px] text-emerald-600 font-bold uppercase mt-0.5 flex items-center gap-1">
+                   <FaCheckCircle/> Paid
+                 </span>
+               ) : (
+                 <span className="text-[10px] text-red-500 font-bold uppercase mt-0.5 animate-pulse">
+                   Payment Pending
+                 </span>
+               )}
+            </div>
+            <span className="text-base font-extrabold text-[#0d7a5f]">
+              Rs {order.totalAmount}
+            </span>
           </div>
         )}
       </div>
