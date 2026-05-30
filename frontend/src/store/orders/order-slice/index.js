@@ -171,28 +171,11 @@ export const cancelOrder = createAsyncThunk(
   },
 );
 
-export const getPendingBroadcastOrdersThunk = createAsyncThunk(
-  "orders/getPendingBroadcastOrders",
-  async (_, thunkAPI) => {
-    try {
-      const response = await axios.get(`${BASE_URL}/urgent/pending`, {
-        withCredentials: true,
-      });
-
-      return response.data.data;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(
-        error.response?.data?.message || "Failed to fetch urgent requests",
-      );
-    }
-  },
-);
 
 // ── Slice ─────────────────────────────────────────────────────────────────────
 
 const initialState = {
   orders: [],
-  pendingBroadcastOrders: [],
   activeOrder: null,
   pagination: null,
   loading: false,
@@ -372,17 +355,6 @@ const orderSlice = createSlice({
         }
       })
       .addCase(rebroadcastOrderThunk.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-      .addCase(getPendingBroadcastOrdersThunk.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(getPendingBroadcastOrdersThunk.fulfilled, (state, action) => {
-        state.loading = false;
-        state.pendingBroadcastOrders = action.payload;
-      })
-      .addCase(getPendingBroadcastOrdersThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
