@@ -81,10 +81,6 @@ const serviceProviderSchema = new Schema(
       type: Number,
       default: 0,
     },
-
-    // GeoJSON Point — stores the provider's physical location for
-    // $near radius queries when dispatching urgent broadcast alerts.
-    // Updated whenever the provider goes online via the app.
     location: {
       type: { type: String, enum: ["Point"], default: "Point" },
       coordinates: { type: [Number], default: [0, 0] }, // [longitude, latitude]

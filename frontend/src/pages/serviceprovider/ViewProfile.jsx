@@ -1,7 +1,7 @@
 // ViewProfile.jsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
 import { FaAward } from "react-icons/fa";
 import { IoOpenOutline } from "react-icons/io5";
 import { capitalizeWords } from "../../utils/capitalize";
@@ -13,7 +13,8 @@ import ProfileHeader from "../../components/serviceprovider/viewProfile/ProfileH
 import ExperienceSection from "../../components/serviceprovider/viewProfile/ExperienceSection";
 import SkillsSection from "../../components/serviceprovider/viewProfile/SkillsSection";
 import EducationSection from "../../components/serviceprovider/viewProfile/EducationSection";
-import { showToast } from "../../utils/toastHelper"; // ✅ Imported toast helper
+import { showToast } from "../../utils/toastHelper";
+import LocationSection from "../../components/serviceprovider/viewProfile/LocationSection";
 
 const ViewProfile = () => {
   const dispatch = useDispatch();
@@ -46,9 +47,9 @@ const ViewProfile = () => {
       .unwrap()
       .catch((err) => {
         if (err.toLowerCase().includes("not found") || err.includes("404")) {
-           navigate("/serviceprovider/profile"); 
+          navigate("/serviceprovider/profile");
         } else {
-           console.error(err);
+          console.error(err);
         }
       });
   }, [dispatch, navigate]);
@@ -65,17 +66,31 @@ const ViewProfile = () => {
         experienceDocuments: profile.experienceDocuments || [],
         certificates: profile.certificates || [],
         education: profile.education || "",
+        phone:user.phone || "",
+        address: {
+          street: user.location?.address?.street || "",
+          city: user.location?.address?.city || "",
+          state: user.location?.address?.state || "",
+          country: user.location?.address?.country || "",
+          zipCode: user.location?.address?.zipCode || "",
+
+        },
+        currentLocation: {
+          latitude: user.location?.currentLocation?.coordinates?.[1] || null,
+          longitude: user.location?.currentLocation?.coordinates?.[0] || null,
+        },
       };
 
       setFormData(initial);
       latestDataRef.current = initial;
-      originalDataRef.current = initial; 
+      originalDataRef.current = initial;
 
       isInitialLoad.current = false;
     }
   }, [profile, user]);
 
-  const scheduleSave = useCallback((nextData) => {
+ const scheduleSave = useCallback(
+  (nextData) => {
     latestDataRef.current = nextData;
 
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -91,10 +106,9 @@ const ViewProfile = () => {
         const currentValue = current[key];
         const originalValue = original[key];
 
-        const isEqual =
-          Array.isArray(currentValue)
-            ? JSON.stringify(currentValue) === JSON.stringify(originalValue)
-            : currentValue === originalValue;
+        const isEqual = Array.isArray(currentValue)
+          ? JSON.stringify(currentValue) === JSON.stringify(originalValue)
+          : currentValue === originalValue;
 
         if (!isEqual) {
           hasChanges = true;
@@ -102,11 +116,12 @@ const ViewProfile = () => {
           if (key === "skills") {
             payload.append("skills", currentValue.join(","));
           } else if (key === "education") {
-            payload.append("education", JSON.stringify(currentValue));
-          } else if (key === "longitude" || key === "latitude") {
-            // ✅ Append the location coordinates
-            payload.append(key, currentValue);
             payload.append("education", currentValue);
+          } else if (key === "longitude" || key === "latitude") {
+            // ✅ FIX: Just append the coordinate key safely. Do not overwrite 'education'.
+            if (currentValue !== null && currentValue !== undefined) {
+              payload.append(key, currentValue);
+            }
           } else if (key === "certificates") {
             currentValue.forEach((cert) => {
               if (cert.file) {
@@ -115,6 +130,15 @@ const ViewProfile = () => {
             });
           } else if (key === "avatar" && currentValue instanceof File) {
             payload.append("avatar", currentValue);
+          } else if (key === "currentLocation") {
+            if (currentValue?.latitude && currentValue?.longitude) {
+              payload.append("latitude", currentValue.latitude);
+              payload.append("longitude", currentValue.longitude);
+            }
+          } else if (key === "address") {
+            Object.entries(currentValue).forEach(([subKey, subVal]) => {
+              payload.append(subKey, subVal);
+            });
           } else {
             payload.append(key, currentValue);
           }
@@ -128,11 +152,18 @@ const ViewProfile = () => {
       dispatch(updateProviderProfile(payload))
         .unwrap()
         .then(() => {
-          originalDataRef.current = { ...current }; 
+          originalDataRef.current = { ...current };
+        })
+        .catch((err) => {
+          // It's good practice to log or surface why backend rejected it here
+          console.error("Auto-save failed:", err);
+          showToast(err || "Failed to sync background updates.", "error");
         })
         .finally(() => setSaving(false));
-    }, 2000); 
-  }, [dispatch]);
+    }, 2000);
+  },
+  [dispatch],
+);
 
   const updateField = (updates) => {
     setFormData((prev) => {
@@ -155,7 +186,7 @@ const ViewProfile = () => {
         return;
       }
 
-      showToast("Fetching location to activate Urgent Mode...", "info");
+      // showToast("Fetching location to activate Urgent Mode...");
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -164,13 +195,19 @@ const ViewProfile = () => {
             longitude: pos.coords.longitude,
             latitude: pos.coords.latitude,
           });
-          showToast("Urgent Mode Activated! You are now visible to nearby customers.", "success");
+          showToast(
+            "Urgent Mode Activated! You are now visible to nearby customers.",
+            "success",
+          );
         },
         (err) => {
           console.error("Location error:", err);
-          showToast("Please allow location access to enable Urgent Mode.", "error");
+          showToast(
+            "Please allow location access to enable Urgent Mode.",
+            "error",
+          );
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 10000 },
       );
     } else {
       updateField({ urgentHire: false });
@@ -198,7 +235,8 @@ const ViewProfile = () => {
             No Profile Found
           </h2>
           <p className="text-sm text-gray-500 mb-6">
-            You need to create a profile before you can start offering services and making gigs.
+            You need to create a profile before you can start offering services
+            and making gigs.
           </p>
           <button
             onClick={() => navigate("/serviceprovider/createProfile")}
@@ -235,6 +273,8 @@ const ViewProfile = () => {
             newSkill={newSkill}
             setNewSkill={setNewSkill}
           />
+                    <LocationSection formData={formData} updateField={updateField} />
+
 
           <EducationSection formData={formData} updateField={updateField} />
 
@@ -281,7 +321,7 @@ const ViewProfile = () => {
               </p>
 
               <button
-                onClick={handleUrgentToggle} 
+                onClick={handleUrgentToggle}
                 className={`w-full text-xs py-2 rounded-full font-bold uppercase tracking-wider transition-all transform active:scale-95 ${
                   formData.urgentHire === true
                     ? "bg-emerald-600 text-white hover:bg-emerald-700"

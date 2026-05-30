@@ -97,6 +97,8 @@ function MapModal({ onConfirm, onClose, initialLatLng }) {
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState("");
+  const [permissionDenied, setPermissionDenied] = useState(false);
 
   const moveTo = async (lat, lng) => {
     setPin({ lat, lng });
@@ -126,21 +128,66 @@ function MapModal({ onConfirm, onClose, initialLatLng }) {
     await moveTo(parseFloat(r.lat), parseFloat(r.lon));
   };
 
-  const handleLocate = () => {
-    if (!navigator.geolocation) return;
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async ({ coords }) => {
-        await moveTo(coords.latitude, coords.longitude);
-        // ✅ Fill the search bar with the resolved address
-        const addr = await reverseGeocode(coords.latitude, coords.longitude);
-        setSearchQ(addr);
-        setLocating(false);
-      },
-      () => setLocating(false),
-      { enableHighAccuracy: true },
-    );
-  };
+ const handleLocate = () => {
+  if (!navigator.geolocation) {
+    setLocationError("Geolocation is not supported by your browser.");
+    return;
+  }
+
+  setLocating(true);
+  setPermissionDenied(false);
+  setLocationError("");
+
+  navigator.geolocation.getCurrentPosition(
+    async ({ coords }) => {
+      await moveTo(coords.latitude, coords.longitude);
+
+      const addr = await reverseGeocode(
+        coords.latitude,
+        coords.longitude
+      );
+
+      setSearchQ(addr);
+      setLocating(false);
+    },
+
+    (error) => {
+      setLocating(false);
+
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+           setPermissionDenied(true);
+          setLocationError(
+  "Location permission is blocked.");
+          break;
+
+        case error.POSITION_UNAVAILABLE:
+          setLocationError(
+            "Location information is unavailable. Make sure GPS is enabled."
+          );
+          break;
+
+        case error.TIMEOUT:
+          setLocationError(
+            "Location request timed out. Please try again."
+          );
+          break;
+
+        default:
+          setLocationError(
+            "Unable to determine your location."
+          );
+      }
+    },
+
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0,
+    }
+  );
+};
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -195,6 +242,7 @@ function MapModal({ onConfirm, onClose, initialLatLng }) {
           <FiX className="text-gray-400 hover:text-gray-600" />
         </button>
       )}
+  
     </div>
 
     {/* Action Buttons */}
@@ -225,7 +273,16 @@ function MapModal({ onConfirm, onClose, initialLatLng }) {
         {searching ? "..." : "Search"}
       </button>
     </div>
+    
   </div>
+    {permissionDenied && (
+              <div className="w-full mt-3 px-6 py-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 shadow-sm animate-[fadeIn_0.3s_ease-out]">
+                <p className="text-xs text-red-700 font-medium leading-relaxed">
+                  <span className="font-bold block mb-0.5">Location Access Blocked!</span> 
+                  Please click the <span className="font-bold">Lock icon (🔒)</span> or <span className="font-bold">Site settings</span> in your browser's address bar to allow location access, then click the target icon again.
+                </p>
+              </div>
+            )}
 
   {/* Results */}
   {results.length > 0 && (
