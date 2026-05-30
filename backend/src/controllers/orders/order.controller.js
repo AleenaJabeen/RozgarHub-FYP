@@ -261,12 +261,24 @@ const createOrder = asyncHandler(async (req, res) => {
         const targetRoom = provider.user.toString();
         io.to(targetRoom).emit("new_urgent_request", order);
         const isProviderOnline = io.sockets.adapter.rooms.has(targetRoom);
-
         if (!isProviderOnline) {
+          await createNotification({
+            recipient: provider.user,
+            sender: req.user._id,
+            type: "urgent-order",
+            title: "You missed it!",
+            message: `An urgent request was sent while you were offline.`,
+            link: "/notifications",
+            metadata: {
+              orderId: order._id,
+              isBroadcast: true,
+            },
+          });
+
           await sendPushNotification({
             userId: provider.user,
-            title: "Urgent Service Request",
-            body: "A nearby customer requested urgent service.",
+            title: "You missed a request",
+            body: "An urgent request was available while you were offline.",
             data: {
               type: "urgent-order",
               orderId: order._id.toString(),
@@ -870,10 +882,23 @@ const rebroadcastOrder = asyncHandler(async (req, res) => {
       const isProviderOnline = io.sockets.adapter.rooms.has(targetRoom);
 
       if (!isProviderOnline) {
+        await createNotification({
+          recipient: provider.user,
+          sender: req.user._id,
+          type: "urgent-order",
+          title: "You missed a request",
+          message: `An urgent request was resent while you were offline.`,
+          link: "/notifications",
+          metadata: {
+            orderId: order._id,
+            rebroadcastCount: order.broadcastCount,
+          },
+        });
+
         await sendPushNotification({
           userId: provider.user,
-          title: "Urgent Request Re-broadcasted",
-          body: "A nearby urgent request is available again.",
+          title: "You missed a request",
+          body: "An urgent request was resent while you were offline.",
           data: {
             type: "urgent-order",
             orderId: order._id.toString(),
@@ -911,35 +936,6 @@ const rebroadcastOrder = asyncHandler(async (req, res) => {
     );
 });
 
-const getPendingBroadcastOrders = asyncHandler(async (req, res) => {
-  const providerProfile = await ServiceProvider.findOne({
-    user: req.user._id,
-  });
-
-  if (!providerProfile) {
-    throw new ApiError(404, "Service provider profile not found.");
-  }
-
-  const orders = await Order.find({
-    isBroadcast: true,
-    status: "pending",
-    broadcastCount: { $lt: 4 },
-    updatedAt: {
-      $gte: new Date(Date.now() - 30 * 1000),
-    },
-  }).sort({ updatedAt: -1 });
-
-  res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        orders,
-        "Pending urgent requests fetched successfully.",
-      ),
-    );
-});
-
 export {
   createOrder,
   getOrders,
@@ -950,5 +946,4 @@ export {
   cancelOrder,
   claimBroadcastOrder,
   rebroadcastOrder,
-  getPendingBroadcastOrders,
 };

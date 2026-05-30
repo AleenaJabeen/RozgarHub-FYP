@@ -4,7 +4,6 @@ import { getSocket, connectSocket } from "../../../socket/socket";
 import {
   claimBroadcastOrderThunk,
   getOrders,
-  getPendingBroadcastOrdersThunk,
 } from "../../../store/orders/order-slice";
 import { showToast } from "../../../utils/toastHelper";
 
@@ -322,22 +321,6 @@ const GlobalUrgentOverlay = () => {
   const dispatch = useDispatch();
   const [urgentRequests, setUrgentRequests] = useState([]);
 
-  useEffect(() => {
-    if (!user || user.role !== "serviceprovider") return;
-
-    dispatch(getPendingBroadcastOrdersThunk())
-      .unwrap()
-      .then((orders) => {
-        setUrgentRequests((prev) => {
-          const existingIds = new Set(prev.map((r) => r._id));
-
-          const newOrders = orders.filter((o) => !existingIds.has(o._id));
-
-          return [...newOrders, ...prev];
-        });
-      })
-      .catch(() => {});
-  }, [dispatch, user]);
 
   useEffect(() => {
     if (!user || user.role !== "serviceprovider" || !profile) return;
