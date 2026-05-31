@@ -45,15 +45,15 @@ function Notification() {
     <div className="min-h-screen bg-gray-50 px-4 py-8">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <IoNotificationsOutline className="text-secondary text-3xl" />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center self-center gap-2">
+            <IoNotificationsOutline className="text-secondary text-2xl sm:text-3xl" />
             Notifications
           </h1>
 
           <button
             onClick={handleMarkAll}
-            className="text-sm text-secondary font-semibold hover:underline"
+            className="text-sm text-secondary font-semibold hover:underline self-end sm:self-auto"
           >
             Mark all as read
           </button>
@@ -68,7 +68,7 @@ function Notification() {
             <div
               key={n._id}
               onClick={() => handleMarkOne(n._id)}
-              className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all
+              className={`flex flex-col sm:flex-row items-start gap-2 sm:gap-4 p-4 rounded-xl border cursor-pointer transition-all
               ${
                 n.isRead
                   ? "bg-white border-gray-200"
@@ -77,7 +77,7 @@ function Notification() {
             >
               {/* Icon */}
               <div
-                className={`w-10 h-10 flex items-center justify-center rounded-full
+                className={`w-10 h-10 sm:flex hidden items-center justify-center rounded-full
                 ${
                   n.isRead
                     ? "bg-gray-100 text-gray-500"
@@ -92,7 +92,7 @@ function Notification() {
               </div>
 
               {/* Content */}
-              <div className="flex-1">
+              <div className="hidden sm:flex flex-1 flex-col">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-gray-800">{n.title}</h3>
                   <span className="text-xs text-gray-400">
@@ -104,15 +104,55 @@ function Notification() {
               </div>
               <button
                 onClick={(e) => handleDelete(e, n._id)}
-                className="text-gray-400 hover:text-red-500 transition"
+                className="sm:flex hidden text-gray-400 hover:text-red-500 transition"
               >
                 <IoTrashOutline className="text-lg" />
               </button>
 
               {/* Unread dot */}
               {!n.isRead && (
-                <span className="w-2.5 h-2.5 bg-red-500 rounded-full mt-2" />
+                <span className="sm:flex hidden w-2.5 h-2.5 bg-red-500 rounded-full mt-2" />
               )}
+              <div className="sm:hidden flex justify-between w-full">
+              <div className="sm:hidden flex items-center gap-4 w-full">
+                <div
+                  className={`w-10 h-10 sm:hidden flex items-center justify-center rounded-full
+                ${
+                  n.isRead
+                    ? "bg-gray-100 text-gray-500"
+                    : "bg-secondary/10 text-secondary"
+                }`}
+                >
+                  {n.isRead ? (
+                    <IoCheckmarkDoneOutline className="text-xl" />
+                  ) : (
+                    <IoNotificationsOutline className="text-xl" />
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="sm:hidden flex flex-col">
+                    <h3 className="font-semibold text-gray-800">{n.title}</h3>
+                  <p className="text-sm text-gray-600">{n.message}</p>
+                </div>
+                
+              </div>
+              {/* Unread dot */}
+                {!n.isRead && (
+                  <span className="sm:hidden self-center flex w-2.5 h-2.5 bg-red-500 rounded-full" />
+                )}
+                </div>
+              <div className="sm:hidden flex items-center justify-between w-full">
+                <span className="text-xs text-gray-400">
+                  {new Date(n.createdAt).toLocaleString()}
+                </span>
+                <button
+                  onClick={(e) => handleDelete(e, n._id)}
+                  className="text-gray-400 hover:text-red-500 transition"
+                >
+                  <IoTrashOutline className="text-lg" />
+                </button>
+              </div>
             </div>
           ))}
         </div>

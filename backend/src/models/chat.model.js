@@ -11,8 +11,12 @@ const deletedForSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    manuallyRestored: {
+      type: Boolean,
+      default: true,
+    },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const chatSchema = new mongoose.Schema(
@@ -37,7 +41,6 @@ const chatSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
-
 
     gigId: {
       type: mongoose.Schema.Types.ObjectId,

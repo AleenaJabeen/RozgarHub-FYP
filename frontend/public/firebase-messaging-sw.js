@@ -42,5 +42,24 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  event.waitUntil(clients.openWindow(`/notifications`));
+  event.waitUntil(
+    (async () => {
+      const allClients = await clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+
+      // Try to find an existing tab
+      for (const client of allClients) {
+        if (client.url.includes(self.location.origin)) {
+          client.focus();
+          client.navigate("/notifications");
+          return;
+        }
+      }
+
+      // If no tab is open, open a new one
+      await clients.openWindow("/notifications");
+    })()
+  );
 });

@@ -29,7 +29,6 @@ export const getOrCreateChat = asyncHandler(async (req, res) => {
 
   const chat = await Chat.findOneAndUpdate(
     { chatKey },
-
     {
       $setOnInsert: {
         participants: participants.map((id) => new mongoose.Types.ObjectId(id)),
@@ -37,20 +36,29 @@ export const getOrCreateChat = asyncHandler(async (req, res) => {
         chatKey,
       },
     },
-
     {
       new: true,
       upsert: true,
     },
-  )
-    .populate("participants", "name")
-    .populate({
-      path: "lastMessage",
-      populate: {
-        path: "senderId",
-        select: "name",
-      },
-    });
+  );
+
+  const deletedEntry = chat.deletedFor.find(
+    (d) => d.userId.toString() === myId,
+  );
+
+  if (deletedEntry) {
+    deletedEntry.manuallyRestored = true;
+    await chat.save();
+  }
+
+  await chat.populate("participants", "name");
+  await chat.populate({
+    path: "lastMessage",
+    populate: {
+      path: "senderId",
+      select: "name",
+    },
+  });
 
   return res
     .status(200)
@@ -58,35 +66,66 @@ export const getOrCreateChat = asyncHandler(async (req, res) => {
 });
 
 export const getMyChats = asyncHandler(async (req, res) => {
-  const chats = await Chat.find({
+  let chats = await Chat.find({
     participants: req.user._id,
   })
     .sort({ lastMessageAt: -1 })
     .populate("participants", "name avatar isOnline lastActiveAt")
-    .populate("gigId", "title images")
-    .populate({
-      path: "lastMessage",
-      populate: {
-        path: "senderId",
-        select: "name avatar isOnline lastActiveAt",
-      },
-    });
-  const filteredChats = chats.filter((chat) => {
-    const deletedEntry = chat.deletedFor.find(
-      (d) => d.userId.toString() === req.user._id.toString(),
-    );
+    .populate("gigId", "title images");
 
-    // never deleted
-    if (!deletedEntry) return true;
-    if (!chat.lastMessage) return false;
+  const userId = req.user._id.toString();
 
-    // show chat only if new message arrived
-    return new Date(chat.lastMessageAt) > new Date(deletedEntry.deletedAt);
-  });
+  const filteredChats = await Promise.all(
+    chats.map(async (chat) => {
+      const deletedEntry = chat.deletedFor.find(
+        (d) => d.userId.toString() === userId
+      );
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, filteredChats, "Chats fetched successfully"));
+      const lastMsgTime = chat.lastMessageAt;
+
+      // hide chat if deleted and no valid restoration
+      if (
+        deletedEntry &&
+        !deletedEntry.manuallyRestored &&
+        lastMsgTime &&
+        new Date(lastMsgTime) <= new Date(deletedEntry.deletedAt)
+      ) {
+        return null;
+      }
+
+      const plain = chat.toObject();
+
+const lastMessage = await Message.findOne({
+  chatId: chat._id,
+  deletedFor: {
+    $not: {
+      $elemMatch: {
+        userId: req.user._id
+      }
+    }
+  },
+  ...(deletedEntry?.deletedAt && {
+    createdAt: { $gt: deletedEntry.deletedAt }
+  })
+})
+.sort({ createdAt: -1 })
+.populate("senderId", "name avatar isOnline lastActiveAt");
+
+plain.lastMessage = lastMessage;
+plain.lastMessageAt = lastMessage?.createdAt || null;
+
+return plain;
+    })
+  );
+  console.log("Filtered Chats:", filteredChats); // Debug log to check the final chat list after filtering
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      filteredChats.filter(Boolean),
+      "Chats fetched successfully"
+    )
+  );
 });
 
 export const deleteChat = asyncHandler(async (req, res) => {
@@ -106,12 +145,13 @@ export const deleteChat = asyncHandler(async (req, res) => {
   );
 
   if (existingEntry) {
-    // 🔥 IMPORTANT: refresh deletion timestamp
+    existingEntry.manuallyRestored = false;
     existingEntry.deletedAt = new Date();
   } else {
     chat.deletedFor.push({
       userId: req.user._id,
       deletedAt: new Date(),
+      manuallyRestored: false,
     });
   }
 
