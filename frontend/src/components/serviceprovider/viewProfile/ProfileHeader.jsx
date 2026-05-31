@@ -1,4 +1,3 @@
-// components/profile/ProfileHeader.jsx
 import {
   IoCamera,
   IoLocationOutline,
@@ -10,6 +9,8 @@ import { MdOutlineEdit } from "react-icons/md";
 import { useRef } from "react";
 import { useDispatch } from "react-redux";
 import { updateProviderProfile } from "../../../store/serviceProvider/profile-slice";
+import { FaPhoneAlt } from "react-icons/fa";
+import { FiPhone } from "react-icons/fi";
 
 const ProfileHeader = ({
   user,
@@ -126,40 +127,18 @@ const ProfileHeader = ({
                 {user.email}
               </span>
             </div>
-            {/* City */}
-            <div className="flex items-center justify-center sm:justify-start gap-1 text-sm text-gray-600">
-              <IoLocationOutline className="text-gray-500" size={18} />
-              {editSection === "city" ? (
-                <div className="flex items-center gap-2 text-sm">
-                  <input
-                    name="city"
-                    value={formData.city || ""}
-                    onChange={handleInputChange}
-                    className="outline-none text-sm px-1 bg-transparent"
-                    autoFocus
-                  />
-                  <button onClick={() => setEditSection(null)}>
-                    <IoCheckmark className="text-secondary" size={24} />
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <span className="text-sm me-2">
-                    {formData.city || "City not set"}
-                  </span>
-                  <MdOutlineEdit
-                    size={24}
-                    className="text-gray-700 hover:text-secondary cursor-pointer"
-                    onClick={() => setEditSection("city")}
-                  />
-                </>
-              )}
+            {/* Phone */}
+              <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-500">
+              <FiPhone  size={18} />
+              <span className="text-sm cursor-not-allowed select-none">
+                {user?.phone || "no phone"}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Sidebar-style Hire Status (rendered in right column from parent) */}
+    
     </>
   );
 };

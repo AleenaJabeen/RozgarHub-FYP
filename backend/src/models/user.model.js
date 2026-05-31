@@ -92,9 +92,7 @@ const userSchema = new Schema(
         type: {
           type: String,
           enum: ["Point"],
-          // Remove default: "Point"
           required: function () {
-            // Only require 'Point' if coordinates are actually provided
             return this.location?.currentLocation?.coordinates?.length > 0;
           },
         },

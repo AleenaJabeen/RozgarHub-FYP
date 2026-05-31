@@ -12,6 +12,7 @@ import {
 } from "react-icons/fa"; 
 
 import { HiPlus } from "react-icons/hi";
+import LocationPickerMap from "../../serviceprovider/profile/Locationpickermap";
 
 const blankAddress = { street: "", city: "", state: "", country: "", zipCode: "" };
 
@@ -20,39 +21,7 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
   const [locationStatus, setLocationStatus] = useState("");
   const [locationPermissionDenied, setLocationPermissionDenied] = useState(false); // ✅ Added state for denied permission
 
-  // ─── Geolocation ────────────────────────────────────────────────
-  const handleGetLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationStatus("Geolocation is not supported by your browser.");
-      return;
-    }
-    
-    setLocationStatus("Requesting location...");
-    setLocationPermissionDenied(false); // Reset state on new attempt
-
-    navigator.geolocation.getCurrentPosition(
-      ({ coords: { latitude, longitude } }) => {
-        setFormData((prev) => ({ ...prev, location: { latitude, longitude } }));
-        setLocationStatus(`Coordinates : "${latitude}, ${longitude}"`);
-        if (errors.location) setErrors((prev) => ({ ...prev, location: "" }));
-      },
-      (error) => {
-        // ✅ Explicitly check for Permission Denied (Error Code 1)
-        if (error.code === 1) {
-          setLocationStatus("Permission Denied.");
-          setLocationPermissionDenied(true);
-        } else {
-          const messages = {
-            2: "Location unavailable. Try again.",
-            3: "Request timed out. Try again.",
-          };
-          setLocationStatus(messages[error.code] || "Unable to retrieve location.");
-        }
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
+  
   // ─── Avatar Upload ───────────────────────────────────────────────
   const handleAvatar = (e) => {
     const file = e.target.files[0];
@@ -325,38 +294,31 @@ const CustomerPersonalInfo = ({ formData, setFormData, onNext }) => {
 
           {/* ── Geolocation ── */}
           <div className="ms-3 pt-2">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Pinpoint Exact Location <span className="text-red-500">*</span></label>
-            <div className={`lg:w-1/2 w-full flex items-center justify-between pl-4 pr-2 py-1.5 border bg-white rounded-full focus-within:ring-2 focus-within:ring-secondary/20 transition-all ${
-              errors.location || locationPermissionDenied ? "border-red-500 focus-within:border-red-500" : "border-gray-300 focus-within:border-secondary"
-            }`}>
-              <input
-                type="text"
-                placeholder="Click the target to locate..."
-                value={locationStatus || (formData.location.latitude ? `Coordinates : "${formData.location.latitude}, ${formData.location.longitude}"` : "")}
-                disabled
-                className={`w-full focus:outline-none bg-transparent text-sm truncate mr-2 ${locationPermissionDenied ? 'text-red-500' : 'text-gray-600'}`}
-              />
-              <button 
-                type="button" 
-                onClick={handleGetLocation}
-                className="p-2 bg-secondary/10 hover:bg-secondary/20 rounded-full transition-colors group"
-              >
-                <FaLocationCrosshairs className="text-secondary text-lg group-hover:scale-110 transition-transform" />
-              </button>
-            </div>
-            
-            {errors.location && !locationPermissionDenied && (
-              <p className="text-red-500 text-xs mt-1 ms-2">{errors.location}</p>
-            )}
+             <LocationPickerMap
+               value={
+                 formData.location
+                   ? {
+                       lat: formData.location.latitude,
+                       lng: formData.location.longitude,
+                       displayName: formData.location.displayName,
+                     }
+                   : null
+               }
+               onChange={(loc) => {
+                 setFormData((prev) => ({
+                   ...prev,
+                   location: {
+                     latitude: loc.lat,
+                     longitude: loc.lng,
+                     displayName: loc.displayName, // store for UI only
+                   },
+                 }));
+             
+                 setErrors((p) => ({ ...p, location: "" }));
+               }}
+               error={errors.location}
+             />
 
-            {locationPermissionDenied && (
-              <div className="lg:w-1/2 w-full mt-3 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 shadow-sm animate-[fadeIn_0.3s_ease-out]">
-                <p className="text-xs text-red-700 font-medium leading-relaxed">
-                  <span className="font-bold block mb-0.5">Location Access Blocked!</span> 
-                  Please click the <span className="font-bold">Lock icon (🔒)</span> or <span className="font-bold">Site settings</span> in your browser's address bar to allow location access, then click the target icon again.
-                </p>
-              </div>
-            )}
           </div>
 
         </div>

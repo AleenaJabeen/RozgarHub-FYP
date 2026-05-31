@@ -9,7 +9,6 @@ import {
   cancelOrder,
   claimBroadcastOrder,
   rebroadcastOrder,
-  getPendingBroadcastOrders,
 } from "../controllers/orders/order.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import {
@@ -58,11 +57,5 @@ router.route("/:orderId/complete").patch(verifyJWT, requireServiceProvider, comp
 // The controller is responsible for validating who is cancelling and
 // whether the current order status allows cancellation.
 router.route("/:orderId/cancel").patch(verifyJWT, cancelOrder);
-
-router.get(
-  "/urgent/pending",
-  verifyJWT,
-  getPendingBroadcastOrders,
-);
 
 export default router;

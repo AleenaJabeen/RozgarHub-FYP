@@ -364,31 +364,6 @@ const PersonalInfo = ({ formData, setFormData, onNext }) => {
 
           {/* Location */}
           <div className="space-y-1 mt-4">
-            {/* <label className="block text-sm font-semibold text-gray-700 ml-1">
-              GPS Location
-            </label> 
-           <div
-              className={`flex md:w-1/2 w-full items-center gap-2 px-4 py-2.5 border rounded-full ${
-                errors.location ? "border-red-500" : "border-gray-300"
-              } focus-within:ring-2 focus-within:ring-secondary/40 transition-all`}
-            >
-              <input
-                type="text"
-                placeholder="Click the icon to capture your location"
-                value={locationStatus}
-                disabled
-                className="flex-1 focus:outline-none text-sm bg-transparent text-gray-700"
-              />
-              <button
-                type="button"
-                onClick={handleGetLocation}
-                title="Get my location"
-                className="text-secondary hover:text-green-700 transition-colors"
-              >
-                <FaLocationCrosshairs className="text-lg" />
-              </button>
-            </div>
-   */}
 <LocationPickerMap
   value={
     formData.location
@@ -413,9 +388,9 @@ const PersonalInfo = ({ formData, setFormData, onNext }) => {
   }}
   error={errors.location}
 />
-            {errors.location && (
+            {/* {errors.location && (
               <p className="text-red-500 text-xs ml-2">{errors.location}</p>
-            )}
+            )} */}
           </div>
         
             {/* Education */}

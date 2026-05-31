@@ -366,6 +366,7 @@ const updateServiceProviderProfile = asyncHandler(async (req, res) => {
     urgentHire: urgentHire !== undefined ? urgentHire : providerProfile.urgentHire,
     certificates: updatedCertificates,
     experienceDocuments: updatedExpDocs,
+     education: education || providerProfile.education,
   };
 
   // ✅ Inject coordinates into the Provider model if Urgent Hire is activated
@@ -380,17 +381,7 @@ const updateServiceProviderProfile = asyncHandler(async (req, res) => {
     { user: userId },
     {
       $set: {
-        cnicNo: cnicNo || providerProfile.cnicNo,
-        cnicImg: cnicImgUrl,
-        bio: bio || providerProfile.bio,
-        education: education || providerProfile.education,
-        experienceDetails:
-          experienceDetails || providerProfile.experienceDetails,
-        skills: parsedSkills,
-        urgentHire:
-          urgentHire !== undefined ? urgentHire : providerProfile.urgentHire,
-        certificates: updatedCertificates,
-        experienceDocuments: updatedExpDocs,
+        ...providerUpdateObj,   
       },
     },
     { returnDocument: "after", runValidators: true },
@@ -401,7 +392,6 @@ const updateServiceProviderProfile = asyncHandler(async (req, res) => {
   if (phone) userUpdate.phone = phone;
   if (avatarUrl) userUpdate.avatar = avatarUrl;
 
-  // Update Address fields if any are provided
   if (street || city || state || country || zipCode) {
     if (street) userUpdate["location.address.street"] = street;
     if (city) userUpdate["location.address.city"] = city;
@@ -435,7 +425,7 @@ const getServiceProviderProfile = asyncHandler(async (req, res) => {
 
   const provider = await ServiceProvider.findOne({ user: userId }).populate(
     "user",
-    "name email avatar location",
+    "name email avatar location phone",
   );
 
   if (!provider) {

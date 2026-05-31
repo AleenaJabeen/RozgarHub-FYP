@@ -14,7 +14,7 @@ const ExperienceSection = ({ formData, updateField }) => {
   const experienceContainerRef = useRef(null);
   const detailsRef = useRef(null);
 
-  // Default to empty array if experience doesn't exist
+  // ✅ Consistently track experienceDocuments across the entire file
   const experienceList = formData.experienceDocuments || [];
 
   useEffect(() => {
@@ -32,37 +32,37 @@ const ExperienceSection = ({ formData, updateField }) => {
   }, []);
 
   const updateExperience = (index, key, value) => {
-    const updated = [...(formData.experienceDocuments || [])];
+    const updated = [...experienceList];
     updated[index] = { ...updated[index], [key]: value };
-    updateField({ experience: updated });
+    updateField({ experienceDocuments: updated }); // ✅ Fixed key
   };
 
   const handleExperienceUpload = (e, index) => {
     const file = e.target.files[0];
     if (!file) return;
     const fileUrl = URL.createObjectURL(file);
-    const updated = [...(formData.experience || [])];
+    const updated = [...experienceList];
     updated[index] = { ...(updated[index] || {}), documentUrl: fileUrl };
-    updateField({ experience: updated });
+    updateField({ experienceDocuments: updated }); // ✅ Fixed key
   };
 
   const removeExperience = (index) => {
-    const updated = (formData.experience || []).filter((_, i) => i !== index);
-    updateField({ experience: updated });
+    const updated = experienceList.filter((_, i) => i !== index);
+    updateField({ experienceDocuments: updated }); // ✅ Fixed key
     if (editExpId === index) setEditExpId(null);
   };
 
- const handleCertificateUpload = (e) => {
-  const files = Array.from(e.target.files);
-  const newCerts = files.map(file => ({
-    file: file, 
-    preview: URL.createObjectURL(file) 
-  }));
+  const handleCertificateUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const newCerts = files.map(file => ({
+      file: file, 
+      preview: URL.createObjectURL(file) 
+    }));
 
-  updateField({
-    certificates: [...(formData.certificates || []), ...newCerts],
-  });
-};
+    updateField({
+      certificates: [...(formData.certificates || []), ...newCerts],
+    });
+  };
 
   const removeCertificate = (index) => {
     updateField({ certificates: (formData.certificates || []).filter((_, i) => i !== index) });
@@ -76,7 +76,6 @@ const ExperienceSection = ({ formData, updateField }) => {
           <FaAlignLeft className="text-secondary" size={18} /> Experience Overview
         </h3>
         
-        {/* FIX: Removed the "|| !formData.experienceDetails" check */}
         {editDetails ? (
           <div className="space-y-3">
             <textarea
@@ -99,13 +98,13 @@ const ExperienceSection = ({ formData, updateField }) => {
         ) : (
           <div className="group relative">
             {formData.experienceDetails ? (
-               <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-               {formData.experienceDetails}
-             </p>
+              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                {formData.experienceDetails}
+              </p>
             ) : (
               <p className="text-gray-400 italic text-sm mb-2">No overview added yet.</p>
             )}
-           
+            
             <button
               onClick={() => setEditDetails(true)}
               className="mt-3 flex items-center gap-2 text-tertiary text-sm border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-50"
@@ -128,7 +127,6 @@ const ExperienceSection = ({ formData, updateField }) => {
           )}
 
           {experienceList.map((exp, index) => {
-            // FIX: Removed the auto-edit check for empty titles
             const isEditing = editExpId === index;
 
             return (
@@ -144,7 +142,7 @@ const ExperienceSection = ({ formData, updateField }) => {
                       rows={2}
                       className={`${inputCls} resize-none mb-2`}
                       placeholder="Title / Workplace (e.g. Senior Electrician at Tesla)"
-                      value={exp.title}
+                      value={exp.title || ""}
                       autoFocus
                       onChange={(e) => updateExperience(index, "title", e.target.value)}
                     />
@@ -186,7 +184,7 @@ const ExperienceSection = ({ formData, updateField }) => {
           <button 
             onClick={() => {
               const newList = [...experienceList, { title: "", documentUrl: "" }];
-              updateField({ experience: newList });
+              updateField({ experienceDocuments: newList }); // ✅ Fixed key
               setEditExpId(newList.length - 1);
             }}
             className="mt-4 text-secondary text-sm font-bold flex items-center gap-1 hover:underline"
@@ -214,7 +212,7 @@ const ExperienceSection = ({ formData, updateField }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {formData.certificates.map((cert, index) => (
               <div key={index} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
-                <a href={cert} target="_blank" rel="noreferrer" className="text-secondary text-sm font-medium truncate max-w-[80%]">
+                <a href={cert.preview || cert} target="_blank" rel="noreferrer" className="text-secondary text-sm font-medium truncate max-w-[80%]">
                   Certificate {index + 1}
                 </a>
                 <button onClick={() => removeCertificate(index)} className="p-1 hover:bg-red-50 rounded-full">
