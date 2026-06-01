@@ -150,7 +150,7 @@ const CustomerGigDetails = () => {
   const handleContactProvider = async (participantId, gigId) => {
     try {
       const response = await axios.post(
-      "http://localhost:3000/api/v1/chat", 
+      `${import.meta.env.VITE_BACKEND_URL}/api/v1/chat`, 
       { participantId, gigId },
       { withCredentials: true }
     );

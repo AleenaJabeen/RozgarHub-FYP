@@ -3,7 +3,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 export const fetchMyChats = createAsyncThunk("chats/fetchAll", async () => {
-  const { data } = await axios.get("http://localhost:3000/api/v1/chat", {
+  const { data } = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/chat`, {
     withCredentials: true,
   });
   return data.data; // Array of chats
@@ -13,7 +13,7 @@ export const markAsRead = createAsyncThunk(
   async ({ chatId, myId }, thunkAPI) => {
     try {
       const response = await axios.put(
-        "http://localhost:3000/api/v1/messages/read",
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/messages/read`,
         { chatId },
         { withCredentials: true },
       );
@@ -30,7 +30,7 @@ export const deleteChat = createAsyncThunk(
   "chat/deleteChat",
   async (chatId, thunkAPI) => {
     try {
-      await axios.delete(`http://localhost:3000/api/v1/chat/${chatId}`, {
+      await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/v1/chat/${chatId}`, {
         withCredentials: true,
       });
 
@@ -47,7 +47,7 @@ export const fetchUserInfo = createAsyncThunk(
   "chat/fetchUserInfo",
   async (userId, thunkAPI) => {
     try {
-      const  response  = await axios.get(`http://localhost:3000/api/v1/chat/user-info/${userId}`, {
+      const  response  = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/chat/user-info/${userId}`, {
         withCredentials: true,
       });
       return response.data.data; // This returns the merged User + ServiceProvider object

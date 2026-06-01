@@ -169,7 +169,7 @@ useEffect(() => {
       // "for me" — REST only, no socket needed
       try {
         await axiosInstance.delete(
-          `http://localhost:3000/api/v1/messages/me/${messageId}`,
+          `${import.meta.env.VITE_BACKEND_URL}/api/v1/messages/me/${messageId}`,
           { withCredentials: true },
         );
         dispatch(deleteMessage({ chatId, messageId }));

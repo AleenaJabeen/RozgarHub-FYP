@@ -55,7 +55,7 @@ const initialState = {
   success: false,
 };
 
-const BASE_URL = "http://localhost:3000/api/v1/customer";
+const BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/api/v1/customer`;
 
 // ── Thunks ────────────────────────────────────────────────────────────────────
 

@@ -5,7 +5,7 @@ export const fetchMessages = createAsyncThunk(
   "messages/fetchMessages",
   async ({ chatId }) => {
     const res = await axios.get(
-      `http://localhost:3000/api/v1/messages/${chatId}/messages`,
+      `${import.meta.env.VITE_BACKEND_URL}/api/v1/messages/${chatId}/messages`,
       { withCredentials: true },
     );
     return {
@@ -20,7 +20,7 @@ export const sendMessage = createAsyncThunk(
   async (formData, { rejectWithValue }) => {
     try {
       const res = await axios.post(
-        "http://localhost:3000/api/v1/messages/send",
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/messages/send`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },

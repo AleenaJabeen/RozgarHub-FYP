@@ -11,7 +11,7 @@ const initialState = {
 
 // Api calls
 // register
-const BASE_URL = "http://localhost:3000/api/v1/auth";
+const BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/api/v1/auth`;
 export const registerUser = createAsyncThunk(
   "/auth/register",
   async (formData, { rejectWithValue }) => {

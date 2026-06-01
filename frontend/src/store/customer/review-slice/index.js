@@ -9,7 +9,7 @@ export const submitReview = createAsyncThunk(
   async ({ orderId, rating, comment }, { rejectWithValue }) => {
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/v1/reviews", 
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/reviews`, 
         { orderId, rating, comment },
         { withCredentials: true }
       );
@@ -26,7 +26,7 @@ export const getGigReviews = createAsyncThunk(
   async (gigId, { rejectWithValue }) => {
     try {
       const response = await axios.get(
-        `http://localhost:3000/api/v1/reviews/gig/${gigId}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/reviews/gig/${gigId}`,
         { withCredentials: true }
       );
       return response.data.data;
@@ -42,7 +42,7 @@ export const getProviderReviews = createAsyncThunk(
   async (providerId, { rejectWithValue }) => {
     try {
       const response = await axios.get(
-        `http://localhost:3000/api/v1/reviews/provider/${providerId}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/reviews/provider/${providerId}`,
         { withCredentials: true }
       );
       return response.data.data;

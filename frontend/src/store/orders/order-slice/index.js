@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const BASE_URL = "http://localhost:3000/api/v1/orders";
+const BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/api/v1/orders`;
 
 // ── Thunks ────────────────────────────────────────────────────────────────────
 
@@ -118,7 +118,7 @@ export const payForOrderThunk = createAsyncThunk(
   async (orderId, { rejectWithValue }) => {
     try {
       const res = await axios.post(
-        `http://localhost:3000/api/v1/payments/create-checkout-session/${orderId}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/payments/create-checkout-session/${orderId}`,
         {}, // Empty body, we only need the orderId from the URL
         { withCredentials: true }
       );

@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-const BASE_URL = "http://localhost:3000/api/v1/gigs";
+const BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/api/v1/gigs`;
 
 // 1. Search Thunk (Now includes day & time filters!)
 export const searchPublicGigs = createAsyncThunk(
