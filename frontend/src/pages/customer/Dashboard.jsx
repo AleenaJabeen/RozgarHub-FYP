@@ -338,7 +338,7 @@ const CustomerDashboard = () => {
             <motion.div variants={fadeUp}>
               <Section
                 title="Saved Gigs"
-                linkTo="/customer/services"
+                linkTo="/customer/wishlist"
                 linkLabel="Browse More"
                 empty={{
                   title: "Nothing saved yet",

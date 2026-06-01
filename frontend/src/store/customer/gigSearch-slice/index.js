@@ -3,7 +3,6 @@ import axios from "axios";
 
 const BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/api/v1/gigs`;
 
-// 1. Search Thunk (Now includes day & time filters!)
 export const searchPublicGigs = createAsyncThunk(
   "gigSearch/searchPublic",
   async (filters, { rejectWithValue }) => {
@@ -13,8 +12,12 @@ export const searchPublicGigs = createAsyncThunk(
       if (filters.category) params.append("category", filters.category);
       if (filters.status) params.append("status", filters.status);
       if (filters.sortBy) params.append("sortBy", filters.sortBy);
-      if (filters.day) params.append("day", filters.day);       // ✅ Added
-      if (filters.time) params.append("time", filters.time);    // ✅ Added
+      if (filters.day) params.append("day", filters.day);       
+      if (filters.time) params.append("time", filters.time);    
+
+      if (filters.nearby) params.append("nearby", filters.nearby);
+      if (filters.longitude) params.append("longitude", filters.longitude);
+      if (filters.latitude) params.append("latitude", filters.latitude);
 
       const response = await axios.get(`${BASE_URL}/search?${params.toString()}`);
       return response.data.data;

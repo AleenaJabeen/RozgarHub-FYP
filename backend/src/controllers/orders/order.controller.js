@@ -149,6 +149,14 @@ const createOrder = asyncHandler(async (req, res) => {
     }
   }
 
+  if (orderType === "DirectHire" && !scheduledDate) {
+      throw new ApiError(400, "Scheduled date and time are mandatory for hourly bookings.");
+    }
+
+  if (orderType === "InspectionHire" && !inspectionTime) {
+      throw new ApiError(400, "Inspection date and time are mandatory.");
+    }
+    
   if (orderType === "UrgentHire") {
     if (!responseTimeLimit)
       throw new ApiError(400, "responseTimeLimit is required for UrgentHire.");
@@ -627,6 +635,9 @@ const completeOrder = asyncHandler(async (req, res) => {
   order.finalDescription = finalDescription?.trim() || null;
 
   await order.save();
+  await ServiceProvider.findByIdAndUpdate(providerProfileId, {
+    $inc: { completedOrders: 1 }
+  });
   const io = getIO();
 
   const customer = await Customer.findById(order.customerId).populate(

@@ -135,6 +135,11 @@ export const getGigById = asyncHandler(async (req, res) => {
 // @route   GET /api/v1/gigs/public
 // @access  Public
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// @desc    Search & filter public gigs for the marketplace
+// @route   GET /api/v1/gigs/public
+// @access  Public
+// ─────────────────────────────────────────────
 export const searchPublicGigs = asyncHandler(async (req, res) => {
   const {
     search,
@@ -143,6 +148,9 @@ export const searchPublicGigs = asyncHandler(async (req, res) => {
     sortBy,
     day,
     time,
+    nearby,    
+    longitude,  
+    latitude,
     page = 1,
     limit = 12,
   } = req.query;
@@ -168,23 +176,39 @@ export const searchPublicGigs = asyncHandler(async (req, res) => {
   }
 
   // ── Availability Hours filter — day + time ────────────────────
-  // Uses $elemMatch to find gigs where:
-  //   1. The requested day is inside the `days` array
-  //   2. The requested time (HH:MM) falls within startTime–endTime
-  // Both conditions must hold on the SAME availability slot.
   if (day && time) {
     query.availabilityHours = {
       $elemMatch: {
-        days: day, // e.g. "Monday"
-        startTime: { $lte: time }, // "09:00" <= "14:00"
-        endTime: { $gte: time }, // "18:00" >= "14:00"
+        days: day,
+        startTime: { $lte: time },
+        endTime: { $gte: time },
       },
     };
   } else if (day) {
-    // Filter by day only when no time is supplied
     query.availabilityHours = {
       $elemMatch: { days: day },
     };
+  }
+
+  if (nearby === "true" && longitude && latitude) {
+    const maxDistanceMeters = 50000; // 50 km in meters
+
+    // 1. Find all service providers within 50km
+    const nearbyProviders = await ServiceProvider.find({
+      location: {
+        $near: {
+          $geometry: { 
+            type: "Point", 
+            coordinates: [Number(longitude), Number(latitude)] 
+          },
+          $maxDistance: maxDistanceMeters,
+        },
+      },
+    }).select("_id");
+
+    // 2. Extract their IDs and filter the gigs to ONLY show theirs
+    const providerIds = nearbyProviders.map(p => p._id);
+    query.serviceProviderId = { $in: providerIds };
   }
 
   // ── Sorting ───────────────────────────────────────────────────
@@ -213,8 +237,6 @@ export const searchPublicGigs = asyncHandler(async (req, res) => {
     .populate({
       path: "serviceProviderId",
       select: "user skills averageRating totalReviews urgentHire",
-      // Populate the nested User document so the frontend always gets
-      // real name/avatar without falling back to placeholder values.
       populate: {
         path: "user",
         select: "name avatar isOnline",

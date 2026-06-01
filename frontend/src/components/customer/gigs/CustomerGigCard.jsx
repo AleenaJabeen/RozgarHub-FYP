@@ -76,15 +76,15 @@ const CustomerGigCard = ({ gig }) => {
           </div>
         )}
 
-        {/* Save button — top left */}
+        {/* ✅ UPDATED: Save button — Completely transparent with smooth hover scaling */}
         <button
           onClick={handleSave}
-          className="absolute top-2.5 left-2.5 w-8 h-8 flex items-center justify-center bg-white/75 backdrop-blur-sm border border-white/60 rounded-lg hover:bg-white/95 transition-all duration-150"
+          className="absolute top-2.5 left-2.5 w-8 h-8 flex items-center justify-center bg-transparent hover:scale-110 active:scale-95 transition-all duration-150 focus:outline-none"
           title={saved ? "Remove from saved" : "Save gig"}
         >
           {saved
-            ? <FaHeart    className="text-rose-500 text-sm drop-shadow-sm" />
-            : <FaRegHeart className="text-gray-500 text-sm hover:text-rose-400 transition-colors drop-shadow-sm" />
+            ? <FaHeart    className="text-rose-500 text-base filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]" />
+            : <FaRegHeart className="text-white text-base hover:text-rose-400 transition-colors filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]" />
           }
         </button>
 
