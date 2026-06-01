@@ -7,6 +7,7 @@ import { getCategories } from "../../../store/serviceProvider/category-slice";
 import { useEffect, useState } from "react";
 import { IoCloudUploadOutline, IoTrashOutline } from "react-icons/io5";
 import { showToast } from "../../../utils/toastHelper";
+import { useNavigate } from "react-router-dom";
 
 const INITIAL_FORM_STATE = {
   title: "",
@@ -23,6 +24,7 @@ const CreateGig = () => {
   const dispatch = useDispatch();
   const { loading, success, error } = useSelector((state) => state.gigs);
   const { categories } = useSelector((state) => state.categories);
+  const navigate = useNavigate();
 
   useEffect(() => {
     dispatch(getCategories());
@@ -166,6 +168,7 @@ const CreateGig = () => {
       setErrors({});
       // Optionally reset form or redirect
       dispatch(resetGigState());
+      navigate("/serviceprovider/gigs");
     }
     if (error) {
       showToast(error, "error");
