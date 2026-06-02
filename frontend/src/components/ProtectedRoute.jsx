@@ -24,7 +24,7 @@ function CheckAuth({ isAuthenticated, user, loading, children }) {
     return <Navigate to="/auth?mode=signup" replace />;
   }
 
-  // 2️⃣ AUTHENTICATED BUT ROLE NOT SET
+  
  if (user?.role === "pending" || !user?.role) {
   // ✅ allow auth page ONLY when verifying email
   if (

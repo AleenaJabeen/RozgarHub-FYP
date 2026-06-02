@@ -98,7 +98,18 @@ function App() {
               </CheckAuth>
             }
           />
-          <Route path="auth" element={<AuthPage />} />
+         <Route
+  path="auth"
+  element={
+    <CheckAuth
+      isAuthenticated={isAuthenticated}
+      user={user}
+      loading={isLoading}
+    >
+      <AuthPage />
+    </CheckAuth>
+  }
+/>
 
           <Route path="reset-password" element={<ForgotPassword />} />
           <Route path="reset-password/:token" element={<ChangePassword />} />

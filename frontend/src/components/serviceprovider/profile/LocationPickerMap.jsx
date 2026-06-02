@@ -188,6 +188,7 @@ function MapModal({ onConfirm, onClose, initialLatLng }) {
   );
 };
 
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -364,6 +365,27 @@ function MapModal({ onConfirm, onClose, initialLatLng }) {
 export default function LocationPickerMap({ value, onChange, error }) {
   const [open, setOpen] = useState(false);
 
+  const [resolvedAddress, setResolvedAddress] = useState("");
+
+useEffect(() => {
+  const loadAddress = async () => {
+    if (
+      value?.lat != null &&
+      value?.lng != null &&
+      !value?.displayName
+    ) {
+      const address = await reverseGeocode(
+        value.lat,
+        value.lng
+      );
+
+      setResolvedAddress(address);
+    }
+  };
+
+  loadAddress();
+}, [value?.lat, value?.lng]);
+
   return (
     <>
       <div className="space-y-1 mt-4">
@@ -380,11 +402,11 @@ export default function LocationPickerMap({ value, onChange, error }) {
             type="text"
             placeholder="Tap to set your location on map"
            value={
-  value?.displayName
-    ? value.displayName
-    : value?.lat != null && value?.lng != null
+  value?.displayName ||
+  resolvedAddress ||
+  (value?.lat != null && value?.lng != null
     ? `${value.lat.toFixed(5)}, ${value.lng.toFixed(5)}`
-    : ""
+    : "")
 }
             readOnly
             className="flex-1 focus:outline-none text-sm bg-transparent text-gray-700 cursor-pointer"

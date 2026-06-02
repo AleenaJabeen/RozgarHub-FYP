@@ -14,7 +14,7 @@ import { IoMdHeartEmpty } from "react-icons/io";
 import { Logo2 } from "../../assets";
 import { useDispatch, useSelector } from "react-redux";
 import { logoutUser } from "../../store/auth-slice";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, NavLink } from "react-router-dom";
 import { showToast } from "../../utils/toastHelper";
 import { capitalizeWords } from "../../utils/capitalize";
 import { CATEGORIES as categories } from "../../utils/categories";
@@ -94,9 +94,9 @@ const Navbar = () => {
   const navLinks = {
     pending: [{ name: "Services", href: "/", isMega: true }],
     customer: [
-      { name: "Home", href: "/customer" },
       { name: "Services", href: "/customer/services", isMega: true },
       { name: "Orders", href: "/customer/orders" },
+        { name: "Dashboard", href: "/customer" },
       {
         name: "Messages",
         href: "/messages",
@@ -166,7 +166,7 @@ const Navbar = () => {
               {cat.subcategories.map((sub) => (
                 <li key={sub}>
                   <Link
-                    to={`/`}
+                    to={`${role==="pending"?"/":"/customer/services"}`}
                     onClick={onLinkClick}
                     className="text-sm text-gray-500 hover:text-secondary hover:translate-x-1 hover:font-bold transition-all inline-block"
                   >
@@ -210,7 +210,7 @@ const Navbar = () => {
 
                   {desktopMegaOpen && (
                     <div
-                      className="absolute top-[90%] lg:right-[-9rem] md:right-[-7rem] w-[75vw] bg-white shadow-2xl border border-gray-300 p-8 animate-in fade-in slide-in-from-top-2 duration-300 rounded-xl"
+                      className="absolute top-[90%] lg:right-[-13rem] md:right-[-8rem] w-[75vw] bg-white shadow-2xl border border-gray-300 p-8 animate-in fade-in slide-in-from-top-2 duration-300 rounded-xl"
                       style={{ zIndex: 100 }}
                     >
                       <MegaMenuContent
@@ -220,12 +220,14 @@ const Navbar = () => {
                   )}
                 </div>
               ) : (
-                <Link
+               <Link
                   key={link.name}
                   to={link.href}
-                  className={`relative flex items-center ${
-                    link.icon ? "justify-center" : ""
-                  } text-gray-600 hover:text-secondary font-semibold`}
+                  className={
+                    `relative flex items-center ${
+                      link.icon ? "justify-center" : ""
+                    } font-semibold transition-colors`
+                  }
                 >
                   {link.icon ? (
                     <>
@@ -286,8 +288,8 @@ const Navbar = () => {
                       </div>
                     </div>
                     <Link
-                      to={role === "serviceprovider" ? "/serviceprovider" : ""}
-                      className={`${role === "customer" ? "hidden" : "flex"}  gap-2 cursor-pointer items-center px-2 py-4 text-base text-gray-600 hover:bg-gray-50`}
+                      to={role === "serviceprovider" ? "/serviceprovider" : "/customer"}
+                      className={`flex gap-2 cursor-pointer items-center px-2 py-4 text-base text-gray-600 hover:bg-gray-50`}
                     >
                       <IoGridOutline className="text-lg" />
                       Dashboard
@@ -391,7 +393,7 @@ const Navbar = () => {
                               {cat.subcategories.map((sub) => (
                                 <Link
                                   key={sub}
-                                  to={`/services/${sub.toLowerCase().replace(/ /g, "-")}`}
+                                  to={`${role==="pending"?"/":"/customer/services"}`}
                                   onClick={closeMobileMenu}
                                   className="block py-2 text-gray-500 text-sm active:text-secondary"
                                 >
