@@ -17,12 +17,8 @@ import { MdOutlineShoppingBag, MdOutlineAccountBalanceWallet } from "react-icons
 import { IoPersonCircle, IoTimeOutline, IoCallOutline, IoMailOutline } from "react-icons/io5";
 import { FaCheckCircle, FaTimesCircle, FaPlayCircle, FaFlagCheckered, FaBan, FaCheckDouble } from "react-icons/fa";
 
-// ✅ ADDED: Import socket functions for real-time payment updates
 import { getSocket, connectSocket } from "../../../socket/socket";
 
-// ─────────────────────────────────────────────
-// Status Badge — same colour map as OrderCard
-// ─────────────────────────────────────────────
 const STATUS_STYLES = {
   pending:       "bg-amber-100  text-amber-700  border-amber-200",
   accepted:      "bg-blue-100   text-blue-700   border-blue-200",
@@ -42,9 +38,6 @@ const StatusBadge = ({ status }) => (
   </span>
 );
 
-// ─────────────────────────────────────────────
-// Info Row — icon + label + value
-// ─────────────────────────────────────────────
 const InfoRow = ({ icon, label, value }) => (
   <div className="flex items-start gap-3">
     <div className="mt-0.5 text-secondary text-base flex-shrink-0">{icon}</div>
@@ -55,18 +48,16 @@ const InfoRow = ({ icon, label, value }) => (
   </div>
 );
 
-// ─────────────────────────────────────────────
-// Main Component
-// ─────────────────────────────────────────────
 const OrderDetails = () => {
   const { orderId } = useParams();
   const navigate    = useNavigate();
   const dispatch    = useDispatch();
 
   const { activeOrder: order, loading, error } = useSelector((state) => state.orders);
-  const [modal, setModal] = useState(null); // { mode }
+  const [modal, setModal] = useState(null);
+  
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // ✅ UPDATED: Fetch on mount and listen for Stripe payment completion
   useEffect(() => {
     dispatch(getOrderById(orderId));
 
@@ -75,10 +66,9 @@ const OrderDetails = () => {
       socket = connectSocket();
     }
 
-    // Listen for the customer's payment success
     const handlePaymentCompleted = (paidOrderId) => {
       if (paidOrderId === orderId) {
-        dispatch(getOrderById(orderId)); // Refresh UI instantly
+        dispatch(getOrderById(orderId)); 
       }
     };
 
@@ -95,21 +85,32 @@ const OrderDetails = () => {
   }, [dispatch, orderId]);
 
   // ── Action Handlers ──────────────────────────────────────────────
-  const handleAccept = () => {
-    dispatch(respondToOrder({ orderId, action: "accept" }))
-      .unwrap()
-      .then(() => showToast("Order accepted."))
-      .catch((err) => showToast(err || "Something went wrong.", "error"));
+  const handleAccept = async () => {
+    setActionLoading(true);
+    try {
+      await dispatch(respondToOrder({ orderId, action: "accept" })).unwrap();
+      showToast("Order accepted.");
+    } catch (err) {
+      showToast(err || "Something went wrong.", "error");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleStartWork = () => {
-    dispatch(startWork(orderId))
-      .unwrap()
-      .then(() => showToast("Work started."))
-      .catch((err) => showToast(err || "Something went wrong.", "error"));
+  const handleStartWork = async () => {
+    setActionLoading(true);
+    try {
+      await dispatch(startWork(orderId)).unwrap();
+      showToast("Work started.");
+    } catch (err) {
+      showToast(err || "Something went wrong.", "error");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleModalConfirm = async (fields) => {
+    setActionLoading(true);
     try {
       if (modal.mode === "reject") {
         await dispatch(
@@ -137,27 +138,30 @@ const OrderDetails = () => {
       setModal(null);
     } catch (err) {
       showToast(err || "Something went wrong.", "error");
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  if (loading || !order) {
+  // ✅ FIXED: If there is no order data yet, ALWAYS show loading or error
+  if (!order) {
+    if (error) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+          <p className="text-red-500 font-semibold">{error}</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="px-6 py-2 bg-secondary text-white rounded-full text-sm font-bold hover:bg-[#0e5641] hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
+          >
+            Go Back
+          </button>
+        </div>
+      );
+    }
+    
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <p className="text-red-500 font-semibold">{error}</p>
-        <button
-          onClick={() => navigate(-1)}
-          className="px-6 py-2 bg-secondary text-white rounded-full text-sm font-bold hover:bg-[#0e5641] hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
-        >
-          Go Back
-        </button>
       </div>
     );
   }
@@ -203,7 +207,6 @@ const OrderDetails = () => {
               </div>
             </div>
 
-            {/* Order type pill */}
             <span className="self-start sm:self-auto text-xs font-bold px-4 py-1.5 bg-gray-100 text-gray-600 rounded-full capitalize">
               {order.orderType}
             </span>
@@ -360,15 +363,16 @@ const OrderDetails = () => {
                   <>
                     <button
                       onClick={handleAccept}
-                      disabled={loading}
+                      disabled={actionLoading}
                       className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-secondary text-white rounded-full hover:bg-[#0e5641] hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <FaCheckCircle className="text-base" />
-                      Accept Order
+                      {actionLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FaCheckCircle className="text-base" />}
+                      {actionLoading ? "Processing..." : "Accept Order"}
                     </button>
                     <button
                       onClick={() => setModal({ mode: "reject" })}
-                      className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-white text-red-500 border border-red-200 rounded-full hover:bg-red-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow-md transition-all duration-200"
+                      disabled={actionLoading}
+                      className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-white text-red-500 border border-red-200 rounded-full hover:bg-red-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <FaTimesCircle className="text-base" />
                       Reject Order
@@ -380,11 +384,11 @@ const OrderDetails = () => {
                 {order.status === "accepted" && (
                   <button
                     onClick={handleStartWork}
-                    disabled={loading}
+                    disabled={actionLoading}
                     className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-blue-600 text-white rounded-full hover:bg-blue-700 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <FaPlayCircle className="text-base" />
-                    Start Work
+                    {actionLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FaPlayCircle className="text-base" />}
+                    {actionLoading ? "Processing..." : "Start Work"}
                   </button>
                 )}
 
@@ -392,7 +396,8 @@ const OrderDetails = () => {
                 {order.status === "in-progress" && (
                   <button
                     onClick={() => setModal({ mode: "complete" , rate: gig?.hourlyRate})}
-                    className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-purple-600 text-white rounded-full hover:bg-purple-700 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow-md transition-all duration-200"
+                    disabled={actionLoading}
+                    className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-purple-600 text-white rounded-full hover:bg-purple-700 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FaFlagCheckered className="text-base" />
                     Mark as Complete
@@ -403,7 +408,8 @@ const OrderDetails = () => {
                 {isCancellable && (
                   <button
                     onClick={() => setModal({ mode: "cancel" })}
-                    className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-white text-gray-500 border border-gray-200 rounded-full hover:text-red-500 hover:border-red-200 hover:bg-red-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow-md transition-all duration-200"
+                    disabled={actionLoading}
+                    className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold bg-white text-gray-500 border border-gray-200 rounded-full hover:text-red-500 hover:border-red-200 hover:bg-red-50 hover:-translate-y-0.5 active:scale-95 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FaBan className="text-base" />
                     Cancel Order
@@ -457,7 +463,6 @@ const OrderDetails = () => {
                     </span>
                   </div>
                   
-                  {/* ✅ SMART PAYMENT STATUS BADGE */}
                   <div className="border-t border-gray-100 mt-4 pt-4 flex flex-col gap-2">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">Payment Status</span>
                     {order.isPaid ? (
@@ -504,7 +509,7 @@ const OrderDetails = () => {
       {modal && (
         <ActionModal
           mode={modal.mode}
-          loading={loading}
+          loading={actionLoading} 
           onConfirm={handleModalConfirm}
           onClose={() => setModal(null)}
           prefilledRate={order.isBroadcast ? order.hourlyRate : order.gigId?.hourlyRate}

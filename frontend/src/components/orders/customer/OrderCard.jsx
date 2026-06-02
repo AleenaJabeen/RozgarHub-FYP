@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { HiOutlineCalendar, HiOutlineLocationMarker } from "react-icons/hi";
 import { IoPersonCircle } from "react-icons/io5";
-import { FaCheckCircle } from "react-icons/fa"; // ✅ Imported Check Circle
+import { FaCheckCircle } from "react-icons/fa"; 
 import { rebroadcastOrderThunk } from "../../../store/orders/order-slice";
 import { showToast } from "../../../utils/toastHelper";
 
@@ -70,7 +70,8 @@ const CustomerOrderCard = ({ order, onCancel }) => {
         isBroadcast ? "border-gray-100 hover:border-amber-400" : "border-gray-100 hover:border-secondary/50"
       }`}
     >
-      <div className={`p-5 border-b flex justify-between items-start gap-4 transition-colors duration-300 ${isBroadcast ? "bg-amber-50/50" : "bg-white"}`}>
+      {/* ✅ ADDED: border-gray-100 to make the line light gray */}
+      <div className={`p-5 border-b border-gray-200 flex justify-between items-start gap-4 transition-colors duration-300 ${isBroadcast ? "bg-amber-50/50" : "bg-white"}`}>
         <div>
           {isBroadcast ? (
             <div className="flex items-center gap-1.5 text-amber-600 font-bold text-xs uppercase tracking-wider mb-1">
@@ -153,7 +154,6 @@ const CustomerOrderCard = ({ order, onCancel }) => {
           )}
         </div>
 
-        {/* ✅ ADDED: Total Billed Badge with Payment Status */}
         {order.status === "completed" && order.totalAmount != null && (
           <div className="mt-2 flex items-center justify-between px-4 py-3 bg-[#e6f4f1] border border-[#b3ddd3] rounded-xl transition-all animate-in fade-in slide-in-from-bottom-2">
             <div className="flex flex-col">

@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { HiOutlineCalendar, HiOutlineLocationMarker } from "react-icons/hi";
 import { IoPersonCircle } from "react-icons/io5";
-import { FaCheckCircle } from "react-icons/fa"; // ✅ Imported Check Circle
+import { FaCheckCircle } from "react-icons/fa"; 
 import { startWork } from "../../../store/orders/order-slice";
 import { showToast } from "../../../utils/toastHelper";
 
@@ -19,6 +19,9 @@ const STATUS_COLORS = {
 const OrderCard = ({ order, role, onRespond, onCancel, onComplete }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  
+  // ✅ ADDED: State to track which action is currently processing
+  const [actionLoading, setActionLoading] = useState(null);
 
   const gig = order.gigId;
   const customer = order.customerId?.user;
@@ -33,12 +36,27 @@ const OrderCard = ({ order, role, onRespond, onCancel, onComplete }) => {
       })
     : "Unscheduled";
 
+  // ── Action Handlers ──────────────────────────────────────────────
   const handleStartWork = async () => {
     try {
+      setActionLoading("startWork");
       await dispatch(startWork(order._id)).unwrap();
       showToast("Work started successfully.", "success");
     } catch (err) {
       showToast(err || "Something went wrong.", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleAction = async (actionName, actionFn) => {
+    try {
+      setActionLoading(actionName);
+      await actionFn();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -49,7 +67,7 @@ const OrderCard = ({ order, role, onRespond, onCancel, onComplete }) => {
         isBroadcast ? "border-amber-200 hover:border-amber-400" : "border-gray-100 hover:border-secondary/50"
       }`}
     >
-      <div className={`p-5 border-b flex justify-between items-start gap-4 transition-colors duration-300 ${isBroadcast ? "bg-amber-50/50" : "bg-white"}`}>
+      <div className={`p-5 border-b border-gray-200 flex justify-between items-start gap-4 transition-colors duration-300 ${isBroadcast ? "bg-amber-50/50" : "bg-white"}`}>
         <div>
           {isBroadcast ? (
             <div className="flex items-center gap-1.5 text-amber-600 font-bold text-xs uppercase tracking-wider mb-1">
@@ -106,7 +124,6 @@ const OrderCard = ({ order, role, onRespond, onCancel, onComplete }) => {
           </div>
         </div>
 
-        {/* ✅ ADDED: Total Billed Badge with Payment Status */}
         {order.status === "completed" && order.totalAmount != null && (
           <div className="mt-2 flex items-center justify-between px-4 py-3 bg-[#e6f4f1] border border-[#b3ddd3] rounded-xl transition-all animate-in fade-in slide-in-from-bottom-2">
             <div className="flex flex-col">
@@ -128,19 +145,24 @@ const OrderCard = ({ order, role, onRespond, onCancel, onComplete }) => {
         )}
       </div>
 
+      {/* ── ACTION BUTTONS WITH LOADING SPINNERS ── */}
       <div className="p-4 border-t border-gray-100 bg-gray-50 flex flex-wrap gap-2">
         {role === "serviceprovider" && order.status === "pending" && (
           <>
             <button
-              onClick={(e) => { e.stopPropagation(); onRespond(order, "accept"); }}
-              className="flex-1 py-2 text-sm font-bold bg-secondary text-white rounded-lg hover:bg-[#0e5641] transition-all"
+              disabled={!!actionLoading}
+              onClick={(e) => { e.stopPropagation(); handleAction("accept", async () => await onRespond(order, "accept")); }}
+              className="flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold bg-secondary text-white rounded-lg hover:bg-[#0e5641] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
+              {actionLoading === "accept" && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
               Accept
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); onRespond(order, "reject"); }}
-              className="flex-1 py-2 text-sm font-bold bg-white text-red-500 border border-red-200 rounded-lg hover:bg-red-50 hover:border-red-300 transition-all"
+              disabled={!!actionLoading}
+              onClick={(e) => { e.stopPropagation(); handleAction("reject", async () => await onRespond(order, "reject")); }}
+              className="flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold bg-white text-red-500 border border-red-200 rounded-lg hover:bg-red-50 hover:border-red-300 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
+              {actionLoading === "reject" && <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />}
               Reject
             </button>
           </>
@@ -148,27 +170,33 @@ const OrderCard = ({ order, role, onRespond, onCancel, onComplete }) => {
 
         {role === "serviceprovider" && order.status === "accepted" && (
           <button
+            disabled={!!actionLoading}
             onClick={(e) => { e.stopPropagation(); handleStartWork(); }}
-            className="flex-1 py-2 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+            className="flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
+            {actionLoading === "startWork" && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
             Start Work
           </button>
         )}
 
         {role === "serviceprovider" && order.status === "in-progress" && (
           <button
-            onClick={(e) => { e.stopPropagation(); onComplete(order); }}
-            className="flex-1 py-2 text-sm font-bold bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all"
+            disabled={!!actionLoading}
+            onClick={(e) => { e.stopPropagation(); handleAction("complete", async () => await onComplete(order)); }}
+            className="flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
+            {actionLoading === "complete" && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
             Mark Complete
           </button>
         )}
 
         {isCancellable && (
           <button
-            onClick={(e) => { e.stopPropagation(); onCancel(order); }}
-            className="flex-1 py-2 text-sm font-bold bg-white text-gray-500 border border-gray-200 rounded-lg hover:text-red-500 hover:bg-red-50 transition-all"
+            disabled={!!actionLoading}
+            onClick={(e) => { e.stopPropagation(); handleAction("cancel", async () => await onCancel(order)); }}
+            className="flex-1 py-2 flex items-center justify-center gap-2 text-sm font-bold bg-white text-gray-500 border border-gray-200 rounded-lg hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
+            {actionLoading === "cancel" && <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />}
             Cancel
           </button>
         )}
