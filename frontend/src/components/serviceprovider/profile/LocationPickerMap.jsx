@@ -87,7 +87,7 @@ function InvalidateSize() {
 }
 
 // ─── Map Modal ─────────────────────────────────────────────────────────────
-function MapModal({ onConfirm, onClose, initialLatLng }) {
+export function MapModal({ onConfirm, onClose, initialLatLng }) {
   const DEFAULT = { lat: 33.6844, lng: 73.0479 }; // Rawalpindi
   const [pin, setPin] = useState(initialLatLng ?? DEFAULT);
   const [flyTarget, setFlyTarget] = useState(null);

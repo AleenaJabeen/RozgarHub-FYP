@@ -94,17 +94,15 @@ const OrderDetails = () => {
       }
     };
 
-    // ✅ ADDED: Listen for Stripe clearing the payment instantly
     const handlePaymentCompleted = (paidOrderId) => {
       if (paidOrderId === orderId) {
-        // Silently refresh the UI without a toast to show the paid badge instantly
         dispatch(getOrderById(orderId)); 
       }
     };
 
     socket.on("broadcast_claimed", handleBroadcastClaimed);
     socket.on("order_auto_cancelled", handleOrderAutoCancelled);
-    socket.on("payment_completed", handlePaymentCompleted); // ✅ Attached listener
+    socket.on("payment_completed", handlePaymentCompleted); 
 
     return () => { 
       dispatch(clearActiveOrder()); 
@@ -112,7 +110,7 @@ const OrderDetails = () => {
       if (socket) {
         socket.off("broadcast_claimed", handleBroadcastClaimed);
         socket.off("order_auto_cancelled", handleOrderAutoCancelled);
-        socket.off("payment_completed", handlePaymentCompleted); // ✅ Cleaned up listener
+        socket.off("payment_completed", handlePaymentCompleted); 
       }
     };
   }, [dispatch, orderId]);
@@ -172,7 +170,7 @@ const OrderDetails = () => {
 
   const scheduledDate = order.scheduledDate
     ? new Date(order.scheduledDate).toLocaleDateString("en-PK", {
-        day: "numeric", month: "long", year: "numeric",
+        day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
       })
     : null;
 
@@ -253,7 +251,6 @@ const OrderDetails = () => {
                     </div>
                   )}
                   
-                  {/* ✅ SMART PAYMENT CHECK */}
                   {order.isPaid ? (
                     <div className="mt-6 border-t pt-6">
                       <div className="flex items-center gap-3 bg-emerald-50 text-emerald-700 px-4 py-3 rounded-xl border border-emerald-100">
@@ -294,7 +291,7 @@ const OrderDetails = () => {
                 <MdOutlineShoppingBag className="text-secondary text-lg" />
                 <h3 className="text-base font-bold text-gray-800">Job Requirements</h3>
               </div>
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
                 {order.requirements || (
                   <span className="text-gray-300 italic">No specific requirements provided.</span>
                 )}
@@ -365,17 +362,29 @@ const OrderDetails = () => {
                   ) : (
                     <IoPersonCircle className="text-[48px] text-gray-300 flex-shrink-0" />
                   )}
+                  
+                  {/* ✅ ADDED: Provider Rating block below the name */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-800 capitalize truncate">
                       {providerName}
                     </p>
+                    {provider?._id && (
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <div className="flex items-center gap-0.5">
+                          <FaStar className="text-amber-400 text-xs" />
+                          <span className="text-xs font-bold text-gray-700">{provider.averageRating?.toFixed(1) || "0.0"}</span>
+                        </div>
+                        <span className="text-[10px] text-gray-400 font-medium">({provider.totalReviews || 0} reviews)</span>
+                      </div>
+                    )}
                   </div>
+
                   {provider?._id && <IoChevronForward className="text-gray-300 group-hover:text-secondary text-base transition-colors flex-shrink-0" />}
                 </div>
               )}
 
               {/* Review Button */}
-              {order.status === "completed" && order.isPaid && !order.isReviewed && (
+              {order.status === "completed" && order.isPaid && !order.isReviewedByCustomer && (
                 <button
                   onClick={() => setIsReviewModalOpen(true)}
                   className="w-full mt-5 py-3 text-sm font-bold text-white bg-[#0d7a5f] rounded-xl hover:bg-[#0e5641] active:scale-95 transition-all shadow-md shadow-[#0d7a5f]/20 flex items-center justify-center gap-2"

@@ -50,9 +50,19 @@ const createReview = asyncHandler(async (req, res) => {
     comment: comment || "",
   });
 
-  // 6. Update order status
-  await Order.findByIdAndUpdate(orderId, { isReviewed: true });
-    // ================= REVIEW NOTIFICATION =================
+  // ✅ 6. Fix: Update exact schema field so frontend hides the review button
+  await Order.findByIdAndUpdate(orderId, { isReviewedByCustomer: true });
+
+  // ✅ BONUS: Automatically calculate and update the Provider's average rating!
+  const allReviews = await Review.find({ serviceProviderId: order.serviceProviderId });
+  const avgRating = allReviews.reduce((acc, curr) => acc + curr.rating, 0) / allReviews.length;
+  
+  await ServiceProvider.findByIdAndUpdate(order.serviceProviderId, { 
+    totalReviews: allReviews.length, 
+    averageRating: parseFloat(avgRating.toFixed(1))
+  });
+
+  // ================= REVIEW NOTIFICATION =================
 
   const io = getIO();
 

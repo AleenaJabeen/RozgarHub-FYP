@@ -39,6 +39,7 @@ import { connectSocket, disconnectSocket } from "./socket/socket";
 import NoChatSelectedComponent from "./components/chat/NoChatSelectedComponent";
 import { useGlobalSocket } from "./hooks/GlobalSocket";
 import UserInfoPage from "./components/chat/UserInfoPage";
+import Whislist from "./pages/customer/Wishlist";
 import {
   initializeNotifications,
 } from "./utils/notification";
@@ -151,6 +152,7 @@ function App() {
             <Route path="place-order" element={<CustomerOrderPage />} />
             <Route path="orders" element={<CustomerOrderManagement />} />
             <Route path="orders/:orderId" element={<OrderDetails />} />
+            <Route path="wishlist" element={<Whislist />} />
             <Route
               path="provider/:providerId"
               element={<ProviderProfileView />}

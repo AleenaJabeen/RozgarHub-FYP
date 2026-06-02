@@ -109,7 +109,7 @@ const Navbar = () => {
         icon: IoNotificationsOutline,
         unread: unreadNotifications,
       },
-      { name: "Wishlist", href: "/", icon: IoMdHeartEmpty },
+      { name: "Wishlist", href: "/customer/wishlist", icon: IoMdHeartEmpty },
     ],
     serviceprovider: [
       { name: "Dashboard", href: "/serviceprovider" },

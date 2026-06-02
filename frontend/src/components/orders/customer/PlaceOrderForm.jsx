@@ -14,7 +14,7 @@ import {
   HiOutlineTag
 } from "react-icons/hi";
 
-// ✅ STRICT LIST: Only allow these database categories to appear in the Urgent Broadcast dropdown
+// Strict list for urgent broadcast categories
 const URGENT_ALLOWED_CATEGORIES = [
   "Plumber",
   "Electrician",
@@ -29,8 +29,9 @@ const URGENT_ALLOWED_CATEGORIES = [
 const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroadcast = false, broadcastCoords, onSuccess }) => {
   const dispatch = useDispatch();
   const { loading } = useSelector((state) => state.orders);
-  
   const { categories = [] } = useSelector((state) => state.categories);
+
+  const [minDateTime, setMinDateTime] = useState("");
 
   useEffect(() => {
     if (isBroadcast && categories.length === 0) {
@@ -38,7 +39,14 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
     }
   }, [dispatch, isBroadcast, categories.length]);
 
-  // ✅ FILTER: Extract only the categories that match our urgent criteria
+  // ✅ Generate current datetime to block past dates on the calendar
+  useEffect(() => {
+    const now = new Date();
+    // Adjust for local timezone offset so the input 'min' attribute works correctly
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    setMinDateTime(now.toISOString().slice(0, 16));
+  }, []);
+
   const urgentCategories = categories.filter((cat) => 
     URGENT_ALLOWED_CATEGORIES.includes(cat.name)
   );
@@ -100,7 +108,11 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
     } else {
       submitData.append("gigId", gig._id);
       submitData.append("serviceProviderId", serviceProviderId);
-      if (formData.scheduledDate) submitData.append("scheduledDate", formData.scheduledDate);
+      
+      // ✅ Attach scheduled datetime if it's a DirectHire
+      if (backendOrderType === "DirectHire") {
+        submitData.append("scheduledDate", formData.scheduledDate);
+      }
       
       if (backendOrderType === "InspectionHire") {
         submitData.append("inspectionTime", formData.inspectionTime);
@@ -155,7 +167,6 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <HiOutlineTag className="text-orange-400 text-lg" />
               </div>
-              {/* ✅ Now strictly mapping over the filtered urgentCategories array */}
               <select
                 name="category"
                 required
@@ -165,9 +176,7 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
               >
                 <option value="" disabled>Select an urgent category...</option>
                 {urgentCategories.map((cat) => (
-                  <option key={cat._id} value={cat.name}>
-                    {cat.name}
-                  </option>
+                  <option key={cat._id} value={cat.name}>{cat.name}</option>
                 ))}
               </select>
             </div>
@@ -197,18 +206,21 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
           </div>
         </div>
 
-        {!isBroadcast && (
+        {/* ✅ Updated: Mandatory DateTime for Hourly Orders */}
+        {!isBroadcast && backendOrderType === "DirectHire" && (
           <div>
             <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">
-              Scheduled Date <span className="text-gray-400 font-normal normal-case">(Optional)</span>
+              Scheduled Date & Time <span className="text-red-500">*</span>
             </label>
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <HiOutlineCalendar className="text-gray-400 group-focus-within:text-secondary transition-colors text-lg" />
               </div>
               <input
-                type="date"
+                type="datetime-local"
                 name="scheduledDate"
+                required
+                min={minDateTime} // Blocks past dates/times
                 value={formData.scheduledDate}
                 onChange={handleChange}
                 className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all text-sm font-medium text-gray-800 bg-gray-50/50 hover:bg-white focus:bg-white"
@@ -240,11 +252,12 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
         </div>
       )}
 
+      {/* ✅ Updated: Added min to Inspection Time */}
       {backendOrderType === "InspectionHire" && (
         <div className="p-6 bg-purple-50/50 border border-purple-200 rounded-2xl shadow-sm space-y-5">
           <div>
             <label className="block text-xs font-bold text-purple-800 uppercase tracking-wide mb-2">
-              Specific Inspection Time <span className="text-red-500">*</span>
+              Specific Inspection Date & Time <span className="text-red-500">*</span>
             </label>
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -254,6 +267,7 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
                 type="datetime-local"
                 name="inspectionTime"
                 required
+                min={minDateTime} // Blocks past dates/times
                 value={formData.inspectionTime}
                 onChange={handleChange}
                 className="w-full pl-11 pr-4 py-3.5 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium text-gray-800 bg-white"
