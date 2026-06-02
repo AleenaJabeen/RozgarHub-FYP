@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { getMyGigs } from "../../store/serviceProvider/gig-slice";
 import EmptyGigState from "../../components/serviceprovider/gig/EmptyGigState";
+import { showToast } from "../../utils/toastHelper";
 
 function Gig() {
   const navigate = useNavigate();
@@ -25,7 +26,14 @@ function Gig() {
         {gigs.length > 0 && (
           <button
             className="bg-secondary text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:shadow-lg transition-all active:scale-95"
-            onClick={() => navigate("/serviceprovider/createGig")}
+            onClick={() => {
+              if (gigs.length >= 4) {
+                showToast("Maximum 4 gigs allowed", "error");
+                return;
+              }
+
+              navigate("/serviceprovider/createGig");
+            }}
           >
             Create New Gig
           </button>
@@ -42,7 +50,7 @@ function Gig() {
         <EmptyGigState />
       ) : (
         /* Gigs Grid */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {gigs.map((gig) => (
             <GigCard key={gig._id} gig={gig} />
           ))}
