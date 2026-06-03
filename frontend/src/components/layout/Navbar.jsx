@@ -80,7 +80,7 @@ const Navbar = () => {
       showToast(data.message || "Logged out successfully");
       setDropdownOpen(false);
       setMobileOpen(false);
-      navigate("/");
+      navigate("/", { replace: true });
     } catch (error) {
       showToast(error, "error");
     }
@@ -94,9 +94,9 @@ const Navbar = () => {
   const navLinks = {
     pending: [{ name: "Services", href: "/", isMega: true }],
     customer: [
+      { name: "Dashboard", href: "/customer" },
       { name: "Services", href: "/customer/services", isMega: true },
       { name: "Orders", href: "/customer/orders" },
-        { name: "Dashboard", href: "/customer" },
       {
         name: "Messages",
         href: "/messages",
@@ -137,7 +137,7 @@ const Navbar = () => {
     const textClass = size === "sm" ? "text-base" : "text-2xl";
     return (
       <div
-        className={`${sizeClass} rounded-full border border-gray-300 overflow-hidden flex-shrink-0`}
+        className={`${sizeClass} rounded-full border border-gray-300 overflow-hidden shrink-0`}
       >
         {avatar ? (
           <img src={avatar} alt={name} className="w-full h-full object-cover" />
@@ -159,14 +159,14 @@ const Navbar = () => {
           <div className="group/cat mb-4">
             <h4 className="cursor-pointer relative pb-2 font-bold text-tertiary text-sm uppercase tracking-wider inline-block w-full">
               {cat.name}
-              <span className="absolute rounded-full bottom-0 left-0 w-0 h-[3px] bg-secondary transition-all duration-500 ease-in-out group-hover/cat:w-[70%]" />
-              <span className="absolute rounded-full bottom-0 left-0 w-[70%] h-[1px] bg-gray-100 -z-10" />
+              <span className="absolute rounded-full bottom-0 left-0 w-0 h-0.75 bg-secondary transition-all duration-500 ease-in-out group-hover/cat:w-[70%]" />
+              <span className="absolute rounded-full bottom-0 left-0 w-[70%] h-px bg-gray-100 -z-10" />
             </h4>
             <ul className="space-y-2 mt-3">
               {cat.subcategories.map((sub) => (
                 <li key={sub}>
                   <Link
-                    to={`${role==="pending"?"/":"/customer/services"}`}
+                    to={`${role === "pending" ? "/" : "/customer/services"}`}
                     onClick={onLinkClick}
                     className="text-sm text-gray-500 hover:text-secondary hover:translate-x-1 hover:font-bold transition-all inline-block"
                   >
@@ -182,10 +182,10 @@ const Navbar = () => {
   );
 
   return (
-    <nav className="bg-primary shadow-md border-b border-gray-100 sticky max-h-[77px] top-0 z-50">
+    <nav className="bg-primary shadow-md border-b border-gray-100 sticky max-h-19.25 top-0 z-50">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          <Link to="/" className="flex-shrink-0">
+          <Link to="/" className="shrink-0">
             <img src={Logo2} alt="RozgarHub" className="h-12 w-auto" />
           </Link>
 
@@ -200,13 +200,21 @@ const Navbar = () => {
                   onMouseEnter={() => setDesktopMegaOpen(true)}
                   onMouseLeave={() => setDesktopMegaOpen(false)}
                 >
-                  <Link
+                  {/* Using NavLink for Mega Menu Trigger parent option style */}
+                  <NavLink
                     to={link.href}
                     onClick={() => setDesktopMegaOpen(false)}
-                    className={`flex cursor-pointer  items-center text-gray-600 hover:text-secondary font-semibold transition-colors ${desktopMegaOpen ? "text-secondary" : ""}`}
+                    end
+                    className={({ isActive }) =>
+                      `flex cursor-pointer items-center font-semibold transition-colors ${
+                        isActive || desktopMegaOpen
+                          ? "text-secondary"
+                          : "text-gray-600 hover:text-secondary"
+                      }`
+                    }
                   >
                     {link.name}
-                  </Link>
+                  </NavLink>
 
                   {desktopMegaOpen && (
                     <div
@@ -220,13 +228,16 @@ const Navbar = () => {
                   )}
                 </div>
               ) : (
-               <Link
+                <NavLink
                   key={link.name}
                   to={link.href}
-                  className={
+                  end
+                  className={({ isActive }) =>
                     `relative flex items-center ${
                       link.icon ? "justify-center" : ""
-                    } font-semibold transition-colors`
+                    } font-semibold transition-colors ${
+                      isActive ? "text-secondary" : "text-gray-600 hover:text-secondary"
+                    }`
                   }
                 >
                   {link.icon ? (
@@ -240,8 +251,8 @@ const Navbar = () => {
                   ) : (
                     <span>{link.name}</span>
                   )}
-                </Link>
-              ),
+                </NavLink>
+              )
             )}
 
             {role === "pending" ? (
@@ -267,7 +278,9 @@ const Navbar = () => {
                 >
                   <Avatar size="sm" />
                   <div
-                    className={`w-2 h-2 absolute bottom-1 right-0 ${isOnline ? "bg-green-500" : "bg-red-500 "} rounded-full`}
+                    className={`w-2 h-2 absolute bottom-1 right-0 ${
+                      isOnline ? "bg-green-500" : "bg-red-500 "
+                    } rounded-full`}
                   ></div>
                 </button>
 
@@ -288,7 +301,11 @@ const Navbar = () => {
                       </div>
                     </div>
                     <Link
-                      to={role === "serviceprovider" ? "/serviceprovider" : "/customer"}
+                      to={
+                        role === "serviceprovider"
+                          ? "/serviceprovider"
+                          : "/customer"
+                      }
                       className={`flex gap-2 cursor-pointer items-center px-2 py-4 text-base text-gray-600 hover:bg-gray-50`}
                     >
                       <IoGridOutline className="text-lg" />
@@ -306,7 +323,7 @@ const Navbar = () => {
                       Profile Settings
                     </Link>
                     <Link
-                    to="/messages"
+                      to="/messages"
                       className="flex items-center gap-2 cursor-pointer px-2 py-2.5 text-base text-gray-600 hover:bg-gray-50"
                     >
                       <IoChatbubblesOutline className="text-lg" />
@@ -362,13 +379,17 @@ const Navbar = () => {
                           : "text-gray-600 hover:bg-gray-50"
                       }`}
                     >
-                      <Link
+                      {/* NavLink for mobile mega menu master button toggle appearance */}
+                      <NavLink
                         to={link.href}
                         onClick={closeMobileMenu}
-                        className="flex-grow py-2"
+                        end
+                        className={({ isActive }) =>
+                          `flex-grow py-2 ${isActive ? "text-secondary" : ""}`
+                        }
                       >
                         {link.name}
-                      </Link>
+                      </NavLink>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -377,7 +398,9 @@ const Navbar = () => {
                         className="p-2"
                       >
                         <IoChevronDown
-                          className={`transition-transform duration-300 ${mobileMegaOpen ? "rotate-180" : ""}`}
+                          className={`transition-transform duration-300 ${
+                            mobileMegaOpen ? "rotate-180" : ""
+                          }`}
                         />
                       </button>
                     </div>
@@ -393,7 +416,11 @@ const Navbar = () => {
                               {cat.subcategories.map((sub) => (
                                 <Link
                                   key={sub}
-                                  to={`${role==="pending"?"/":"/customer/services"}`}
+                                  to={`${
+                                    role === "pending"
+                                      ? "/"
+                                      : "/customer/services"
+                                  }`}
                                   onClick={closeMobileMenu}
                                   className="block py-2 text-gray-500 text-sm active:text-secondary"
                                 >
@@ -407,25 +434,39 @@ const Navbar = () => {
                     )}
                   </div>
                 ) : (
-                  <Link
+                  <NavLink
                     to={link.href}
                     onClick={closeMobileMenu}
-                    className="block px-4 py-4 text-base text-gray-600 font-semibold hover:bg-secondary/10 rounded-xl"
+                    end
+                    className={({ isActive }) =>
+                      `block px-4 py-4 text-base font-semibold rounded-xl ${
+                        isActive
+                          ? "bg-secondary/10 text-secondary"
+                          : "text-gray-600 hover:bg-secondary/10"
+                      }`
+                    }
                   >
                     {link.name}
-                  </Link>
+                  </NavLink>
                 )}
               </React.Fragment>
             ))}
 
             {role !== "pending" && (
-              <Link
+              <NavLink
                 to="/profile"
                 onClick={closeMobileMenu}
-                className="block px-4 py-4 text-base text-gray-600 font-semibold hover:bg-secondary/10 rounded-xl"
+                end
+                className={({ isActive }) =>
+                  `block px-4 py-4 text-base font-semibold rounded-xl ${
+                    isActive
+                      ? "bg-secondary/10 text-secondary"
+                      : "text-gray-600 hover:bg-secondary/10"
+                  }`
+                }
               >
                 Profile Settings
-              </Link>
+              </NavLink>
             )}
 
             <div className="pt-3 border-t border-gray-300">
