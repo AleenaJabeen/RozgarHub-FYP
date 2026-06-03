@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { createOrder } from "../../../store/orders/order-slice";
-import { getCategories } from "../../../store/serviceProvider/category-slice"; 
+import { getCategories } from "../../../store/serviceProvider/category-slice";
 import { showToast } from "../../../utils/toastHelper";
 import { MdUploadFile } from "react-icons/md";
 import { IoClose } from "react-icons/io5";
-import { 
-  HiOutlineLocationMarker, 
-  HiOutlineCalendar, 
-  HiOutlineClock, 
+import {
+  HiOutlineLocationMarker,
+  HiOutlineCalendar,
+  HiOutlineClock,
   HiOutlineDocumentText,
   HiOutlineBriefcase,
-  HiOutlineTag
+  HiOutlineTag,
 } from "react-icons/hi";
 
 // Strict list for urgent broadcast categories
@@ -23,10 +23,17 @@ const URGENT_ALLOWED_CATEGORIES = [
   "Appliance Repair",
   "Carpenter",
   "Labor Work",
-  "CCTV Installation"
+  "CCTV Installation",
 ];
 
-const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroadcast = false, broadcastCoords, onSuccess }) => {
+const PlaceOrderForm = ({
+  gig,
+  serviceProviderId,
+  bookingType = "hourly",
+  isBroadcast = false,
+  broadcastCoords,
+  onSuccess,
+}) => {
   const dispatch = useDispatch();
   const { loading } = useSelector((state) => state.orders);
   const { categories = [] } = useSelector((state) => state.categories);
@@ -42,13 +49,14 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
   // ✅ Generate current datetime to block past dates on the calendar
   useEffect(() => {
     const now = new Date();
+    now.setMinutes(now.getMinutes() + 30);
     // Adjust for local timezone offset so the input 'min' attribute works correctly
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     setMinDateTime(now.toISOString().slice(0, 16));
   }, []);
 
-  const urgentCategories = categories.filter((cat) => 
-    URGENT_ALLOWED_CATEGORIES.includes(cat.name)
+  const urgentCategories = categories.filter((cat) =>
+    URGENT_ALLOWED_CATEGORIES.includes(cat.name),
   );
 
   const getBackendOrderType = () => {
@@ -56,12 +64,12 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
     if (bookingType === "inspection") return "InspectionHire";
     return "DirectHire";
   };
-  
+
   const backendOrderType = getBackendOrderType();
 
   const [formData, setFormData] = useState({
-    requestTitle: "", 
-    category: "",     
+    requestTitle: "",
+    category: "",
     serviceLocation: "",
     requirements: "",
     scheduledDate: "",
@@ -69,7 +77,7 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
     inspectionTime: "",
     inspectionNotes: "",
   });
-  
+
   const [images, setImages] = useState([]);
 
   const handleChange = (e) => {
@@ -88,11 +96,32 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!isBroadcast &&
+  (backendOrderType === "DirectHire" ||
+    backendOrderType === "InspectionHire")) {
+      const selectedDateTime = new Date(
+    backendOrderType === "DirectHire"
+      ? formData.scheduledDate
+      : formData.inspectionTime);
+      const now = new Date();
+
+      const diffInMinutes = (selectedDateTime - now) / (1000 * 60);
+
+      if (diffInMinutes < 30) {
+        showToast(
+          "Orders must be scheduled at least 30 minutes in advance.",
+          "error",
+        );
+        return;
+      }
+    }
+
     const submitData = new FormData();
-    
+
     submitData.append("orderType", backendOrderType);
     submitData.append("serviceLocation", formData.serviceLocation);
-    if (formData.requirements) submitData.append("requirements", formData.requirements);
+    if (formData.requirements)
+      submitData.append("requirements", formData.requirements);
 
     if (isBroadcast || backendOrderType === "UrgentHire") {
       submitData.append("isBroadcast", "true");
@@ -108,15 +137,16 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
     } else {
       submitData.append("gigId", gig._id);
       submitData.append("serviceProviderId", serviceProviderId);
-      
+
       // ✅ Attach scheduled datetime if it's a DirectHire
       if (backendOrderType === "DirectHire") {
         submitData.append("scheduledDate", formData.scheduledDate);
       }
-      
+
       if (backendOrderType === "InspectionHire") {
         submitData.append("inspectionTime", formData.inspectionTime);
-        if (formData.inspectionNotes) submitData.append("inspectionNotes", formData.inspectionNotes);
+        if (formData.inspectionNotes)
+          submitData.append("inspectionNotes", formData.inspectionNotes);
       }
     }
 
@@ -126,8 +156,13 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
 
     try {
       await dispatch(createOrder(submitData)).unwrap();
-      showToast(isBroadcast ? "Urgent Hiring Broadcast sent!" : "Order placed successfully!", "success");
-      if (onSuccess) onSuccess(); 
+      showToast(
+        isBroadcast
+          ? "Urgent Hiring Broadcast sent!"
+          : "Order placed successfully!",
+        "success",
+      );
+      if (onSuccess) onSuccess();
     } catch (err) {
       showToast(err || "Failed to place order.", "error");
     }
@@ -135,7 +170,6 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      
       {/* ── Broadcast Details ── */}
       {isBroadcast && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -174,9 +208,13 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
                 onChange={handleChange}
                 className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm font-medium text-gray-800 bg-gray-50/50 focus:bg-white appearance-none"
               >
-                <option value="" disabled>Select an urgent category...</option>
+                <option value="" disabled>
+                  Select an urgent category...
+                </option>
                 {urgentCategories.map((cat) => (
-                  <option key={cat._id} value={cat.name}>{cat.name}</option>
+                  <option key={cat._id} value={cat.name}>
+                    {cat.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -257,7 +295,8 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
         <div className="p-6 bg-purple-50/50 border border-purple-200 rounded-2xl shadow-sm space-y-5">
           <div>
             <label className="block text-xs font-bold text-purple-800 uppercase tracking-wide mb-2">
-              Specific Inspection Date & Time <span className="text-red-500">*</span>
+              Specific Inspection Date & Time{" "}
+              <span className="text-red-500">*</span>
             </label>
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -276,7 +315,10 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
           </div>
           <div>
             <label className="block text-xs font-bold text-purple-800 uppercase tracking-wide mb-2">
-              Inspection Notes <span className="text-purple-400 font-normal normal-case">(Optional)</span>
+              Inspection Notes{" "}
+              <span className="text-purple-400 font-normal normal-case">
+                (Optional)
+              </span>
             </label>
             <textarea
               name="inspectionNotes"
@@ -293,7 +335,10 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
       {/* ── Job Requirements ── */}
       <div>
         <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">
-          Job Requirements & Details <span className="text-gray-400 font-normal normal-case">(Recommended)</span>
+          Job Requirements & Details{" "}
+          <span className="text-gray-400 font-normal normal-case">
+            (Recommended)
+          </span>
         </label>
         <div className="relative group">
           <div className="absolute top-4 left-0 pl-4 flex items-start pointer-events-none">
@@ -316,30 +361,49 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
           <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide">
             Reference Images
           </label>
-          <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">Max 5 limits</span>
+          <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">
+            Max 5 limits
+          </span>
         </div>
-        
+
         <div className="flex items-center justify-center w-full group">
           <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-gray-200 border-dashed rounded-2xl cursor-pointer bg-gray-50/50 hover:bg-gray-50 hover:border-secondary transition-all group-focus-within:ring-2 group-focus-within:ring-secondary/20">
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               <div className="p-3 bg-white shadow-sm rounded-full mb-3 group-hover:scale-110 transition-transform">
                 <MdUploadFile className="text-2xl text-secondary" />
               </div>
-              <p className="text-sm text-gray-500 font-medium"><span className="text-secondary font-bold">Click to upload</span> or drag and drop</p>
-              <p className="text-xs text-gray-400 mt-1">PNG, JPG or JPEG</p>
+              <p className="text-sm text-gray-500 font-medium">
+                <span className="text-secondary font-bold">
+                  Click to upload
+                </span>{" "}
+                or drag and drop
+              </p>
             </div>
-            <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageChange} />
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageChange}
+            />
           </label>
         </div>
 
         {images.length > 0 && (
           <div className="flex gap-3 mt-4 overflow-x-auto pb-2 custom-scrollbar">
             {images.map((img, idx) => (
-              <div key={idx} className="relative w-24 h-24 flex-shrink-0 group/img">
-                <img src={URL.createObjectURL(img)} alt="preview" className="w-full h-full object-cover rounded-xl border border-gray-200 shadow-sm" />
-                <button 
-                  type="button" 
-                  onClick={() => setImages(images.filter((_, i) => i !== idx))} 
+              <div
+                key={idx}
+                className="relative w-24 h-24 flex-shrink-0 group/img"
+              >
+                <img
+                  src={URL.createObjectURL(img)}
+                  alt="preview"
+                  className="w-full h-full object-cover rounded-xl border border-gray-200 shadow-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setImages(images.filter((_, i) => i !== idx))}
                   className="absolute -top-2 -right-2 bg-white text-gray-500 hover:text-red-500 rounded-full w-6 h-6 flex items-center justify-center shadow-md border border-gray-100 transition-colors opacity-0 group-hover/img:opacity-100"
                 >
                   <IoClose className="text-base" />
@@ -356,8 +420,8 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
           type="submit"
           disabled={loading}
           className={`w-full py-4 text-white font-extrabold text-base rounded-xl transition-all flex justify-center items-center shadow-lg active:scale-[0.98] ${
-            loading 
-              ? "bg-gray-400 cursor-not-allowed shadow-none" 
+            loading
+              ? "bg-gray-400 cursor-not-allowed shadow-none"
               : isBroadcast
                 ? "bg-orange-500 hover:bg-orange-600 shadow-orange-500/30"
                 : "bg-secondary hover:bg-[#0e5641] shadow-secondary/30"
@@ -368,8 +432,10 @@ const PlaceOrderForm = ({ gig, serviceProviderId, bookingType = "hourly", isBroa
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
               Processing...
             </>
+          ) : isBroadcast ? (
+            "Broadcast Urgent Hiring Request"
           ) : (
-             isBroadcast ? "Broadcast Urgent Hiring Request" : "Confirm & Place Order"
+            "Confirm & Place Order"
           )}
         </button>
       </div>

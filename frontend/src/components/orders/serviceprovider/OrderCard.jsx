@@ -31,6 +31,10 @@ const OrderCard = ({ order, role, onRespond, onCancel, onComplete }) => {
     ? new Date(order.scheduledDate).toLocaleDateString("en-PK", {
         day: "numeric", month: "short", year: "numeric",
       })
+    : order.inspectionTime
+    ? new Date(order.inspectionTime).toLocaleDateString("en-PK", {
+        day: "numeric", month: "short", year: "numeric",
+      })
     : "Unscheduled";
 
   const handleStartWork = async () => {

@@ -107,7 +107,7 @@ const CustomerOrderCard = ({ order, onCancel }) => {
             <div className="flex items-center gap-2.5 text-sm text-gray-600">
               <HiOutlineCalendar className="text-gray-400 text-base flex-shrink-0" />
               <span className="font-medium">
-                {order.scheduledDate ? new Date(order.scheduledDate).toLocaleDateString("en-PK", { day: "numeric", month: "short" }) : "Unscheduled"}
+                {order.scheduledDate ? new Date(order.scheduledDate).toLocaleDateString("en-PK", { day: "numeric", month: "short" }) : order.inspectionTime ? new Date(order.inspectionTime).toLocaleDateString("en-PK", { day: "numeric", month: "short" }) : "Unscheduled"}
               </span>
             </div>
           )}

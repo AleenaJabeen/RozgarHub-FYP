@@ -65,7 +65,7 @@ const PlaceOrder = () => {
   if (!isBroadcast && (!gig || !serviceProviderId)) return null;
 
   const handleSuccess = () => {
-    navigate("/customer/orders");
+    navigate("/customer/orders", { replace: true });
   };
 
   const getTypeDisplay = () => {
