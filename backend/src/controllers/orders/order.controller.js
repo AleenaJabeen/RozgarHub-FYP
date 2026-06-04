@@ -1,6 +1,7 @@
 import Order from "../../models/order.model.js";
 import { Customer } from "../../models/customer.model.js";
 import { ServiceProvider } from "../../models/serviceProvider.model.js";
+import { User } from "../../models/user.model.js"; // ✅ ADDED: Import User model
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
@@ -251,8 +252,10 @@ const createOrder = asyncHandler(async (req, res) => {
       const targetMinutes = parseTimeLimit(responseTimeLimit);
       const maxDistanceMeters = (targetMinutes / 60) * 30000;
 
-      const nearbyProviders = await ServiceProvider.find({
-        location: {
+      // ✅ FIXED: Query the User collection using the 2dsphere index on currentLocation
+      const nearbyUsers = await User.find({
+        role: "serviceprovider",
+        "location.currentLocation": {
           $near: {
             $geometry: {
               type: "Point",
@@ -261,7 +264,10 @@ const createOrder = asyncHandler(async (req, res) => {
             $maxDistance: maxDistanceMeters,
           },
         },
-      }).select("user");
+      }).select("_id");
+
+      // ✅ Map to match the existing loop format so no downstream code breaks
+      const nearbyProviders = nearbyUsers.map((u) => ({ user: u._id }));
 
       const io = getIO();
 
@@ -717,43 +723,54 @@ const cancelOrder = asyncHandler(async (req, res) => {
 
   const io = getIO();
 
+  // ✅ SCENARIO 1 FIX: If unaccepted broadcast, tell all overlays to vanish!
+  if (order.isBroadcast && !order.serviceProviderId) {
+    io.emit("order_auto_cancelled", order._id);
+  }
+
   let targetUserId = null;
 
   if (req.user.role === "customer") {
-    const provider = await ServiceProvider.findById(
-      order.serviceProviderId,
-    ).populate("user", "name");
+    // ✅ SCENARIO 2 FIX: Only try to notify SP if the SP actually exists
+    if (order.serviceProviderId) {
+      const provider = await ServiceProvider.findById(
+        order.serviceProviderId,
+      ).populate("user", "name");
 
-    targetUserId = provider?.user?._id;
+      targetUserId = provider?.user?._id;
 
-    if (targetUserId) {
-      const notification = await createNotification({
-        recipient: targetUserId,
-        sender: req.user._id,
-        type: "order",
-        title: "Order Cancelled",
-        message: "Customer cancelled the order.",
-        link: "/serviceprovider/orders",
-        metadata: {
-          orderId: order._id,
-        },
-      });
-
-      io.to(targetUserId.toString()).emit("new_notification", notification);
-      const isProviderOnline = io.sockets.adapter.rooms.has(
-        targetUserId.toString(),
-      );
-
-      if (!isProviderOnline) {
-        await sendPushNotification({
-          userId: targetUserId,
+      if (targetUserId) {
+        const notification = await createNotification({
+          recipient: targetUserId,
+          sender: req.user._id,
+          type: "order",
           title: "Order Cancelled",
-          body: "Customer cancelled the order.",
-          data: {
-            type: "order",
-            orderId: order._id.toString(),
+          message: "Customer cancelled the order.",
+          link: "/serviceprovider/orders",
+          metadata: {
+            orderId: order._id,
           },
         });
+
+        io.to(targetUserId.toString()).emit("new_notification", notification);
+        // ✅ Live update the SP's order details screen
+        io.to(targetUserId.toString()).emit("order_status_updated", order._id); 
+        
+        const isProviderOnline = io.sockets.adapter.rooms.has(
+          targetUserId.toString(),
+        );
+
+        if (!isProviderOnline) {
+          await sendPushNotification({
+            userId: targetUserId,
+            title: "Order Cancelled",
+            body: "Customer cancelled the order.",
+            data: {
+              type: "order",
+              orderId: order._id.toString(),
+            },
+          });
+        }
       }
     }
   } else {
@@ -777,6 +794,8 @@ const cancelOrder = asyncHandler(async (req, res) => {
     });
 
     io.to(targetUserId.toString()).emit("new_notification", notification);
+    io.to(targetUserId.toString()).emit("order_status_updated", order._id); 
+
     const isCustomerOnline = io.sockets.adapter.rooms.has(
       targetUserId.toString(),
     );
@@ -816,6 +835,11 @@ const claimBroadcastOrder = asyncHandler(async (req, res) => {
 
   if (!order.isBroadcast) {
     throw new ApiError(400, "This is not a broadcast order.");
+  }
+
+  // ✅ PREVENT RACE CONDITION: Ensure it hasn't been cancelled while SP was typing
+  if (order.status !== "pending") {
+    throw new ApiError(400, "This request is no longer available.");
   }
 
   if (order.serviceProviderId) {
@@ -877,14 +901,19 @@ const rebroadcastOrder = asyncHandler(async (req, res) => {
 
     const [lng, lat] = order.location.coordinates;
 
-    const nearbyProviders = await ServiceProvider.find({
-      location: {
+    // ✅ FIXED: Query the User collection using the 2dsphere index on currentLocation
+    const nearbyUsers = await User.find({
+      role: "serviceprovider",
+      "location.currentLocation": {
         $near: {
           $geometry: { type: "Point", coordinates: [lng, lat] },
           $maxDistance: maxDistanceMeters,
         },
       },
-    }).select("user");
+    }).select("_id");
+
+    // ✅ Map to match the existing loop format
+    const nearbyProviders = nearbyUsers.map((u) => ({ user: u._id }));
 
     const io = getIO();
     for (const provider of nearbyProviders) {
