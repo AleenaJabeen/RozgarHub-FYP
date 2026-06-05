@@ -815,7 +815,7 @@ const Dashboard = () => {
 
                 {completionPercentage !== "100" && (
                   <Link
-                    to="/profile"
+                    to="createProfile"
                     className="block text-center w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-all text-sm shadow-sm shadow-blue-100 hover:shadow-md active:scale-[0.99]"
                   >
                     Complete Verification Setup
