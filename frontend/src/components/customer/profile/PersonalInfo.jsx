@@ -12,7 +12,7 @@ import {
 } from "react-icons/fa"; 
 
 import { HiPlus } from "react-icons/hi";
-import LocationPickerMap from "../../serviceprovider/profile/Locationpickermap";
+import LocationPickerMap from "../../serviceprovider/profile/LocationPickerMap";
 
 const blankAddress = { street: "", city: "", state: "", country: "", zipCode: "" };
 
