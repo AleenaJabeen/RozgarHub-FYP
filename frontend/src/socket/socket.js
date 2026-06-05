@@ -5,8 +5,9 @@ let socket = null;
 export const connectSocket = () => {
  
   if (socket) return socket;
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
-  socket = io(`${import.meta.env.VITE_BACKEND_URL}`, {
+  socket = io(BACKEND_URL, {
     withCredentials: true,
     transports: ["websocket"],
     autoConnect: true,

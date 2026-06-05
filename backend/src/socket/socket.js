@@ -6,7 +6,6 @@ import cookie from "cookie";
 import { sendPushNotification } from "../services/notification.service.js";
 import { User } from "../models/user.model.js";
 import { createNotification } from "../controllers/notification/notification.controller.js";
-
 let io;
 const onlineUsers = new Map();
 const disconnectTimers = new Map();
