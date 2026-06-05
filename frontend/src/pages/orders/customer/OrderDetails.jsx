@@ -16,6 +16,7 @@ import { IoPersonCircle, IoChevronForward, IoImageOutline } from "react-icons/io
 import { FaStar, FaCheckCircle } from "react-icons/fa";
 
 import { getSocket, connectSocket } from "../../../socket/socket"; 
+import RozgarHubLoader from "../../../components/layout/Loader";
 
 const STATUS_STYLES = {
   pending:       "bg-amber-100 text-amber-700 border-amber-200",
@@ -141,9 +142,7 @@ const OrderDetails = () => {
 
   if (loading || !order) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary" />
-      </div>
+      <RozgarHubLoader/>
     );
   }
 

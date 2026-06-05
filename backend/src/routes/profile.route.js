@@ -29,7 +29,10 @@ router.route("/update-profile").patch(
     { name: "cnicImg", maxCount: 1 },
     { name: "avatar", maxCount: 1 },
     { name: "certificates", maxCount: 5 },
-    { name: "experienceDocuments", maxCount: 5 },
+    ...Array.from({ length: 10 }, (_, i) => ({
+      name: `expFile_${i}`,
+      maxCount: 1,
+    })),
   ]),
   updateServiceProviderProfile,
 );

@@ -10,6 +10,7 @@ import OrderTabs from "../../../components/orders/customer/OrderTabs";
 import OrderEmptyState from "../../../components/orders/customer/OrderEmptyState";
 import CustomerOrderCard from "../../../components/orders/customer/OrderCard";
 import ActionModal from "../../../components/orders/ActionModal";
+import RozgarHubLoader from "../../../components/layout/Loader";
 
 const CustomerOrderManagement = () => {
   const dispatch = useDispatch();
@@ -99,9 +100,7 @@ const CustomerOrderManagement = () => {
         )}
 
         {loading && orders.length === 0 ? (
-          <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-secondary border-t-transparent" />
-          </div>
+          <RozgarHubLoader/>
         ) : (
           <>
             {filteredOrders.length === 0 ? (

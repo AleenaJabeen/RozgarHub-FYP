@@ -18,6 +18,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { VscVerifiedFilled, VscUnverified } from "react-icons/vsc";
+import { motion } from "framer-motion";
 import { HiChevronRight } from "react-icons/hi";
 import { FaFire } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
@@ -33,6 +34,11 @@ const Dashboard = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { orders } = useSelector((state) => state.orders);
+  const { profile } =
+    useSelector((state) => state.serviceProviderProfile) || {};
+  const totalReviews = profile?.totalReviews || 0;
+  const averageRating = profile?.averageRating || 0;
+
   const [hasMounted, setHasMounted] = useState(false);
 
   const totalOrders = orders?.length || 0;
@@ -95,6 +101,42 @@ const Dashboard = () => {
   const totalPoints = 100;
   const currentPoints = (hasAvatar ? 60 : 0) + (hasPhone ? 40 : 0);
   const completionPercentage = ((currentPoints / totalPoints) * 100).toFixed(0);
+  const fadeUp = {
+    hidden: {
+      opacity: 0,
+      y: 30,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+      },
+    },
+  };
+
+  const staggerContainer = {
+    hidden: {},
+    visible: {
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const scaleIn = {
+    hidden: {
+      opacity: 0,
+      scale: 0.9,
+    },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.4,
+      },
+    },
+  };
 
   const getWeeklyActivityData = () => {
     const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -180,7 +222,12 @@ const Dashboard = () => {
   }, []);
   return (
     <div className="min-h-screen bg-[#f7f7f7] p-3 md:p-8 font-sans text-[#222325]">
-      <div className="w-[95%] mx-auto">
+      <motion.div
+        className="w-[95%] mx-auto"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+      >
         {/* Top Profile Header */}
         <header className="relative overflow-hidden bg-white rounded-2xl border border-gray-200 p-6 mb-8 flex flex-col sm:flex-row items-center justify-between shadow-sm gap-6">
           {/* Subtle decorative background gradient blobs */}
@@ -254,7 +301,11 @@ const Dashboard = () => {
         {/* ─── METRICS SUMMARY GRID ───────────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
           {/* Total Orders Assigned */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center justify-between shadow-sm">
+          <motion.div
+            variants={fadeUp}
+            whileHover={{ y: -2 }}
+            className="bg-white border border-gray-200 rounded-xl p-5 flex items-center justify-between shadow-sm"
+          >
             <div className="space-y-1">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
                 Total Orders Received
@@ -269,10 +320,14 @@ const Dashboard = () => {
             <div className="p-4 bg-gray-200 text-gray-600 rounded-2xl">
               <LiaToolsSolid size={32} />
             </div>
-          </div>
+          </motion.div>
 
           {/* Completed Orders Card */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center justify-between shadow-sm">
+          <motion.div
+            variants={fadeUp}
+            whileHover={{ y: -2 }}
+            className="bg-white border border-gray-200 rounded-xl p-5 flex items-center justify-between shadow-sm"
+          >
             <div className="space-y-1">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
                 Completed Orders
@@ -287,17 +342,21 @@ const Dashboard = () => {
             <div className="p-4 bg-green-100 text-green-600 rounded-2xl">
               <LiaCheckCircleSolid size={32} />
             </div>
-          </div>
+          </motion.div>
 
           {/* Ratings Card */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 flex items-center justify-between shadow-sm">
+          <motion.div
+            variants={fadeUp}
+            whileHover={{ y: -2 }}
+            className="bg-white border border-gray-200 rounded-xl p-5 flex items-center justify-between shadow-sm"
+          >
             <div className="space-y-1">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
                 Average Rating
               </p>
               <div className="flex items-center gap-1.5">
                 <h3 className="text-2xl font-black text-gray-900">
-                  {providerStats.averageRating}
+                  {averageRating}
                 </h3>
                 <LiaStarSolid className="text-amber-500 text-xl fill-amber-500" />
               </div>
@@ -308,7 +367,7 @@ const Dashboard = () => {
             <div className="p-4 bg-amber-100 text-amber-600 rounded-2xl">
               <LiaStarSolid size={32} />
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Main Layout Split */}
@@ -348,18 +407,22 @@ const Dashboard = () => {
                     <div className="absolute top-3 left-7 right-7 h-1 bg-slate-100 -translate-y-1/2 z-0 rounded-full"></div>
 
                     {/* 2. ACTIVE FILL LINE: Animates smoothly with matched 'top-3' tracking points */}
-                    <div
-                      style={{
-                        width: `${
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{
+                        width:
                           recentOrder?.statusStep === 1
                             ? "0%"
                             : recentOrder?.statusStep === 2
                               ? "50%"
-                              : "100%"
-                        }`,
+                              : "100%",
+                      }}
+                      transition={{
+                        duration: 1,
+                        ease: "easeOut",
                       }}
                       className="absolute top-3 left-4 h-1 bg-emerald-500 -translate-y-1/2 z-0 transition-all duration-700 ease-in-out rounded-full"
-                    ></div>
+                    ></motion.div>
 
                     {/* 3. STEP INTERACTION ROW */}
                     <div className="relative flex justify-between z-10">
@@ -422,7 +485,13 @@ const Dashboard = () => {
             )}
 
             {/* CHART 2: Premium Weekly Job Activity Chart (Mobile Full-Width Responsive) */}
-            <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-300 ">
+            <motion.section
+              variants={fadeUp}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-300 "
+            >
               <div className="flex justify-between items-center mb-6">
                 <div>
                   <div className="flex items-center gap-2">
@@ -555,7 +624,7 @@ const Dashboard = () => {
                   </ResponsiveContainer>
                 )}
               </div>
-            </section>
+            </motion.section>
             {/* CHART 3: Rating Distribution Progress Gauge */}
             <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
               <h2 className="text-base font-black tracking-tight mb-4">
@@ -573,8 +642,8 @@ const Dashboard = () => {
                   <div className="sm:col-span-4 flex flex-col items-center justify-center text-center p-4 bg-slate-50 rounded-xl border border-slate-100/50">
                     {/* Dynamic calculation fallbacks handled cleanly */}
                     <div className="text-4xl font-black italic tracking-tight text-secondary leading-none">
-                      {providerStats.averageRating
-                        ? Number(providerStats.averageRating).toFixed(1)
+                      {averageRating
+                        ? Number(averageRating).toFixed(1)
                         : "0.0"}
                     </div>
 
@@ -587,7 +656,7 @@ const Dashboard = () => {
                       {/* If rating is less than 4.5, you could conditionally swap icons here */}
                       <LiaStarSolid
                         className={
-                          providerStats.averageRating >= 4.5
+                          averageRating >= 4.5
                             ? "text-amber-500"
                             : "text-gray-200"
                         }
@@ -595,7 +664,7 @@ const Dashboard = () => {
                     </div>
 
                     <div className="text-[11px] font-black uppercase text-gray-400 tracking-wider">
-                      {providerStats.totalReviews || 0} Global Reviews
+                      {totalReviews || 0} Global Reviews
                     </div>
                   </div>
 
@@ -680,7 +749,16 @@ const Dashboard = () => {
                 </span>
               </div>
 
-              <div className="relative flex items-center justify-center my-4">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                whileInView="visible"
+                transition={{
+                  duration: 0.7,
+                  ease: "easeOut",
+                }}
+                className="relative flex items-center justify-center my-4"
+              >
                 <div className="absolute flex flex-col items-center justify-center">
                   <span className="text-3xl font-black tracking-tight text-blue-600 leading-none">
                     {completionPercentage}%
@@ -727,7 +805,7 @@ const Dashboard = () => {
                     className="transition-all duration-1000 ease-out"
                   />
                 </svg>
-              </div>
+              </motion.div>
               <div className="mt-4 w-full flex flex-col items-center">
                 <p className="text-xs text-gray-500 mb-5 leading-relaxed font-medium max-w-[240px]">
                   {completionPercentage === "100"
@@ -773,7 +851,7 @@ const Dashboard = () => {
             <OrderStatusPieChart providerStats={providerStats} />
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

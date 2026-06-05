@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { getMyGigs } from "../../store/serviceProvider/gig-slice";
 import EmptyGigState from "../../components/serviceprovider/gig/EmptyGigState";
 import { showToast } from "../../utils/toastHelper";
+import RozgarHubLoader from "../../components/layout/Loader";
 
 function Gig() {
   const navigate = useNavigate();
@@ -42,9 +43,7 @@ function Gig() {
 
       {/* Loading State */}
       {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary"></div>
-        </div>
+        <RozgarHubLoader/>
       ) : gigs.length === 0 ? (
         /* Empty State */
         <EmptyGigState />

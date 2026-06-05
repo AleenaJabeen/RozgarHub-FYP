@@ -3,9 +3,12 @@ import ChatSidebar from '../../components/chat/ChatSidebar';
 import { useParams, Outlet } from 'react-router-dom'; // Import Outlet
 import { connectSocket } from '../../socket/socket';
 import { useSelector } from 'react-redux';
+import RozgarHubLoader from '../../components/layout/Loader';
 
 function Chat() {
   const { chatId } = useParams();
+
+ 
 
   return (
     /* h-screen and overflow-hidden are correct here to prevent the WHOLE page from scrolling */

@@ -8,6 +8,7 @@ import {
   markAllNotificationsAsRead,
   deleteNotification,
 } from "../store/notification-slice";
+import RozgarHubLoader from '../components/layout/Loader'
 
 import {
   IoNotificationsOutline,
@@ -60,7 +61,7 @@ function Notification() {
         </div>
 
         {/* Loading */}
-        {loading && <p className="text-gray-500 text-center">Loading...</p>}
+        {loading && <RozgarHubLoader/>}
 
         {/* List */}
         <div className="space-y-3">

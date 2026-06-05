@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { HiOutlineHeart } from "react-icons/hi";
 import { TbMoodEmpty } from "react-icons/tb";
 import CustomerGigCard from "../../components/customer/gigs/CustomerGigCard";
+import RozgarHubLoader from "../../components/layout/Loader";
 
 // ─── Animation Variants ───────────────────────────────────────────────────────
 const fadeUp = {
@@ -72,9 +73,7 @@ const Wishlist = () => {
       {/* ── Main Content ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading ? (
-          <div className="flex justify-center py-24">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#0d7a5f]" />
-          </div>
+          <RozgarHubLoader/>
         ) : savedGigs.length === 0 ? (
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}

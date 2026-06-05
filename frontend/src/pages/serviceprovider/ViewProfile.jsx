@@ -15,6 +15,7 @@ import SkillsSection from "../../components/serviceprovider/viewProfile/SkillsSe
 import EducationSection from "../../components/serviceprovider/viewProfile/EducationSection";
 import { showToast } from "../../utils/toastHelper";
 import LocationSection from "../../components/serviceprovider/viewProfile/LocationSection";
+import RozgarHubLoader from "../../components/layout/Loader";
 
 const ViewProfile = () => {
   const dispatch = useDispatch();
@@ -55,7 +56,8 @@ const ViewProfile = () => {
   }, [dispatch, navigate]);
 
   useEffect(() => {
-    if (profile && user && isInitialLoad.current) {
+    if (profile && user) {
+      if (!isInitialLoad.current) return;
       const initial = {
         bio: profile.bio || "",
         experienceDetails: profile.experienceDetails || "",
@@ -66,14 +68,13 @@ const ViewProfile = () => {
         experienceDocuments: profile.experienceDocuments || [],
         certificates: profile.certificates || [],
         education: profile.education || "",
-        phone:user.phone || "",
+        phone: user.phone || "",
         address: {
           street: user.location?.address?.street || "",
           city: user.location?.address?.city || "",
           state: user.location?.address?.state || "",
           country: user.location?.address?.country || "",
           zipCode: user.location?.address?.zipCode || "",
-
         },
         currentLocation: {
           latitude: user.location?.currentLocation?.coordinates?.[1] || null,
@@ -89,87 +90,106 @@ const ViewProfile = () => {
     }
   }, [profile, user]);
 
- const scheduleSave = useCallback(
-  (nextData) => {
-    latestDataRef.current = nextData;
+  const scheduleSave = useCallback(
+    (nextData) => {
+      latestDataRef.current = nextData;
 
-    if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
 
-    timerRef.current = setTimeout(() => {
-      const current = latestDataRef.current;
-      const original = originalDataRef.current;
+      timerRef.current = setTimeout(() => {
+        const current = latestDataRef.current;
+        const original = originalDataRef.current;
 
-      const payload = new FormData();
-      let hasChanges = false;
+        const payload = new FormData();
+        let hasChanges = false;
 
-      Object.keys(current).forEach((key) => {
-        const currentValue = current[key];
-        const originalValue = original[key];
+        Object.keys(current).forEach((key) => {
+          const currentValue = current[key];
+          const originalValue = original[key];
 
-        const isEqual = Array.isArray(currentValue)
-          ? JSON.stringify(currentValue) === JSON.stringify(originalValue)
-          : currentValue === originalValue;
+          const isEqual = Array.isArray(currentValue)
+            ? JSON.stringify(currentValue) === JSON.stringify(originalValue)
+            : currentValue === originalValue;
 
-        if (!isEqual) {
-          hasChanges = true;
+          if (!isEqual) {
+            hasChanges = true;
 
-          if (key === "skills") {
-            payload.append("skills", currentValue.join(","));
-          } else if (key === "education") {
-            payload.append("education", currentValue);
-          } else if (key === "longitude" || key === "latitude") {
-            // ✅ FIX: Just append the coordinate key safely. Do not overwrite 'education'.
-            if (currentValue !== null && currentValue !== undefined) {
+            if (key === "skills") {
+              payload.append("skills", currentValue.join(","));
+            } else if (key === "education") {
+              payload.append("education", currentValue);
+            } else if (key === "longitude" || key === "latitude") {
+              // ✅ FIX: Just append the coordinate key safely. Do not overwrite 'education'.
+              if (currentValue !== null && currentValue !== undefined) {
+                payload.append(key, currentValue);
+              }
+            } else if (key === "experienceDocuments") {
+              currentValue.forEach((doc, index) => {
+                if (doc.title) payload.append(`expTitle_${index}`, doc.title);
+                if (doc.file) {
+                  payload.append(`expFile_${index}`, doc.file);
+                } else if (doc.documentUrl) {
+                  payload.append(`expUrl_${index}`, doc.documentUrl);
+                }
+              });
+              payload.append("expCount", currentValue.length);
+            } else if (key === "certificates") {
+              // ✅ Your original logic — just add existing URLs too
+              currentValue.forEach((cert, index) => {
+                if (cert.file) {
+                  payload.append("certificates", cert.file); // new upload
+                } else if (typeof cert === "string") {
+                  payload.append("existingCerts", cert); // existing Cloudinary URL
+                }
+              });
+            } else if (key === "avatar" && currentValue instanceof File) {
+              payload.append("avatar", currentValue);
+            } else if (key === "currentLocation") {
+              if (currentValue?.latitude && currentValue?.longitude) {
+                payload.append("latitude", currentValue.latitude);
+                payload.append("longitude", currentValue.longitude);
+              }
+            } else if (key === "address") {
+              Object.entries(currentValue).forEach(([subKey, subVal]) => {
+                payload.append(subKey, subVal);
+              });
+            } else {
               payload.append(key, currentValue);
             }
-          } else if (key === "certificates") {
-            currentValue.forEach((cert) => {
-              if (cert.file) {
-                payload.append("certificates", cert.file);
-              }
-            });
-          } else if (key === "avatar" && currentValue instanceof File) {
-            payload.append("avatar", currentValue);
-          } else if (key === "currentLocation") {
-            if (currentValue?.latitude && currentValue?.longitude) {
-              payload.append("latitude", currentValue.latitude);
-              payload.append("longitude", currentValue.longitude);
-            }
-          } else if (key === "address") {
-            Object.entries(currentValue).forEach(([subKey, subVal]) => {
-              payload.append(subKey, subVal);
-            });
-          } else {
-            payload.append(key, currentValue);
           }
-        }
-      });
+        });
 
-      if (!hasChanges) return;
+        if (!hasChanges) return;
 
-      setSaving(true);
+        setSaving(true);
 
-      dispatch(updateProviderProfile(payload))
-        .unwrap()
-        .then(() => {
-          originalDataRef.current = { ...current };
-        })
-        .catch((err) => {
-          // It's good practice to log or surface why backend rejected it here
-          console.error("Auto-save failed:", err);
-          showToast(err || "Failed to sync background updates.", "error");
-        })
-        .finally(() => setSaving(false));
-    }, 2000);
-  },
-  [dispatch],
-);
+        dispatch(updateProviderProfile(payload))
+          .unwrap()
+          .then(() => { 
+            dispatch(getProviderProfile());
+          })
+          .catch((err) => {
+            // It's good practice to log or surface why backend rejected it here
+            console.error("Auto-save failed:", err);
+            showToast(err || "Failed to sync background updates.", "error");
+          })
+          .finally(() => setSaving(false));
+      }, 2000);
+    },
+    [dispatch],
+  );
 
   const updateField = (updates) => {
     setFormData((prev) => {
       const next = { ...prev, ...updates };
 
-      const isSame = JSON.stringify(prev) === JSON.stringify(next);
+      const isSame =
+        JSON.stringify(prev, (key, val) =>
+          val instanceof File ? val.name + val.size : val,
+        ) ===
+        JSON.stringify(next, (key, val) =>
+          val instanceof File ? val.name + val.size : val,
+        );
       if (!isSame) {
         scheduleSave(next);
       }
@@ -216,14 +236,7 @@ const ViewProfile = () => {
 
   // 1. Show loading state if it's the very first load
   if (loading && isInitialLoad.current) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-          <p className="text-gray-500 font-medium">Loading profile...</p>
-        </div>
-      </div>
-    );
+    return <RozgarHubLoader />;
   }
 
   // 2. Show empty state if there is no profile
@@ -273,8 +286,7 @@ const ViewProfile = () => {
             newSkill={newSkill}
             setNewSkill={setNewSkill}
           />
-                    <LocationSection formData={formData} updateField={updateField} />
-
+          <LocationSection formData={formData} updateField={updateField} />
 
           <EducationSection formData={formData} updateField={updateField} />
 

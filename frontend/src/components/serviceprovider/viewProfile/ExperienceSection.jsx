@@ -37,14 +37,18 @@ const ExperienceSection = ({ formData, updateField }) => {
     updateField({ experienceDocuments: updated }); // ✅ Fixed key
   };
 
-  const handleExperienceUpload = (e, index) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const fileUrl = URL.createObjectURL(file);
-    const updated = [...experienceList];
-    updated[index] = { ...(updated[index] || {}), documentUrl: fileUrl };
-    updateField({ experienceDocuments: updated }); // ✅ Fixed key
+const handleExperienceUpload = (e, index) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const updated = [...experienceList];
+  updated[index] = {
+    ...updated[index],
+    file: file,                              // ✅ stored as `file`, not `documentUrl`
+    title: updated[index]?.title || file.name, // ✅ browser uses .name not .originalname
   };
+  updateField({ experienceDocuments: updated });
+};
 
   const removeExperience = (index) => {
     const updated = experienceList.filter((_, i) => i !== index);

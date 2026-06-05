@@ -14,6 +14,7 @@ import {
   clearSelectedProfile,
 } from "../../store/chat/chatSlice";
 import { capitalizeWords } from "../../utils/capitalize";
+import RozgarHubLoader from "../layout/Loader";
 
 const UserInfoPage = () => {
   const { userId } = useParams();
@@ -34,9 +35,7 @@ const UserInfoPage = () => {
 
   if (profileLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary"></div>
-      </div>
+    <RozgarHubLoader/>
     );
   }
 

@@ -331,7 +331,54 @@ const updateServiceProviderProfile = asyncHandler(async (req, res) => {
     parsedSkills = typeof skills === "string" ? skills.split(",") : skills;
   }
 
-  let updatedCertificates = [...providerProfile.certificates];
+  // ─── CERTIFICATES ─────────────────────────────────────────
+// ─── EXPERIENCE DOCUMENTS ─────────────────────────────────
+let updatedExpDocs;
+
+if (req.body.expCount !== undefined) {
+  // Frontend sent experience data — replace fully
+  updatedExpDocs = [];
+  const expCount = parseInt(req.body.expCount) || 0;
+  
+  for (let i = 0; i < expCount; i++) {
+    const title = req.body[`expTitle_${i}`];
+    const existingUrl = req.body[`expUrl_${i}`];
+    const uploadedFile = req.files?.[`expFile_${i}`]?.[0];
+
+    if (uploadedFile) {
+      const uploaded = await uploadOnCloudinary(uploadedFile.path, {
+        folder: "providers/experience",
+      });
+      if (uploaded?.secure_url) {
+        updatedExpDocs.push({
+          title: title || uploadedFile.originalname,
+          documentUrl: uploaded.secure_url,
+        });
+      }
+    } else if (existingUrl) {
+      updatedExpDocs.push({ title, documentUrl: existingUrl });
+    }
+  }
+} else {
+  // ✅ Not sent this save — keep whatever is in DB untouched
+  updatedExpDocs = [...providerProfile.experienceDocuments];
+}
+
+// ─── CERTIFICATES ─────────────────────────────────────────
+let updatedCertificates;
+
+if (req.body.existingCerts !== undefined || req.files?.certificates) {
+  // Frontend sent certificate data — replace fully
+  updatedCertificates = [];
+
+  const existingCerts = req.body.existingCerts
+    ? Array.isArray(req.body.existingCerts)
+      ? req.body.existingCerts
+      : [req.body.existingCerts]
+    : [];
+
+  updatedCertificates.push(...existingCerts);
+
   if (req.files?.certificates) {
     for (const file of req.files.certificates) {
       const uploaded = await uploadOnCloudinary(file.path, {
@@ -340,22 +387,10 @@ const updateServiceProviderProfile = asyncHandler(async (req, res) => {
       if (uploaded?.secure_url) updatedCertificates.push(uploaded.secure_url);
     }
   }
-
-  let updatedExpDocs = [...providerProfile.experienceDocuments];
-  if (req.files?.experienceDocuments) {
-    for (const file of req.files.experienceDocuments) {
-      const uploaded = await uploadOnCloudinary(file.path, {
-        folder: "providers/experience",
-      });
-      if (uploaded?.secure_url) {
-        updatedExpDocs.push({
-          title: file.originalname,
-          documentUrl: uploaded.secure_url,
-        });
-      }
-    }
-  }
-
+} else {
+  // ✅ Not sent this save — keep whatever is in DB untouched
+  updatedCertificates = [...providerProfile.certificates];
+}
   // ✅ Build update object for Provider Profile
   const providerUpdateObj = {
     cnicNo: cnicNo || providerProfile.cnicNo,

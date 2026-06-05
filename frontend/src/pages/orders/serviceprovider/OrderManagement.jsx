@@ -12,6 +12,7 @@ import ActionModal from "../../../components/orders/ActionModal";
 import { showToast } from "../../../utils/toastHelper";
 import { MdOutlineShoppingBag } from "react-icons/md";
 import { FaBolt } from "react-icons/fa";
+import RozgarHubLoader from "../../../components/layout/Loader";
 
 const TABS = [
   { label: "All",         value: ""            },
@@ -110,10 +111,11 @@ const OrderManagement = () => {
     ? orders.filter(order => order.isBroadcast === true) 
     : orders;
 
+
+
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
-
         <div className="flex items-center gap-3 mb-8">
           <div className="p-2.5 bg-secondary rounded-xl">
             <MdOutlineShoppingBag className="text-white text-xl" />
@@ -168,9 +170,7 @@ const OrderManagement = () => {
         )}
 
         {loading && filteredOrders.length === 0 ? (
-          <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary" />
-          </div>
+          <RozgarHubLoader/>
         ) : (
           <>
             {filteredOrders.length === 0 ? (

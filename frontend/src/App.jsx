@@ -43,6 +43,7 @@ import Whislist from "./pages/customer/Wishlist";
 import {
   initializeNotifications,
 } from "./utils/notification";
+import RozgarHubLoader from "./components/layout/Loader";
 
 function App() {
    useGlobalSocket();
@@ -73,11 +74,7 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-primary">
-        <div className="animate-pulse text-white text-xl font-bold">
-          RozgarHub...
-        </div>
-      </div>
+      <RozgarHubLoader loading={isLoading}/>
     );
   }
   return (
