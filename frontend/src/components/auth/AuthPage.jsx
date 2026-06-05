@@ -168,7 +168,7 @@ const validatePassword = (password) => {
         />
       )}
 
-      <div className="rounded-2xl shadow-xl border border-gray-200 w-full max-w-[80%] mx-auto flex flex-col md:flex-row relative">
+      <div className="rounded-2xl shadow-xl border border-gray-200 w-full md:max-w-[80%] mx-auto flex flex-col md:flex-row relative">
         {/* Left Side: Image */}
         <div className="flex-1 hidden md:block md:w-1/2 relative rounded-tl-2xl rounded-bl-2xl">
           <img

@@ -9,7 +9,7 @@ app.set('trust proxy', 1);
 app.post("/api/v1/payments/webhook", express.raw({ type: "application/json" }), stripeWebhook);
 
 app.use(cors({
-    origin: 'http://localhost:5173', // Allow only your frontend
+    origin: process.env.CORS_ORIGIN, // Allow only your frontend
     methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
     credentials: true // Allow cookies/headers if needed
 }));
