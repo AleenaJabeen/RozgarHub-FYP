@@ -19,7 +19,7 @@ import {
 } from "react-icons/tb";
 import { PiIdentificationCard } from "react-icons/pi";
 import { HiOutlineMapPin } from "react-icons/hi2";
-import LocationPickerMap from "./Locationpickermap";
+import LocationPickerMap from "./LocationPickerMap";
 
 // ─── Reusable input wrapper with left icon ────────────────────────────────────
 const IconInput = ({ icon: Icon, error, children }) => (
