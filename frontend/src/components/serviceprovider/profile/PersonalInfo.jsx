@@ -19,7 +19,7 @@ import {
 } from "react-icons/tb";
 import { PiIdentificationCard } from "react-icons/pi";
 import { HiOutlineMapPin } from "react-icons/hi2";
-import LocationPickerMap from "./LocationPickerMap";
+import LocationPickerMap from "./Locationpickermap";
 
 // ─── Reusable input wrapper with left icon ────────────────────────────────────
 const IconInput = ({ icon: Icon, error, children }) => (
@@ -293,7 +293,7 @@ const PersonalInfo = ({ formData, setFormData, onNext }) => {
 
             {/* City & State */}
             <div className="grid lg:grid-cols-2 grid-cols-1 gap-x-3 gap-y-6  pb-3">
-              <div className="space-y-3">
+              <div className="space-y-3"> 
                 <div className="relative flex items-center">
                   <MdOutlineLocationCity className="absolute left-3 text-gray-500 text-lg pointer-events-none" />
                   <input
@@ -304,12 +304,13 @@ const PersonalInfo = ({ formData, setFormData, onNext }) => {
                     value={formData.address.city}
                     onChange={handleAddressChange}
                   />
-                  {errors.city && (
-                    <p className="absolute left-2 top-full mt-1 text-red-500 text-xs">
-                      {errors.city}
-                    </p>
-                  )}
+                                     {errors.city && (
+      <p className="absolute left-2 top-full mt-1 text-red-500 text-xs">
+        {errors.city}
+      </p>
+    )}
                 </div>
+               
               </div>
 
               <div className="relative flex items-center">
@@ -338,12 +339,13 @@ const PersonalInfo = ({ formData, setFormData, onNext }) => {
                     value={formData.address.country}
                     onChange={handleAddressChange}
                   />
-                  {errors.country && (
-                    <p className="absolute left-2 top-full mt-1 text-red-500 text-xs">
-                      {errors.country}
-                    </p>
-                  )}
+                         {errors.country && (
+      <p className="absolute left-2 top-full mt-1 text-red-500 text-xs">
+        {errors.country}
+      </p>
+    )}
                 </div>
+         
               </div>
 
               <div className="relative flex items-center">
@@ -362,84 +364,87 @@ const PersonalInfo = ({ formData, setFormData, onNext }) => {
 
           {/* Location */}
           <div className="space-y-1 mt-4">
-            <LocationPickerMap
-              value={
-                formData.location
-                  ? {
-                      lat: formData.location.latitude,
-                      lng: formData.location.longitude,
-                      displayName: formData.location.displayName,
-                    }
-                  : null
-              }
-              onChange={(loc) => {
-                setFormData((prev) => ({
-                  ...prev,
-                  location: {
-                    latitude: loc.lat,
-                    longitude: loc.lng,
-                    displayName: loc.displayName, // store for UI only
-                  },
-                }));
+<LocationPickerMap
+  value={
+    formData.location
+      ? {
+          lat: formData.location.latitude,
+          lng: formData.location.longitude,
+          displayName: formData.location.displayName,
+        }
+      : null
+  }
+  onChange={(loc) => {
+    setFormData((prev) => ({
+      ...prev,
+      location: {
+        latitude: loc.lat,
+        longitude: loc.lng,
+        displayName: loc.displayName, // store for UI only
+      },
+    }));
 
-                setErrors((p) => ({ ...p, location: "" }));
-              }}
-              error={errors.location}
-            />
+    setErrors((p) => ({ ...p, location: "" }));
+  }}
+  error={errors.location}
+/>
             {/* {errors.location && (
               <p className="text-red-500 text-xs ml-2">{errors.location}</p>
             )} */}
           </div>
-
-          {/* Education */}
-          <div className="space-y-1">
-            <label className="block text-sm font-semibold text-gray-700 ml-1">
-              Education
-              <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <div className="relative flex items-center">
-              <TbSchool className="absolute left-3 text-gray-500 text-lg pointer-events-none" />
-              <input
-                type="text"
-                placeholder="e.g. Matric or Intermediate"
-                className={`${inputBase} pl-9 border-gray-300`}
-                value={formData.education}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    education: e.target.value,
-                  }))
-                }
-              />
-            </div>
-          </div>
-
-          {/* Certificates */}
-          <div className="space-y-1">
-            <label className="block text-sm font-semibold text-gray-600 ml-1">
-              Certificates{" "}
-              <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <label className="cursor-pointer">
-              <input
-                type="file"
-                accept=".pdf,image/*"
-                className="hidden"
-                onChange={handleCertificates}
-              />
-              <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-full transition-colors">
-                <FaRegFileAlt className="text-gray-500 text-base shrink-0" />
-                <span className="text-sm text-gray-600 truncate flex-1">
-                  {formData.certificates
-                    ? formData.certificates.name
-                    : "Choose File (PDF / JPG / PNG)"}
-                </span>
+        
+            {/* Education */}
+            <div className="space-y-1">
+              <label className="block text-sm font-semibold text-gray-700 ml-1">
+                Education
+                <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <div className="relative flex items-center">
+                <TbSchool className="absolute left-3 text-gray-500 text-lg pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="e.g. Matric or Intermediate"
+                  className={`${inputBase} pl-9 border-gray-300`}
+                  value={formData.education}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      education: e.target.value,
+                    }))
+                  }
+                />
               </div>
-            </label>
-            {errors.certificates && (
-              <p className="text-red-500 text-xs ml-2">{errors.certificates}</p>
-            )}
-          </div>
+            </div>
+
+            {/* Certificates */}
+            <div className="space-y-1">
+              <label className="block text-sm font-semibold text-gray-600 ml-1">
+                Certificates{" "}
+                <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept=".pdf,image/*"
+                  className="hidden"
+                  onChange={handleCertificates}
+                />
+                <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-full transition-colors">
+                  <FaRegFileAlt className="text-gray-500 text-base shrink-0" />
+                  <span className="text-sm text-gray-600 truncate flex-1">
+                    {formData.certificates
+                      ? formData.certificates.name
+                      : "Choose File (PDF / JPG / PNG)"}
+                  </span>
+                </div>
+              </label>
+              {errors.certificates && (
+                <p className="text-red-500 text-xs ml-2">
+                  {errors.certificates}
+                </p>
+              )}
+            </div>
+         
 
           {/* CNIC */}
           <div className="grid lg:grid-cols-2 grid-cols-1 gap-4">
