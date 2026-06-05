@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser'
 import { stripeWebhook } from "./controllers/payment/payment.controller.js"
 
 const app=express();
+app.set('trust proxy', 1);
 
 app.post("/api/v1/payments/webhook", express.raw({ type: "application/json" }), stripeWebhook);
 

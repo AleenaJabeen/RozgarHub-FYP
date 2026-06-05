@@ -139,7 +139,6 @@ const IncomingRequestCard = ({ request, onAccept, onIgnore }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  // ✅ FIX: Use updatedAt so rebroadcasts get a fresh 30 seconds!
   const calculateTimeLeft = () => {
     const baseTime = request.updatedAt
       ? new Date(request.updatedAt).getTime()
@@ -208,7 +207,6 @@ const IncomingRequestCard = ({ request, onAccept, onIgnore }) => {
           <h4 className="text-base font-bold text-gray-900 leading-tight flex-1 truncate">
             {request.requestTitle || "Urgent Hiring Request"}
           </h4>
-          {/* ✅ FIX: Display the correct updated time */}
           <span className="text-xs font-mono font-medium text-gray-400 mt-0.5 flex-shrink-0">
             {new Date(
               request.updatedAt || request.createdAt,
@@ -321,7 +319,6 @@ const GlobalUrgentOverlay = () => {
   const dispatch = useDispatch();
   const [urgentRequests, setUrgentRequests] = useState([]);
 
-
   useEffect(() => {
     if (!user || user.role !== "serviceprovider" || !profile) return;
 
@@ -369,10 +366,19 @@ const GlobalUrgentOverlay = () => {
       });
     };
 
+    // ✅ NEW FIX: Remove overlay if order is cancelled OR claimed by someone else
+    const handleRemoveRequest = (orderId) => {
+      setUrgentRequests((prev) => prev.filter((r) => r._id !== orderId));
+    };
+
     socket.on("new_urgent_request", handleNewRequest);
+    socket.on("order_auto_cancelled", handleRemoveRequest);
+    socket.on("broadcast_claimed", handleRemoveRequest); // Also fixes if another SP claims it first!
 
     return () => {
       socket.off("new_urgent_request", handleNewRequest);
+      socket.off("order_auto_cancelled", handleRemoveRequest);
+      socket.off("broadcast_claimed", handleRemoveRequest);
     };
   }, [user, profile]);
 

@@ -66,20 +66,22 @@ const OrderDetails = () => {
       socket = connectSocket();
     }
 
-    const handlePaymentCompleted = (paidOrderId) => {
-      if (paidOrderId === orderId) {
+    const handleOrderUpdate = (updatedOrderId) => {
+      if (updatedOrderId === orderId) {
         dispatch(getOrderById(orderId)); 
       }
     };
 
-    socket.on("payment_completed", handlePaymentCompleted);
+    socket.on("payment_completed", handleOrderUpdate);
+    socket.on("order_status_updated", handleOrderUpdate); // ✅ NEW: Listens for cancellations in real-time
 
     return () => {
       dispatch(clearActiveOrder());
       dispatch(clearOrderError());
       
       if (socket) {
-        socket.off("payment_completed", handlePaymentCompleted);
+        socket.off("payment_completed", handleOrderUpdate);
+        socket.off("order_status_updated", handleOrderUpdate);
       }
     };
   }, [dispatch, orderId]);
@@ -143,7 +145,6 @@ const OrderDetails = () => {
     }
   };
 
-  // ✅ FIXED: If there is no order data yet, ALWAYS show loading or error
   if (!order) {
     if (error) {
       return (
