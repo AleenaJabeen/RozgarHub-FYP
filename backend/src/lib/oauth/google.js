@@ -10,5 +10,4 @@ export const google=new Google(
     google_client_id,
     google_client_secret, 
     `${BASE_URL}/api/v1/auth/google/callback`
-// we wil create this route to verify after login
 )
