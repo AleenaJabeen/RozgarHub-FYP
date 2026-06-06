@@ -115,7 +115,7 @@ const getGoogleLoginCallback = asyncHandler(async (req, res) => {
   const cookieOptions = {
     httpOnly: true,
     secure: true,
-    sameSite: "lax",
+    sameSite: "none",
      maxAge: 604800000
   };
 
