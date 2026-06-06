@@ -22,7 +22,7 @@ const getGoogleLoginPage = asyncHandler(async (req, res) => {
   const cookieConfig = {
     httpOnly: true,
     secure: true,
-    sameSite: "lax",
+    sameSite: "none",
     maxAge: OAUTH_EXCHANGE_EXPIRY,
   };
 
