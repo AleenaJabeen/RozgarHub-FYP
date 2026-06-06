@@ -76,16 +76,16 @@ const UserInfoPage = () => {
           {/* Cover/Avatar Section */}
           <div className="h-24 bg-gradient-to-r from-secondary to-secondary/80 w-full" />
           <div className="flex flex-col items-center -mt-12 px-6 pb-6">
-            {user.avatar ? (
+            {user.avatar? (
               <img
                 src={user.avatar}
                 alt="avatar"
                 className="w-48 h-48 rounded-full object-cover border-4 border-gray-300 shadow-lg bg-white"
               />
             ) : (
-              <div className="w-28 h-28 rounded-3xl bg-secondary flex items-center justify-center border-4 border-white shadow-lg">
-                <span className="text-4xl font-bold text-white">
-                  {capitalizeWords(user?.name)}
+              <div className="w-28 h-28 rounded-full bg-secondary flex items-center justify-center border-4 border-white shadow-lg">
+                <span className="text-4xl font-bold text-white text-center">
+                  {capitalizeWords(user?.name.charAt(0))}
                 </span>
               </div>
             )}
@@ -93,7 +93,7 @@ const UserInfoPage = () => {
             <div className="text-center mt-4">
               <div className="flex items-center justify-center gap-1">
                 <h2 className="text-2xl font-extrabold text-gray-900">
-                  {capitalizeWords(user.name)}
+                  {capitalizeWords(user?.name)}
                 </h2>
                 {user.isPhoneVerified && (
                   <IoCheckmarkCircle className="text-secondary" size={20} />

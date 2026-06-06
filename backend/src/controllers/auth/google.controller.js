@@ -83,7 +83,7 @@ const getGoogleLoginCallback = asyncHandler(async (req, res) => {
 
     if (user) {
       if (user.authProvider !== "email") {
-        throw new ApiError(400, "Account already exists with another provider");
+        throw new ApiError(400, "Account already exists with another provider (email)");
       }
 
       // Link Google account

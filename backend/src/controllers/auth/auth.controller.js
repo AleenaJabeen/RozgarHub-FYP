@@ -37,7 +37,7 @@ const registerUserWithEmail = asyncHandler(async (req, res) => {
     email,
     password,
     authProvider: "email",
-    isEmailVerified:false
+    isEmailVerified: false,
   });
   // check if the user created or not
   const createdUser = await User.findById(user._id).select(
@@ -62,7 +62,7 @@ const logoutUser = asyncHandler(async (req, res) => {
         refreshToken: undefined,
       },
     },
-    { returnDocument: 'after' }
+    { returnDocument: "after" },
   );
 
   const options = {
@@ -86,12 +86,23 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({ email });
 
-
   if (!user) {
     throw new ApiError(404, "Invalid Email or Password");
   }
-  if(!user.isEmailVerified){
-    throw new ApiError(401,"Email not verified.Verify your email!")
+  if (user.authProvider === "google") {
+    return res.status(409).json(
+      new ApiResponse(
+        409,
+        {
+          authProvider: "google",
+          message: "Use Google Sign-In",
+        },
+        "Account exists with Google authentication",
+      ),
+    );
+  }
+  if (!user.isEmailVerified) {
+    throw new ApiError(401, "Email not verified.Verify your email!");
   }
 
   const isPasswordValid = await user.isPasswordCorrect(password);
@@ -107,8 +118,8 @@ const loginUser = asyncHandler(async (req, res) => {
   const options = {
     httpOnly: true,
     secure: true,
-     maxAge: 604800000,
-     sameSite: 'none'
+    maxAge: 604800000,
+    sameSite: "none",
   };
   return res
     .status(200)
@@ -126,44 +137,44 @@ const loginUser = asyncHandler(async (req, res) => {
 });
 
 // choose role
-const updateUserRole=asyncHandler(async(req,res)=>{
-  const {role}=req.body;
+const updateUserRole = asyncHandler(async (req, res) => {
+  const { role } = req.body;
   const userId = req.user._id;
-  if(!['customer', 'serviceprovider'].includes(role)){
-    throw new ApiError(400,"Invalid role selected. Please choose 'customer' or 'provider")
-  };
-  const updatedUser = await User.findByIdAndUpdate(
-  userId,
-  { role },
-  { 
-    returnDocument: 'after', // ✅ Replaces { new: true }
-    runValidators: true 
-  }
-);
-
-    if(!updatedUser){
-      throw new ApiError(404,"User not found");
-    }
-
-    return res.status(200).json(
-      new ApiResponse(200,updatedUser,"User role selected successfully")
-
+  if (!["customer", "serviceprovider"].includes(role)) {
+    throw new ApiError(
+      400,
+      "Invalid role selected. Please choose 'customer' or 'provider",
     );
+  }
+  const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    { role },
+    {
+      returnDocument: "after", // ✅ Replaces { new: true }
+      runValidators: true,
+    },
+  );
 
+  if (!updatedUser) {
+    throw new ApiError(404, "User not found");
+  }
 
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedUser, "User role selected successfully"));
 });
 
 const checkAuth = asyncHandler(async (req, res) => {
   // Your existing auth middleware should populate req.user
-  const user = await User.findById(req.user._id).select("-password -refreshToken");
-  
+  const user = await User.findById(req.user._id).select(
+    "-password -refreshToken",
+  );
+
   if (!user) {
     throw new ApiError(401, "User not found");
   }
 
-  return res.status(200).json(
-    new ApiResponse(200, user, "User authenticated")
-  );
+  return res.status(200).json(new ApiResponse(200, user, "User authenticated"));
 });
 
 const saveFCMToken = async (req, res) => {
@@ -178,9 +189,15 @@ const saveFCMToken = async (req, res) => {
     },
   });
 
-  return res.status(200).json(
-    new ApiResponse(200, null, "FCM token saved")
-  );
+  return res.status(200).json(new ApiResponse(200, null, "FCM token saved"));
 };
 
-export { registerUserWithEmail, logoutUser, loginUser,generateAccessTokenandRefreshToken,updateUserRole ,checkAuth,saveFCMToken};
+export {
+  registerUserWithEmail,
+  logoutUser,
+  loginUser,
+  generateAccessTokenandRefreshToken,
+  updateUserRole,
+  checkAuth,
+  saveFCMToken,
+};
