@@ -454,7 +454,7 @@ const Navbar = () => {
 
             {role !== "pending" && (
               <NavLink
-                to="/profile"
+                to="view-profile"
                 onClick={closeMobileMenu}
                 end
                 className={({ isActive }) =>
