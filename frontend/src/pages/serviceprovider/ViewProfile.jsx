@@ -16,6 +16,7 @@ import EducationSection from "../../components/serviceprovider/viewProfile/Educa
 import { showToast } from "../../utils/toastHelper";
 import LocationSection from "../../components/serviceprovider/viewProfile/LocationSection";
 import RozgarHubLoader from "../../components/layout/Loader";
+import { checkAuth } from "../../store/auth-slice";
 
 const ViewProfile = () => {
   const dispatch = useDispatch();
@@ -167,6 +168,8 @@ const ViewProfile = () => {
           .unwrap()
           .then(() => { 
             dispatch(getProviderProfile());
+            dispatch(checkAuth());
+            
           })
           .catch((err) => {
             // It's good practice to log or surface why backend rejected it here

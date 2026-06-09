@@ -49,7 +49,7 @@ const CustomerVerification = ({ formData, setFormData, onSubmit, onBack, user })
   const handleSendOtp = async () => {
     if (!validatePhone()) return;
     try {
-      await dispatch(sendCustomerPhoneOTP(formData.phoneNumber)).unwrap();
+      // await dispatch(sendCustomerPhoneOTP(formData.phoneNumber)).unwrap();
       setOtpSent(true);
       setErrors((prev) => ({ ...prev, phone: "" }));
     } catch (err) {
@@ -78,12 +78,12 @@ const CustomerVerification = ({ formData, setFormData, onSubmit, onBack, user })
     try {
       if (!isAlreadyVerified) {
         // Gate 2: Verify OTP via backend — throws error if invalid/expired
-        await dispatch(
-          verifyCustomerPhoneOTP({
-            phone: formData.phoneNumber,
-            otp: formData.otp.join(""),
-          })
-        ).unwrap();
+        // await dispatch(
+        //   verifyCustomerPhoneOTP({
+        //     phone: formData.phoneNumber,
+        //     otp: formData.otp.join(""),
+        //   })
+        // ).unwrap();
       }
 
       // Only reaches here if verified successfully (or was already verified)

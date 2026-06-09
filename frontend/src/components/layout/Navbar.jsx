@@ -13,7 +13,7 @@ import {
 import { IoMdHeartEmpty } from "react-icons/io";
 import { Logo2 } from "../../assets";
 import { useDispatch, useSelector } from "react-redux";
-import { logoutUser } from "../../store/auth-slice";
+import { checkAuth, logoutUser } from "../../store/auth-slice";
 import { useNavigate, Link, NavLink } from "react-router-dom";
 import { showToast } from "../../utils/toastHelper";
 import { capitalizeWords } from "../../utils/capitalize";
@@ -59,6 +59,10 @@ const Navbar = () => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+//   useEffect(() => {
+//   dispatch(checkAuth());
+// }, []);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -151,6 +155,9 @@ const Navbar = () => {
       </div>
     );
   };
+
+  
+   
 
   const MegaMenuContent = ({ onLinkClick }) => (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">

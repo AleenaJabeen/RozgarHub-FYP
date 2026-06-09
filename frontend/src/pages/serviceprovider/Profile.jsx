@@ -6,6 +6,7 @@ import AdditionalInfo from "../../components/serviceprovider/profile/AdditionalI
 import Verification from "../../components/serviceprovider/profile/Verification";
 import { createProviderProfile } from "../../store/serviceProvider/profile-slice";
 import { showToast } from "../../utils/toastHelper";
+import {checkAuth} from '../../store/auth-slice'
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -66,6 +67,8 @@ useEffect(() => {
   }
      window.scrollTo(0, 0);
   }, [step,user]);
+
+  
   
 
   const nextStep = () => setStep((prev) => prev + 1);
@@ -103,6 +106,7 @@ console.log("cnicPicture name:", formData.cnicPicture?.name);
 
   try {
       const response = await dispatch(createProviderProfile(data)).unwrap();
+      await dispatch(checkAuth());
       localStorage.removeItem("serviceProviderProfileDraft"); // Clean up!
       localStorage.removeItem("profileCurrentStep");
       showToast(response.message);
