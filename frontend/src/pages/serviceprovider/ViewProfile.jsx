@@ -177,7 +177,7 @@ const ViewProfile = () => {
             showToast(err || "Failed to sync background updates.", "error");
           })
           .finally(() => setSaving(false));
-      }, 2000);
+      }, 3000);
     },
     [dispatch],
   );
