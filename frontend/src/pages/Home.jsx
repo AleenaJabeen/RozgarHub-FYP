@@ -13,7 +13,7 @@ function Home() {
       <HeroSection  />
       <CategorySection/>
      <HowItWorks/>
-     <TutorialSection/>
+     {/* <TutorialSection/> */}
     </div>
   );
 }

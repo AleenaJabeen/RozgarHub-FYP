@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
-
 const initialState = {
   user: null, // user object
   isAuthenticated: false,
@@ -110,10 +109,9 @@ export const resetPassword = createAsyncThunk(
   async (email, { rejectWithValue }) => {
     try {
       console.log("email", email);
-      const response = await axios.post(
-        `${BASE_URL}/reset-password`,
-        { email },
-      );
+      const response = await axios.post(`${BASE_URL}/reset-password`, {
+        email,
+      });
       return response.data;
     } catch (error) {
       console.log(rejectWithValue(error.response.data));
@@ -132,10 +130,9 @@ export const resetPasswordConfirm = createAsyncThunk(
       // Log the payload to ensure data is coming through
       console.log("Resetting password for token:", token);
 
-      const response = await axios.post(
-        `${BASE_URL}/reset-password/${token}`,
-        { password },
-      );
+      const response = await axios.post(`${BASE_URL}/reset-password/${token}`, {
+        password,
+      });
 
       return response.data;
     } catch (error) {
@@ -157,7 +154,7 @@ export const verifyResetToken = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Invalid token");
     }
-  }
+  },
 );
 
 export const updateUserRole = createAsyncThunk(
@@ -198,29 +195,26 @@ export const logoutUser = createAsyncThunk(
   },
 );
 
-
-
 export const checkAuth = createAsyncThunk(
   "auth/checkAuth",
   async (_, { rejectWithValue }) => {
-
     try {
-      const response = await axios.get(`${BASE_URL}/check-auth`, { 
-        withCredentials:true,
+      const response = await axios.get(`${BASE_URL}/check-auth`, {
+        withCredentials: true,
         validateStatus: (status) => status === 200 || status === 401,
       });
 
       if (response.status === 401) {
-        
         return rejectWithValue(null);
       }
 
-     
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Not authenticated");
+      return rejectWithValue(
+        error.response?.data?.message || "Not authenticated",
+      );
     }
-  }
+  },
 );
 export const addSavedAddress = createAsyncThunk(
   "customerProfile/addSavedAddress",
@@ -262,7 +256,16 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setUser: (state, action) => {},
+    setUser: (state, action) => {
+      state.user = action.payload; // ✅ actually update the user
+      state.isAuthenticated = true;
+    },
+    setOnlineStatus: (state, action) => {
+      if (state.user) {
+        console.log(state.user)
+        state.user.isOnline = action.payload; // ✅ update only isOnline
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -318,12 +321,12 @@ const authSlice = createSlice({
         state.user = action.payload.data || action.payload.user;
         state.isAuthenticated = true;
       })
-      .addCase(checkAuth.rejected, (state,action) => {
+      .addCase(checkAuth.rejected, (state, action) => {
         state.isLoading = false;
         state.user = null;
         state.isAuthenticated = false;
         // console.log(action.payload)
-        // come and check it 
+        // come and check it
         if (action.payload !== null) {
           state.error = action.payload;
         }
@@ -369,5 +372,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setUser } = authSlice.actions;
+export const { setUser, setOnlineStatus} = authSlice.actions;
 export default authSlice.reducer;
