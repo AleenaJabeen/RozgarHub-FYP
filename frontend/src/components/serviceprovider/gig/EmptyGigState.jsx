@@ -1,9 +1,30 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import { useNavigate } from "react-router-dom";
 import { IoRocketOutline, IoShieldCheckmarkOutline } from "react-icons/io5";
+import { useDispatch, useSelector } from "react-redux";
+import { getProviderProfile } from "../../../store/serviceProvider/profile-slice";
+import { showToast } from "../../../utils/toastHelper";
 
 const EmptyGigState = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { profile = null } =
+    useSelector((state) => state.serviceProviderProfile) || {};
+  console.log("Provider Profile in Gig.jsx:", profile);
+  useEffect(() => {
+      dispatch(getProviderProfile());
+    }, [dispatch]);
+  const handleCreateGig = () => {
+      console.log("Profile inside handleCreateGig:", profile);
+      if (!profile) {
+        console.log("Profile is null or undefined:", profile);
+        showToast(`Complete your profile to create a gig`, "error");
+        return;
+      }
+      if (profile) {
+        navigate("/serviceprovider/createGig");
+      }
+    };
 
   return (
     <div className="flex flex-col items-center justify-center py-5 px-4 text-center">
@@ -24,7 +45,7 @@ const EmptyGigState = () => {
 
       {/* The Call to Action */}
       <button
-        onClick={() => navigate("/serviceprovider/createGig")}
+        onClick={handleCreateGig}
         className="flex items-center gap-2 bg-secondary text-white px-8 py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-secondary/30 hover:-translate-y-1 transition-all active:scale-95"
       >
         Create Your First Gig
