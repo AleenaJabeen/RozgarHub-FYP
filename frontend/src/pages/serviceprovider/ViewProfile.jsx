@@ -45,16 +45,15 @@ const ViewProfile = () => {
   );
 
   useEffect(() => {
-    dispatch(getProviderProfile())
-      .unwrap()
-      .catch((err) => {
-        if (err.toLowerCase().includes("not found") || err.includes("404")) {
-          navigate("/serviceprovider/profile");
-        } else {
-          console.error(err);
-        }
-      });
-  }, [dispatch, navigate]);
+  dispatch(getProviderProfile())
+    .unwrap()
+    .catch((err) => {
+      if (!err.toLowerCase().includes("not found") && !err.includes("404")) {
+        console.error(err);
+      }
+      // No redirect — the !profile check below renders the empty state UI
+    });
+}, [dispatch, navigate]);
 
   useEffect(() => {
     if (profile && user) {
