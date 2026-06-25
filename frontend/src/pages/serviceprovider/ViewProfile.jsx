@@ -17,6 +17,7 @@ import { showToast } from "../../utils/toastHelper";
 import LocationSection from "../../components/serviceprovider/viewProfile/LocationSection";
 import RozgarHubLoader from "../../components/layout/Loader";
 import { checkAuth } from "../../store/auth-slice";
+import ProfileSetupPrompt from "../../components/serviceprovider/viewProfile/ProfileSetupPrompt";
 
 const ViewProfile = () => {
   const dispatch = useDispatch();
@@ -244,42 +245,43 @@ const ViewProfile = () => {
   // 2. Show empty state if there is no profile
  if (!profile) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
-      <div className="w-20 h-20 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center mb-6">
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-9 h-9 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      </div>
+    // <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
+    //   <div className="w-20 h-20 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center mb-6">
+    //     <svg xmlns="http://www.w3.org/2000/svg" className="w-9 h-9 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    //       <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+    //     </svg>
+    //   </div>
 
-      <h2 className="text-lg font-semibold text-gray-800 mb-2">Your profile isn't set up yet</h2>
-      <p className="text-sm text-gray-500 text-center max-w-sm leading-relaxed mb-8">
-        Create your profile to start appearing in searches, showcase your skills, and get hired for gigs near you.
-      </p>
+    //   <h2 className="text-lg font-semibold text-gray-800 mb-2">Your profile isn't set up yet</h2>
+    //   <p className="text-sm text-gray-500 text-center max-w-sm leading-relaxed mb-8">
+    //     Create your profile to start appearing in searches, showcase your skills, and get hired for gigs near you.
+    //   </p>
 
-      <div className="grid grid-cols-3 gap-3 w-full max-w-sm mb-8">
-        {[
-          { step: "1", icon: "📄", label: "Add your bio & experience" },
-          { step: "2", icon: "🛠️", label: "List your skills & services" },
-          { step: "3", icon: "📍", label: "Set location & go live" },
-        ].map(({ step, icon, label }) => (
-          <div key={step} className="bg-white border border-gray-200 rounded-xl p-3 text-center">
-            <div className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium flex items-center justify-center mx-auto mb-2">
-              {step}
-            </div>
-            <span className="text-lg">{icon}</span>
-            <p className="text-xs text-gray-500 mt-1 leading-snug">{label}</p>
-          </div>
-        ))}
-      </div>
+    //   <div className="grid grid-cols-3 gap-3 w-full max-w-sm mb-8">
+    //     {[
+    //       { step: "1", icon: "📄", label: "Add your bio & experience" },
+    //       { step: "2", icon: "🛠️", label: "List your skills & services" },
+    //       { step: "3", icon: "📍", label: "Set location & go live" },
+    //     ].map(({ step, icon, label }) => (
+    //       <div key={step} className="bg-white border border-gray-200 rounded-xl p-3 text-center">
+    //         <div className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium flex items-center justify-center mx-auto mb-2">
+    //           {step}
+    //         </div>
+    //         <span className="text-lg">{icon}</span>
+    //         <p className="text-xs text-gray-500 mt-1 leading-snug">{label}</p>
+    //       </div>
+    //     ))}
+    //   </div>
 
-      <button
-        onClick={() => navigate("/serviceprovider/createProfile")}
-        className="cursor-pointer bg-emerald-600 text-white px-7 py-2.5 rounded-full text-sm font-semibold hover:bg-emerald-700 transition-all flex items-center gap-2"
-      >
-        <span>+</span> Create your profile
-      </button>
-      <p className="text-xs text-gray-400 mt-3">Takes less than 5 minutes</p>
-    </div>
+    //   <button
+    //     onClick={() => navigate("/serviceprovider/createProfile")}
+    //     className="cursor-pointer bg-emerald-600 text-white px-7 py-2.5 rounded-full text-sm font-semibold hover:bg-emerald-700 transition-all flex items-center gap-2"
+    //   >
+    //     <span>+</span> Create your profile
+    //   </button>
+    //   <p className="text-xs text-gray-400 mt-3">Takes less than 5 minutes</p>
+    // </div>
+    <ProfileSetupPrompt/>
   );
 }
 
