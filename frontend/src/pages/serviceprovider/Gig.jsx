@@ -10,12 +10,6 @@ import RozgarHubLoader from "../../components/layout/Loader";
 function Gig() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
-  const hasAvatar = !!user?.avatar;
-  const hasPhone = !!user?.isPhoneVerified;
-  const totalPoints = 100;
-  const currentPoints = (hasAvatar ? 60 : 0) + (hasPhone ? 40 : 0);
-  const completionPercentage = ((currentPoints / totalPoints) * 100).toFixed(0);
 
   const { gigs = [], loading } = useSelector((state) => state.gigs);
 
@@ -36,12 +30,6 @@ function Gig() {
             onClick={() => {
               if (gigs.length >= 4) {
                 showToast("Maximum 4 gigs allowed", "error");
-                return;
-              }
-              if (completionPercentage < 100) {
-                showToast(
-                  `Complete your profile to create a gig`,
-                  "error");
                 return;
               }
 
