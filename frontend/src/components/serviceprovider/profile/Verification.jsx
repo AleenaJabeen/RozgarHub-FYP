@@ -42,7 +42,7 @@ const Verification = ({ formData, setFormData, onSubmit, onBack }) => {
     if (!validatePhone()) return;
     try {
       setErrors((prev) => ({ ...prev, otp: null, phone: null }));
-      // await dispatch(sendPhoneOTP({ phone: formData.phoneNumber })).unwrap();
+      await dispatch(sendPhoneOTP({ phone: formData.phoneNumber })).unwrap();
       setOtpSent(true);
       setIsPhoneVerified(false); // Reset if they change number and resend
     } catch (err) {
@@ -68,10 +68,10 @@ const Verification = ({ formData, setFormData, onSubmit, onBack }) => {
 
     try {
       // 3. Verify OTP
-      // await dispatch(verifyPhoneOTP({ 
-      //   phone: formData.phoneNumber, 
-      //   otp: otpString 
-      // })).unwrap();
+      await dispatch(verifyPhoneOTP({ 
+        phone: formData.phoneNumber, 
+        otp: otpString 
+      })).unwrap();
 
       setIsPhoneVerified(true);
       
