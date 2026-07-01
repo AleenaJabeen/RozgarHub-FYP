@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { heroImg, mainVideo ,customerStep3 as heroMobileImg} from "../../assets";
+import { heroImg, mainVideo ,login as heroMobileImg} from "../../assets";
+import { useNavigate } from "react-router-dom";
 
 const HeroSection = () => {
   const [playVideo, setPlayVideo] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const navigate=useNavigate()
 
 useEffect(() => {
   const handleResize = () => {
@@ -67,16 +69,16 @@ useEffect(() => {
         <div className="absolute inset-0 flex flex-col justify-center px-8 md:px-14 max-w-3xl z-10">
           {/* Main Headline */}
           <motion.h1
-            className="text-white text-4xl md:text-6xl font-semibold leading-tight tracking-tight"
+            className="text-white sm:text-4xl text-3xl md:text-6xl font-semibold leading-tight tracking-tight"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.9, ease: "easeOut" }}
           >
             Connect directly with trusted local
-            <span className="text-secondary/80">
+            <span className="md:text-secondary/80 text-white">
               {" "}
               Service Providers
-            </span> on <span className="text-secondary">RozgarHub</span>
+            </span> on <span className="md:text-secondary text-white">RozgarHub</span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -91,6 +93,7 @@ useEffect(() => {
 
           {/* CTA Button */}
           <motion.button
+          onClick={()=>navigate('/auth')}
             className="mt-8 w-fit bg-secondary  text-white px-8 py-3 rounded-full font-semibold text-base transition-colors shadow-lg"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

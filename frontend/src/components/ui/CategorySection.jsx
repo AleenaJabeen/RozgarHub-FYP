@@ -30,15 +30,15 @@ const CategorySection = () => {
   const visibleCategories = showAll ? categories : categories.slice(0, 8);
 
   return (
-    <section className="py-20 px-6 bg-[#f8fafc]">
+    <section className="py-20 px-4 sm:px-6 bg-[#f8fafc]">
       <div className="w-[95%] mx-auto">
         
         {/* Header Section */}
-        <div className=" mb-16">
+        <div className="mb-16 text-center md:text-left">
           <h2 className="text-3xl md:text-4xl font-semibold text-slate-900 mb-4">
             Find Skilled <span className='text-secondary'>Physical Services</span>
           </h2>
-          <div className="w-48 h-1 ms-30 rounded-full mb-6 bg-amber-400" ></div>
+          <div className="md:w-48 w-24 h-1 md:mx-0 mx-auto rounded-full mb-6 bg-amber-400"></div>
           <p className="text-slate-600 text-lg md:text-xl">
             Reliable experts for your home and business across Pakistan.
           </p>
@@ -46,37 +46,32 @@ const CategorySection = () => {
 
         {/* 12 Categories Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
-         {visibleCategories.map((cat, index) => (
+          {visibleCategories.map((cat, index) => (
             <div 
               key={index}
-              className="group flex lg:h-48  md:h-42 h-32  flex-col items-center p-6 md:p-10 bg-white rounded-3xl shadow-sm border border-gray-300 hover:border-transparent transition-all duration-500 hover:shadow-2xl hover:-translate-y-3 cursor-pointer relative overflow-hidden"
+              className="group flex h-auto min-h-[140px] sm:min-h-[170px] md:min-h-[200px] flex-col items-center justify-center p-4 md:p-8 rounded-2xl md:rounded-3xl shadow-sm border border-transparent sm:border-gray-300 sm:hover:border-transparent transition-all duration-500 hover:shadow-2xl hover:-translate-y-3 cursor-pointer relative overflow-hidden bg-secondary sm:bg-white"
             >
-              {/* Animated Background Gradient on Hover */}
-              <div className="absolute inset-0 bg-gradient-to-br from-secondary/100 to-secondary/70 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0"></div>
+              {/* Animated Background Gradient on Hover (Only visible/active on sm screens and up) */}
+              <div className="absolute inset-0 bg-gradient-to-br from-secondary/100 to-secondary/70 opacity-0 sm:group-hover:opacity-100 transition-opacity duration-500 z-0"></div>
 
               {/* Icon Circle */}
-              <div 
-                className="relative text-secondary z-10 text-2xl md:text-3xl mb-4 transition-all duration-500 group-hover:scale-110 group-hover:text-white"
-              
-              >
+              <div className="relative z-10 text-xl md:text-3xl mb-3 transition-all duration-500 text-white sm:text-secondary sm:group-hover:scale-110 sm:group-hover:text-white">
                 {cat.icon}
               </div>
 
               {/* Category Name */}
-              <h3 className="relative z-10 text-base md:text-xl font-bold text-tertiary group-hover:text-white transition-colors duration-300 text-center uppercase tracking-wide">
+              <h3 className="relative z-10 text-xs sm:text-sm md:text-lg font-bold text-white sm:text-tertiary sm:group-hover:text-white transition-colors duration-300 text-center uppercase tracking-wide break-words max-w-full">
                 {cat.name}
               </h3>
-              
-              {/* Subtle Decorative Element */}
             </div>
           ))}
         </div>
+
         {/* View All Button */}
         <div className="mt-12 text-center">
           <button 
             onClick={() => setShowAll(!showAll)}
             className="cursor-pointer inline-flex items-center bg-secondary gap-2 px-8 py-4 rounded-full font-bold text-white shadow-lg transition-all active:scale-95 hover:brightness-110"
-            
           >
             {showAll ? (
               <>Show Less <FaChevronUp /></>
@@ -86,7 +81,6 @@ const CategorySection = () => {
           </button>
         </div>
 
-       
       </div>
     </section>
   );

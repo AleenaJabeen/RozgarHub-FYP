@@ -144,7 +144,7 @@ const Navbar = () => {
         className={`${sizeClass} rounded-full border border-gray-300 overflow-hidden shrink-0`}
       >
         {avatar ? (
-          <img src={avatar} loading="lazy" alt={name} className="w-full h-full object-cover" />
+          <img src={avatar} fetchPriority="high" alt={name} className="w-full h-full object-cover" />
         ) : (
           <div
             className={`w-full h-full flex items-center justify-center text-secondary font-bold ${textClass}`}
@@ -364,7 +364,14 @@ const Navbar = () => {
         <div className="md:hidden bg-white fixed inset-0 top-19 z-70 overflow-y-auto">
           {role !== "pending" && (
             <div className="px-6 py-8 bg-gray-50 border-b border-gray-100 flex items-center space-x-4">
+              <div className="relative">
               <Avatar size="lg" />
+               <div
+                    className={`w-3 h-3 absolute bottom-2 right-0 ${
+                      isOnline ? "bg-green-500" : "bg-red-500 "
+                    } rounded-full`}
+                  ></div>
+                  </div>
               <div>
                 <h3 className="font-bold text-xl text-gray-800">
                   {capitalizeWords(name)}
