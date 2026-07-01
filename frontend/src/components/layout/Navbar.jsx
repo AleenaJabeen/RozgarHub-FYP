@@ -144,7 +144,7 @@ const Navbar = () => {
         className={`${sizeClass} rounded-full border border-gray-300 overflow-hidden shrink-0`}
       >
         {avatar ? (
-          <img src={avatar} alt={name} className="w-full h-full object-cover" />
+          <img src={avatar} loading="lazy" alt={name} className="w-full h-full object-cover" />
         ) : (
           <div
             className={`w-full h-full flex items-center justify-center text-secondary font-bold ${textClass}`}
@@ -193,7 +193,7 @@ const Navbar = () => {
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <Link to="/" className="shrink-0">
-            <img src={Logo2} alt="RozgarHub" className="h-12 w-auto" />
+            <img src={Logo2}  loading="lazy" alt="RozgarHub" className="h-12 w-auto" />
           </Link>
 
           {/* Desktop Menu */}

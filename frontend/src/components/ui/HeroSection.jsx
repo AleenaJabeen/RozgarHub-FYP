@@ -73,4 +73,4 @@ and get the job done fast
   );
 };
 
-export default HeroSection;
+export default React.memo(HeroSection);
