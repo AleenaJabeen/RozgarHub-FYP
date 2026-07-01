@@ -9,20 +9,35 @@ import {
 import { ServiceProvider } from "../../models/serviceProvider.model.js";
 
 const checkIfWithinAvailability = (availabilityHours) => {
-  const now = new Date();
-  const currentDay = now.toLocaleString("en-US", {
-    weekday: "long",
+  const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Karachi",
-  });
-
-  const currentTime = now.toLocaleTimeString("en-GB", {
+    weekday: "long",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-    timeZone: "Asia/Karachi",
   });
 
+  const parts = formatter.formatToParts(new Date());
+
+  const currentDay = parts.find((p) => p.type === "weekday")?.value;
+  const hour = parts.find((p) => p.type === "hour")?.value;
+  const minute = parts.find((p) => p.type === "minute")?.value;
+
+  const currentTime = `${hour}:${minute}`;
+
+  console.log("PK CURRENT DAY:", currentDay);
+  console.log("PK CURRENT TIME:", currentTime);
+  console.log("AVAILABILITY HOURS:", availabilityHours);
+
   return availabilityHours?.some((slot) => {
+    console.log("Checking slot:", {
+      days: slot.days,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      currentDay,
+      currentTime,
+    });
+
     return (
       slot.days.includes(currentDay) &&
       currentTime >= slot.startTime &&
