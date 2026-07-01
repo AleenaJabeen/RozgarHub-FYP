@@ -193,7 +193,7 @@ const Navbar = () => {
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <Link to="/" className="shrink-0">
-            <img src={Logo2}  loading="lazy" alt="RozgarHub" className="h-12 w-auto" />
+            <img src={Logo2}  loading="eager" fetchPriority="high" alt="RozgarHub" className="h-12 w-auto" />
           </Link>
 
           {/* Desktop Menu */}
