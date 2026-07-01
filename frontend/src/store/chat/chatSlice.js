@@ -3,9 +3,12 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 export const fetchMyChats = createAsyncThunk("chats/fetchAll", async () => {
-  const { data } = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/chat`, {
-    withCredentials: true,
-  });
+  const { data } = await axios.get(
+    `${import.meta.env.VITE_BACKEND_URL}/api/v1/chat`,
+    {
+      withCredentials: true,
+    },
+  );
   return data.data; // Array of chats
 });
 export const markAsRead = createAsyncThunk(
@@ -30,9 +33,12 @@ export const deleteChat = createAsyncThunk(
   "chat/deleteChat",
   async (chatId, thunkAPI) => {
     try {
-      await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/v1/chat/${chatId}`, {
-        withCredentials: true,
-      });
+      await axios.delete(
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/chat/${chatId}`,
+        {
+          withCredentials: true,
+        },
+      );
 
       return chatId;
     } catch (error) {
@@ -47,20 +53,28 @@ export const fetchUserInfo = createAsyncThunk(
   "chat/fetchUserInfo",
   async (userId, thunkAPI) => {
     try {
-      const  response  = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/chat/user-info/${userId}`, {
-        withCredentials: true,
-      });
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/chat/user-info/${userId}`,
+        {
+          withCredentials: true,
+        },
+      );
       return response.data.data; // This returns the merged User + ServiceProvider object
     } catch (error) {
       return thunkAPI.rejectWithValue(
-        error.response?.data || "Failed to fetch user details"
+        error.response?.data || "Failed to fetch user details",
       );
     }
-  }
+  },
 );
 const chatSlice = createSlice({
   name: "chats",
-  initialState: { items: [], loading: false,selectedUserProfile: null,profileLoading: false },
+  initialState: {
+    items: [],
+    loading: false,
+    selectedUserProfile: null,
+    profileLoading: false,
+  },
   reducers: {
     setUserOnline: (state, action) => {
       const userId = action.payload;
@@ -87,7 +101,7 @@ const chatSlice = createSlice({
         );
       });
     },
-    
+
     updateLastMessage(state, { payload }) {
       const chatIndex = state.items.findIndex((c) => c._id === payload.chatId);
       if (chatIndex !== -1) {
@@ -119,9 +133,28 @@ const chatSlice = createSlice({
         chat.unreadCounts[userId] = 0;
       }
     },
+    chatUpdatedFromSocket: (state, action) => {
+      const { chatId, lastMessage, lastMessageAt, myId, unreadCount } =
+        action.payload;
+
+      const chat = state.items.find((c) => c._id === chatId);
+      if (!chat) return;
+
+      chat.lastMessage = lastMessage;
+      chat.lastMessageAt = lastMessageAt;
+
+      if (typeof unreadCount === "number") {
+        chat.unreadCounts = {
+          ...chat.unreadCounts,
+          [myId]: unreadCount,
+        };
+      }
+
+      
+    },
     clearSelectedProfile: (state) => {
       state.selectedUserProfile = null;
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -149,6 +182,7 @@ const chatSlice = createSlice({
         state.selectedUserProfile = payload;
         state.profileLoading = false;
       })
+
       .addCase(fetchUserInfo.rejected, (state) => {
         state.profileLoading = false;
         state.selectedUserProfile = null;
@@ -164,14 +198,13 @@ const chatSlice = createSlice({
   },
 });
 
-
-
 export const {
   setUserOnline,
   setUserOffline,
   updateLastMessage,
   resetUnreadCount,
   removeChat,
-  clearSelectedProfile
+  chatUpdatedFromSocket,
+  clearSelectedProfile,
 } = chatSlice.actions;
 export default chatSlice.reducer;

@@ -90,6 +90,15 @@ export const initSocket = (httpServer) => {
         socket.join(chatId);
         console.log(`User ${userId} joined chat room ${chatId}`);
         console.log("JOIN EVENT DATA:", chatId);
+
+        const deliveredMessages = await Message.find({
+          chatId,
+          senderId: { $ne: userId },
+          status: "sent",
+        });
+
+        const ids = deliveredMessages.map((m) => m._id);
+
         await Message.updateMany(
           {
             chatId,
@@ -100,6 +109,11 @@ export const initSocket = (httpServer) => {
             status: "delivered",
           },
         );
+        io.to(chatId).emit("message_status_updated", {
+          chatId,
+          messageIds: ids,
+          status: "delivered",
+        });
       } catch (err) {
         console.error("join_chat error:", err);
         socket.emit("error", { message: "Failed to join chat" });
@@ -114,7 +128,10 @@ export const initSocket = (httpServer) => {
 
     // ── send_message ─────────────────────────────────────────────────────────
     // Payload: { chatId, type, content?, mediaUrl? }
-    // Server saves the message, updates the chat, then broadcasts to the room.
+    // Server saves the message, then follows the flowchart:
+    //   is receiver connected to this chat room right now?
+    //     yes -> status = delivered, emit delivered
+    //     no  -> unreadCounts++, push notification
     socket.on("send_message", async (payload) => {
       try {
         const { chatId, type, content, mediaUrl } = payload;
@@ -139,7 +156,7 @@ export const initSocket = (httpServer) => {
         const chat = await Chat.findOne({ _id: chatId, participants: userId });
         if (!chat) return socket.emit("error", { message: "Chat not found" });
 
-        // Persist
+        // Persist (status starts as "sent")
         const message = await Message.create({
           chatId,
           senderId: userId,
@@ -149,46 +166,61 @@ export const initSocket = (httpServer) => {
           status: "sent",
         });
 
-        // Update chat's lastMessage pointer
-        const receiverId = chat.participants
+        // Populate sender for the emitted payload
+        await message.populate("senderId", "name avatar");
+
+        const otherId = chat.participants
           .map((id) => id.toString())
           .find((id) => id !== userId);
 
-        await Chat.findByIdAndUpdate(chatId, {
-          lastMessage: message._id,
-          lastMessageAt: new Date(),
-          $inc: {
-            [`unreadCounts.${receiverId}`]: 1,
-          },
-        });
-
-        // Populate sender for the emitted payload
-        await message.populate("senderId", "name avatar");
+        // ── Flowchart: is receiver connected to the chat room? ───────────
         const roomMembers = io.sockets.adapter.rooms.get(chatId);
-        console.log("ROOM MEMBERS:", roomMembers);
+
+        const isReceiverOnline = otherId && onlineUsers.has(otherId);
+
+        const isReceiverInChatRoom = otherId
+          ? [...(roomMembers || [])].some((socketId) => {
+              const socketInstance = io.sockets.sockets.get(socketId);
+              return socketInstance?.user?._id?.toString() === otherId;
+            })
+          : false;
+        if (isReceiverOnline) {
+          message.status = "delivered";
+          await message.save();
+
+          io.to(userId).emit("message_status_updated", {
+            chatId,
+            messageIds: [message._id],
+            status: "delivered",
+          });
+        }
+
         // Broadcast to everyone in the room (including sender — client can use
         // this as the "delivered" confirmation and replace the optimistic copy)
         io.to(chatId).emit("new_message", message);
 
-        // Also notify the OTHER participant's personal room if they're not in
-        // this chat window right now (for unread badge / push notification hook)
-        const otherId = chat.participants
-          .map((p) => p.toString())
-          .find((id) => id !== userId);
-
         if (otherId) {
+          const update = {
+            lastMessage: message._id,
+            lastMessageAt: new Date(),
+          };
+
+          if (!isReceiverInChatRoom) {
+            update.$inc = {
+              [`unreadCounts.${otherId}`]: 1,
+            };
+          }
+
+          const updatedChat = await Chat.findByIdAndUpdate(chatId, update, {
+            new: true,
+          });
+
           io.to(otherId).emit("chat_updated", {
             chatId,
             lastMessage: message,
             lastMessageAt: message.createdAt,
+            unreadCount: updatedChat.unreadCounts.get(otherId),
           });
-          const isReceiverInChatRoom = [...(roomMembers || [])].some(
-            (socketId) => {
-              const socketInstance = io.sockets.sockets.get(socketId);
-
-              return socketInstance?.user?._id?.toString() === otherId;
-            },
-          );
 
           console.log("Receiver in chat room:", isReceiverInChatRoom);
 
@@ -248,28 +280,10 @@ export const initSocket = (httpServer) => {
       }
     });
 
-    // ── message_read ─────────────────────────────────────────────────────────
-    // Client emits when the user actually reads the message.
-    // Payload: { messageId, chatId }
-    // socket.on("message_read", async ({ messageId, chatId }) => {
-    //   try {
-    //     const message = await Message.findByIdAndUpdate(
-    //       messageId,
-    //       { status: "read" },
-    //       { new: true },
-    //     );
-    //     if (!message) return;
-
-    //     io.to(message.senderId.toString()).emit("message_status_updated", {
-    //       messageId,
-    //       status: "read",
-    //       chatId,
-    //     });
-    //   } catch (err) {
-    //     console.error("message_read error:", err);
-    //   }
-    // });
-
+    // ── messages_read ─────────────────────────────────────────────────────────
+    // Client emits when the user actually reads message(s) in an open chat.
+    // Payload: { chatId, messageIds }
+    // Flowchart: status = read, unreadCounts[reader] = 0, notify sender(s).
     socket.on("messages_read", async ({ chatId, messageIds }) => {
       try {
         if (!Array.isArray(messageIds) || !messageIds.length) {
@@ -307,7 +321,12 @@ export const initSocket = (httpServer) => {
           chatId,
         });
 
-        // Update individual message status
+        // ── Flowchart: Unread = 0 for the person who just read ────────────
+        if (chatId) {
+          await Chat.findByIdAndUpdate(chatId, {
+            $set: { [`unreadCounts.${userId}`]: 0 },
+          });
+        }
       } catch (err) {
         console.error("messages_read error:", err);
       }
