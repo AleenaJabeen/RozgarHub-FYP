@@ -119,6 +119,22 @@ const chatSlice = createSlice({
         chat.unreadCounts[userId] = 0;
       }
     },
+    chatUpdatedFromSocket: (state, action) => {
+      console.log("Reducer fired", action.payload);
+  const { chatId, lastMessage, lastMessageAt, myId, isActive } = action.payload;
+  const chat = state.items.find((c) => c._id === chatId);
+  if (!chat) return;
+
+  chat.lastMessage = lastMessage;
+  chat.lastMessageAt = lastMessageAt;
+
+  if (!isActive) {
+    chat.unreadCounts = {
+      ...chat.unreadCounts,
+      [myId]: (chat.unreadCounts?.[myId] || 0) + 1,
+    };
+  }
+},
     clearSelectedProfile: (state) => {
       state.selectedUserProfile = null;
     }
@@ -172,6 +188,7 @@ export const {
   updateLastMessage,
   resetUnreadCount,
   removeChat,
+  chatUpdatedFromSocket,
   clearSelectedProfile
 } = chatSlice.actions;
 export default chatSlice.reducer;

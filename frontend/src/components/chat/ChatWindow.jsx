@@ -106,7 +106,7 @@ useEffect(() => {
       messageIds: unreadMessageIds,
     });
   }
-}, [myId, chatId]);
+}, [myId, chatId,messages]);
  
 
   useEffect(() => {
@@ -115,7 +115,7 @@ useEffect(() => {
   useEffect(() => {
     if (!chatId) return;
     dispatch(markAsRead({ chatId, myId }));
-  }, [chatId, dispatch]);
+  }, [chatId,myId, dispatch]);
   // Scroll Logic
   useEffect(() => {
     const container = containerRef.current;

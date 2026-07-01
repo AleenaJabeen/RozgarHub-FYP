@@ -45,6 +45,7 @@ import {
   initializeNotifications,
 } from "./utils/notification";
 import RozgarHubLoader from "./components/layout/Loader";
+import SocketListener from "./hooks/SocketListener";
 
 function App() {
    useGlobalSocket();
@@ -83,6 +84,7 @@ function App() {
       <ScrollToTop />
       <ToastContainer />
       <GlobalUrgentOverlay />
+        <SocketListener />
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route

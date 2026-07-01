@@ -2,12 +2,23 @@ import React, { useEffect } from 'react';
 import ChatSidebar from '../../components/chat/ChatSidebar';
 import { useParams, Outlet } from 'react-router-dom'; // Import Outlet
 import { connectSocket } from '../../socket/socket';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import RozgarHubLoader from '../../components/layout/Loader';
+import { fetchMyChats } from '../../store/chat/chatSlice';
 
 function Chat() {
   const { chatId } = useParams();
+  const dispatch=useDispatch();
+useEffect(() => {
+  console.log("ChatSidebar mounted");
 
+  return () => {
+    console.log("ChatSidebar unmounted");
+  };
+}, []);
+useEffect(() => {
+    dispatch(fetchMyChats());
+}, []);
  
 
   return (

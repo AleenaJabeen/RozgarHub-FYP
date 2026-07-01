@@ -4,7 +4,8 @@ import {
   deleteChat,
   fetchMyChats,
   markAsRead,
-  resetUnreadCount
+  resetUnreadCount,
+  chatUpdatedFromSocket, // 👈 new action, add this to chatSlice (see below)
 } from "../../store/chat/chatSlice";
 import { useNavigate, useParams } from "react-router-dom";
 import { TbMessageCircleSearch } from "react-icons/tb";
@@ -32,18 +33,57 @@ const ChatSidebar = () => {
 
   useEffect(() => {
     dispatch(fetchMyChats());
-  }, [dispatch]);
+  }, []);
 
+  // ── messages_read: someone read messages -> clear unread badge ───────────
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleMessagesRead = ({ chatId }) => {
+      dispatch(resetUnreadCount({ chatId, userId: myId }));
+      dispatch(markAsRead({ chatId, myId }));
+    };
+
+    // socket.on("messages_read", handleMessagesRead);
+    return () => socket.off("messages_read", handleMessagesRead);
+  }, [socket, myId]);
+
+  // ── chat_updated: a new message landed in one of my chats ────────────────
+  // Backend emits this to the OTHER participant on every send_message,
+  // whether or not they're currently in the chat room. We use it to bump
+  // the unread badge and refresh the last-message preview in real time.
   useEffect(() => {
   if (!socket) return;
 
-  const handleMessagesRead = ({ chatId }) => {
-    dispatch(resetUnreadCount({ chatId, userId: myId }));
+  const handleChatUpdated = (data) => {
+    console.log("📩 chat_updated:", data);
+
+    dispatch(
+      chatUpdatedFromSocket({
+        ...data,
+        myId,
+        isActive: data.chatId === activeChatId,
+      })
+    );
   };
 
-  socket.on("messages_read", handleMessagesRead);
-  return () => socket.off("messages_read", handleMessagesRead);
-}, [socket, myId]);
+  socket.on("chat_updated", handleChatUpdated);
+  
+
+  return () => {
+    socket.off("chat_updated", handleChatUpdated);
+  };
+}, [socket, myId, activeChatId, dispatch]);
+// useEffect(() => {
+//     if (!socket) return;
+
+//     console.log("Listening for chat_updated");
+
+//     socket.on("chat_updated", (data) => {
+//         console.log("Received chat_updated", data);
+//     });
+
+// }, [socket]);
 
   useEffect(() => {
     if (!socket) return;
@@ -135,13 +175,13 @@ const ChatSidebar = () => {
                 typingUserId={typingUsers[chat._id]}
                 onClick={() => {
                   if (chat._id === activeChatId) return;
-                  dispatch(markAsRead({chatId: chat._id , myId}));
-                 navigate(`/messages/${chat._id}`);
+                  dispatch(markAsRead({ chatId: chat._id, myId }));
+                  navigate(`/messages/${chat._id}`);
                 }}
                 onDelete={(chatId) => {
                   dispatch(deleteChat(chatId)).then(() => {
                     if (chatId === activeChatId) {
-                       navigate(`/messages`);
+                      navigate(`/messages`);
                     }
                   });
                 }}
