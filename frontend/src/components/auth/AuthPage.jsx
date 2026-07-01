@@ -328,4 +328,4 @@ const validatePassword = (password) => {
   );
 };
 
-export default AuthPage;
+export default React.memo(AuthPage);
