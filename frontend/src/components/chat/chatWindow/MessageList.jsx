@@ -23,6 +23,21 @@ const MessageList = React.forwardRef(
     const [editText, setEditText] = useState("");
     const editInputRef = useRef(null);
 
+    const lastTap = useRef(0);
+
+const handleMobileDoubleTap = (e, msg) => {
+  if (window.innerWidth >= 640) return; // desktop uses hover
+
+  const now = Date.now();
+
+  if (now - lastTap.current < 300) {
+    e.stopPropagation();
+    handleBubbleClick(e, msg);
+  }
+
+  lastTap.current = now;
+};
+
     useEffect(() => {
       const handler = () => setContextMenu(null);
       document.addEventListener("click", handler);
@@ -176,6 +191,7 @@ const MessageList = React.forwardRef(
                             ? "opacity-50"
                             : "opacity-100"
                         }`}
+                        onClick={(e) => handleMobileDoubleTap(e, msg)}
                       >
                         <div
                           className={`absolute top-1 ${isMe ? "right-1 text-gray-300" : "right-1 text-gray-400"} 

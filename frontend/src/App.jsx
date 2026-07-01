@@ -1,27 +1,28 @@
 import { ToastContainer } from "react-toastify";
+import React from 'react'
+import { useDispatch, useSelector } from "react-redux";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom"; // ✅ import useLocation
 import Layout from "./components/layout/Layout";
 import CheckAuth from "./components/ProtectedRoute";
-import Home from "./pages/Home";
-import { useDispatch, useSelector } from "react-redux";
-import ForgotPassword from "./components/auth/ForgotPassword";
-import ChangePassword from "./components/auth/ChangePassword";
+const Home = React.lazy(() => import("./pages/Home"));
+const AuthPage = React.lazy(() => import("./components/auth/AuthPage"));
+const ForgotPassword = React.lazy(() => import("./components/auth/ForgotPassword"));
+const ChangePassword = React.lazy(() => import("./components/auth/ChangePassword"));
 import ChooseRole from "./components/auth/ChooseRole";
 import { useEffect } from "react";
 import { checkAuth } from "./store/auth-slice";
 import Profile from "./pages/serviceprovider/Profile";
-import Dashboard from "./pages/serviceprovider/Dashboard";
-import Gig from "./pages/serviceprovider/Gig";
+const Dashboard = React.lazy(() => import("./pages/serviceprovider/Dashboard"));
 import CreateGig from "./components/serviceprovider/gig/CreateGig";
 import ScrollToTop from "./components/layout/ScrollToTop";
-import AuthPage from "./components/auth/AuthPage";
-import ProviderHome from "./pages/serviceprovider/ProviderHome";
-import ViewProfile from "./pages/serviceprovider/ViewProfile";
+const ProviderHome = React.lazy(() => import("./pages/serviceprovider/ProviderHome"));
+const Gig = React.lazy(() => import("./pages/serviceprovider/Gig"));
+const ViewProfile = React.lazy(() => import("./pages/serviceprovider/ViewProfile"))
 import GigDetails from "./components/serviceprovider/gig/GigDetails";
 import CustomerProfile from "./pages/customer/Profile";
-import CustomerHome from "./pages/customer/CustomerHome";
-import ServicesPage from "./pages/customer/ServicesPage";
-import CustomerDashboard from "./pages/customer/Dashboard";
+const CustomerHome = React.lazy(() => import("./pages/customer/CustomerHome"));
+const CustomerDashboard = React.lazy(() => import("./pages/customer/Dashboard"));
+const ServicesPage = React.lazy(() => import("./pages/customer/ServicesPage"));
 import CustomerViewProfile from "./pages/customer/ViewProfile";
 import SPOrderManagement from "./pages/orders/serviceprovider/OrderManagement";
 import CustomerOrderPage from "./pages/orders/customer/PlaceOrder";

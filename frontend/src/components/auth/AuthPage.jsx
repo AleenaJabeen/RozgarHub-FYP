@@ -173,6 +173,7 @@ const validatePassword = (password) => {
         <div className="flex-1 hidden md:block md:w-1/2 relative rounded-tl-2xl rounded-bl-2xl">
           <img
             src={login}
+            fetchPriority="high"
             className="absolute inset-0 w-full  h-full lg:object-cover object-fill  rounded-tl-2xl rounded-bl-2xl"
             alt="Professionals"
           />

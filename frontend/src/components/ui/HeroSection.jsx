@@ -1,8 +1,27 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { heroImg, mainVideo } from "../../assets";
+import { heroImg, mainVideo ,customerStep3 as heroMobileImg} from "../../assets";
 
 const HeroSection = () => {
+  const [playVideo, setPlayVideo] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+useEffect(() => {
+  const handleResize = () => {
+    setIsMobile(window.innerWidth < 768);
+  };
+
+  window.addEventListener("resize", handleResize);
+
+  return () => window.removeEventListener("resize", handleResize);
+}, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPlayVideo(true);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
   return (
     <section className="relative w-[95%] mx-auto my-6">
       {/* Announcement Banner */}
@@ -15,34 +34,49 @@ const HeroSection = () => {
       {/* Hero with Video Background */}
       <div className="relative w-full h-[500px] md:h-[600px] overflow-hidden rounded-2xl">
         {/* Video Background */}
-        <div className="absolute inset-0 z-0">
-          <video
-            poster={heroImg}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover"
-          >
-            <source src={mainVideo} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-
-          {/* Dark gradient overlay — stronger on left for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/20 to-transparent" />
-        </div>
-
+        <div className="absolute inset-0">
+  {isMobile ? (
+    <img
+      src={heroMobileImg}
+      alt="RozgarHub"
+      className="w-full h-full object-cover"
+      width={768}
+      height={1024}
+    />
+  ) : playVideo ? (
+    <video
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="w-full h-full object-cover"
+    >
+      <source src={mainVideo} type="video/mp4" />
+    </video>
+  ) : (
+    <img
+      src={heroImg}
+      alt="RozgarHub"
+      className="w-full h-full object-cover"
+      width={1600}
+      height={900}
+    />
+  )}
+</div>
         {/* Left-Aligned Text Content */}
         <div className="absolute inset-0 flex flex-col justify-center px-8 md:px-14 max-w-3xl z-10">
           {/* Main Headline */}
           <motion.h1
             className="text-white text-4xl md:text-6xl font-semibold leading-tight tracking-tight"
-            initial={{ opacity: 0, x: 190 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.9, ease: "easeOut" }}
           >
-           Connect directly with trusted local 
- <span className="text-secondary/80"> Service Providers</span> on <span className="text-secondary">RozgarHub</span>
+            Connect directly with trusted local
+            <span className="text-secondary/80">
+              {" "}
+              Service Providers
+            </span> on <span className="text-secondary">RozgarHub</span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -52,8 +86,7 @@ const HeroSection = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.9, ease: "easeOut", delay: 0.6 }}
           >
-            Find skilled service providers near you
-and get the job done fast
+            Find skilled service providers near you and get the job done fast
           </motion.p>
 
           {/* CTA Button */}
