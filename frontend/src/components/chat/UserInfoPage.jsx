@@ -70,12 +70,12 @@ const UserInfoPage = () => {
         </h1>
       </div>
 
-      <div className="w-[90%] mx-auto px-4 mt-6">
+      <div className="w-[95%] mx-auto px-4 mt-6">
         {/* Main Profile Card */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Cover/Avatar Section */}
           <div className="h-24 bg-gradient-to-r from-secondary to-secondary/80 w-full" />
-          <div className="flex flex-col items-center -mt-12 px-6 pb-6">
+          <div className="flex flex-col items-center -mt-12 md:px-6 px-4 pb-6">
             {user.avatar? (
               <img
                 src={user.avatar}
@@ -134,7 +134,7 @@ const UserInfoPage = () => {
 
             {/* Info Grid */}
             <div className="w-full mt-6 space-y-4">
-              <div className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50/50 border border-gray-50">
+              <div className="flex items-start gap-4 md:p-4 p-3 rounded-2xl bg-gray-50/50 border border-gray-50">
                 <IoMailOutline className="text-gray-400 mt-1" size={20} />
                 <div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-tight">

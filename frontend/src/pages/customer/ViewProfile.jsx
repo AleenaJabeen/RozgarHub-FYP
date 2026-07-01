@@ -140,12 +140,12 @@ const CustomerViewProfile = () => {
       <div className="max-w-5xl mx-auto space-y-6">
 
         {/* ── Top Header Card ── */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 sm:p-6 p-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             
             {/* User Info */}
-            <div className="flex items-center gap-5">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border border-gray-200 overflow-hidden bg-gray-100 shrink-0">
+            <div className="flex items-center sm:gap-5 gap-3">
+              <div className="w-18 h-18 sm:w-24 sm:h-24 rounded-full border border-gray-200 overflow-hidden bg-gray-100 shrink-0">
                 {mergedUser?.avatar ? (
                   <img src={mergedUser.avatar} alt={mergedUser.name} className="w-full h-full object-cover" />
                 ) : (
@@ -154,12 +154,14 @@ const CustomerViewProfile = () => {
               </div>
               
               <div>
-                <h1 className="text-2xl font-bold text-gray-800 mb-1">
+                <h1 className="sm:text-2xl text-xl font-bold text-gray-800 mb-1">
                   {capitalizeWords(mergedUser?.name) || "Your Name"}
                 </h1>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-500">
-                  <span className="flex items-center gap-1"><HiOutlineMail /> {mergedUser?.email || "—"}</span>
-                  {mergedUser?.phone && <span className="flex items-center gap-1"><IoCallOutline /> {mergedUser.phone}</span>}
+<h1 className="text-wrap break-all text-sm sm:text-base">
+  <HiOutlineMail className="inline-block mr-1 align-middle mb-0.5" /> 
+  {mergedUser?.email || "—"}
+</h1>                  {mergedUser?.phone && <span className="flex items-center gap-1"><IoCallOutline /> {mergedUser.phone}</span>}
                 </div>
                 {memberSince && (
                   <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">

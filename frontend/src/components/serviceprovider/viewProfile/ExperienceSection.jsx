@@ -164,8 +164,8 @@ const handleExperienceUpload = (e, index) => {
                   </>
                 ) : (
                   <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-gray-800 font-semibold">{exp.title || "Untitled Experience"}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-gray-800 text-wrap break-words font-semibold">{exp.title || "Untitled Experience"}</p>
                       {exp.documentUrl && (
                         <a href={exp.documentUrl} target="_blank" rel="noreferrer" className="text-xs text-secondary underline">
                           View Attachment
