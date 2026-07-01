@@ -10,17 +10,25 @@ import { ServiceProvider } from "../../models/serviceProvider.model.js";
 
 const checkIfWithinAvailability = (availabilityHours) => {
   const now = new Date();
-  const currentDay = now.toLocaleString("en-US", { weekday: "long" });
-  const currentTime = now.toTimeString().slice(0, 5);
+  const currentDay = now.toLocaleString("en-US", {
+    weekday: "long",
+    timeZone: "Asia/Karachi",
+  });
 
-  for (const slot of availabilityHours) {
-    if (slot.days.includes(currentDay)) {
-      if (currentTime >= slot.startTime && currentTime <= slot.endTime) {
-        return true;
-      }
-    }
-  }
-  return false;
+  const currentTime = now.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Karachi",
+  });
+
+  return availabilityHours?.some((slot) => {
+    return (
+      slot.days.includes(currentDay) &&
+      currentTime >= slot.startTime &&
+      currentTime <= slot.endTime
+    );
+  });
 };
 
 // Create Gig
