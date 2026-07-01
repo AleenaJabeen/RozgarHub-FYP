@@ -176,49 +176,52 @@ export const initSocket = (httpServer) => {
         // ── Flowchart: is receiver connected to the chat room? ───────────
         const roomMembers = io.sockets.adapter.rooms.get(chatId);
 
-const isReceiverOnline = otherId && onlineUsers.has(otherId);
+        const isReceiverOnline = otherId && onlineUsers.has(otherId);
 
-const isReceiverInChatRoom = otherId
-  ? [...(roomMembers || [])].some((socketId) => {
-      const socketInstance = io.sockets.sockets.get(socketId);
-      return socketInstance?.user?._id?.toString() === otherId;
-    })
-  : false;
+        const isReceiverInChatRoom = otherId
+          ? [...(roomMembers || [])].some((socketId) => {
+              const socketInstance = io.sockets.sockets.get(socketId);
+              return socketInstance?.user?._id?.toString() === otherId;
+            })
+          : false;
         if (isReceiverOnline) {
-    message.status = "delivered";
-    await message.save();
+          message.status = "delivered";
+          await message.save();
 
-    io.to(userId).emit("message_status_updated", {
-        chatId,
-        messageIds: [message._id],
-        status: "delivered",
-    });
-}
+          io.to(userId).emit("message_status_updated", {
+            chatId,
+            messageIds: [message._id],
+            status: "delivered",
+          });
+        }
 
         // Broadcast to everyone in the room (including sender — client can use
         // this as the "delivered" confirmation and replace the optimistic copy)
         io.to(chatId).emit("new_message", message);
 
         if (otherId) {
-          io.to(otherId).emit("chat_updated", {
-            chatId,
-            lastMessage: message,
-            lastMessageAt: message.createdAt,
-          });
-
           const update = {
             lastMessage: message._id,
             lastMessageAt: new Date(),
           };
 
           if (!isReceiverInChatRoom) {
-            // Receiver not in the room -> bump their unread counter
             update.$inc = {
               [`unreadCounts.${otherId}`]: 1,
             };
           }
 
-          await Chat.findByIdAndUpdate(chatId, update);
+          const updatedChat = await Chat.findByIdAndUpdate(chatId, update, {
+            new: true,
+          });
+
+          io.to(otherId).emit("chat_updated", {
+            chatId,
+            lastMessage: message,
+            lastMessageAt: message.createdAt,
+            unreadCount: updatedChat.unreadCounts.get(otherId),
+          });
+
           console.log("Receiver in chat room:", isReceiverInChatRoom);
 
           if (!isReceiverInChatRoom) {

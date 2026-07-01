@@ -13,7 +13,9 @@ export default function SocketListener() {
     useEffect(() => {
         if (!socket || !myId) return;
 
+
         const handleChatUpdated = (data) => {
+            console.log("chat_updated received", data);
             dispatch(
                 chatUpdatedFromSocket({
                     ...data,

@@ -16,10 +16,6 @@ useEffect(() => {
     console.log("ChatSidebar unmounted");
   };
 }, []);
-useEffect(() => {
-    dispatch(fetchMyChats());
-}, []);
- 
 
   return (
     /* h-screen and overflow-hidden are correct here to prevent the WHOLE page from scrolling */
