@@ -192,8 +192,8 @@ const Dashboard = () => {
 
   //  for Order status piechart
   const providerStats = {
-    completedOrders: completedOrdersCount || 2,
-    averageRating: user?.averageRating || 4.7,
+    completedOrders: completedOrdersCount || 0,
+    averageRating: user?.averageRating || 0,
     totalOrders: totalOrders,
     cancelledOrders: cancelledOrders,
 
