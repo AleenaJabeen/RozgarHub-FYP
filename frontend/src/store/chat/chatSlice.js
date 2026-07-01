@@ -150,12 +150,7 @@ const chatSlice = createSlice({
         };
       }
 
-      // Move updated chat to the top
-      const index = state.items.findIndex((c) => c._id === chatId);
-      if (index > 0) {
-        const [updated] = state.items.splice(index, 1);
-        state.items.unshift(updated);
-      }
+      
     },
     clearSelectedProfile: (state) => {
       state.selectedUserProfile = null;
